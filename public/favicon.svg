@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Navy blue rounded background -->
+  <rect width="32" height="32" rx="7" fill="#1e3a8a"/>
+  <!-- Shield with check (please protect logo style) -->
+  <path d="M16 5 L24 8.5 L24 15 C24 20 16 27 16 27 C16 27 8 20 8 15 L8 8.5 Z" fill="none" stroke="white" stroke-width="1.8" stroke-linejoin="round"/>
+  <path d="M12.5 16 L15 18.5 L19.5 13" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+</svg>
