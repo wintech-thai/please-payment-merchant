@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none">
+  <defs>
+    <linearGradient id="bagGrad" x1="20%" y1="0%" x2="80%" y2="100%">
+      <stop offset="0%" stop-color="#fb923c"/>
+      <stop offset="60%" stop-color="#f97316"/>
+      <stop offset="100%" stop-color="#c2410c"/>
+    </linearGradient>
+    <filter id="bagGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="5" flood-color="#f97316" flood-opacity="0.5"/>
+    </filter>
+  </defs>
+  <g filter="url(#bagGlow)">
+    <ellipse cx="60" cy="20" rx="11" ry="7" fill="url(#bagGrad)"/>
+    <rect x="49" y="24" width="22" height="16" rx="5" fill="url(#bagGrad)"/>
+    <ellipse cx="60" cy="76" rx="40" ry="36" fill="url(#bagGrad)"/>
+    <ellipse cx="45" cy="60" rx="9" ry="6" fill="white" fill-opacity="0.2" transform="rotate(-35 45 60)"/>
+    <text x="60" y="89" text-anchor="middle" fill="white" font-size="42" font-weight="bold" font-family="Arial, sans-serif">฿</text>
+  </g>
+</svg>
