@@ -100,7 +100,9 @@ export default function AuditLogPage() {
   const [chartInterval, setChartInterval] = useState('30m')
   const [selectedLog, setSelectedLog] = useState<AuditLogDocument | null>(null)
   const [selectedIndex, setSelectedIndex] = useState(-1)
-  const [highlightedId, setHighlightedId] = useState<string>('')
+  const [highlightedId, setHighlightedId] = useState<string>(
+    () => typeof window !== 'undefined' ? sessionStorage.getItem('auditLog:highlight') || '' : ''
+  )
 
   const fetchData = useCallback(async () => {
     const orgId = getOrgId()
@@ -172,11 +174,16 @@ export default function AuditLogPage() {
   const setAndSaveTimeRange = (val: TimeRangeValue) => { setTimeRange(val); setPage(1); saveTimeRange(val) }
   const handleSearch = () => { setPage(1); setSearchTerm(inputValue) }
   const handleReset = () => { setInputValue(''); setSearchTerm(''); setSearchField('all'); setAndSaveTimeRange({ type: 'relative', value: '24h' }) }
-  const handleRowClick = (log: AuditLogDocument) => { setHighlightedId(log.id) }
-  const handleOpenFlyout = (log: AuditLogDocument, idx: number) => { setHighlightedId(log.id); setSelectedLog(log); setSelectedIndex(idx) }
+  const setHighlight = (id: string) => {
+    setHighlightedId(id)
+    sessionStorage.setItem('auditLog:highlight', id)
+  }
+
+  const handleRowClick = (log: AuditLogDocument) => { setHighlight(log.id) }
+  const handleOpenFlyout = (log: AuditLogDocument, idx: number) => { setHighlight(log.id); setSelectedLog(log); setSelectedIndex(idx) }
   const handleCloseFlyout = () => { setSelectedLog(null); setSelectedIndex(-1) }
   const handleNavigate = (idx: number) => {
-    if (idx >= 0 && idx < logs.length) { setHighlightedId(logs[idx].id); setSelectedLog(logs[idx]); setSelectedIndex(idx) }
+    if (idx >= 0 && idx < logs.length) { setHighlight(logs[idx].id); setSelectedLog(logs[idx]); setSelectedIndex(idx) }
   }
 
   const totalPages = Math.ceil(totalCount / itemsPerPage)

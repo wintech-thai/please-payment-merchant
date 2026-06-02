@@ -4,7 +4,8 @@ import { useState, useEffect, useRef, Suspense } from 'react'
 import { useSearchParams, usePathname } from 'next/navigation'
 import { userApi } from '@/lib/api/user.api'
 import { toast } from 'sonner'
-import { Search, ChevronLeft, ChevronRight, Trash2, Key, Ban, CheckCircle, MoreHorizontal, X, Users, Check } from 'lucide-react'
+import { Search, ChevronLeft, ChevronRight, Trash2, Key, Ban, CheckCircle, MoreHorizontal, X, Users, Check, Plus, UserPlus } from 'lucide-react'
+import { useHighlightRow } from '@/hooks/useHighlightRow'
 import clsx from 'clsx'
 import { useLang } from '@/context/LanguageContext'
 
@@ -40,9 +41,7 @@ function processUrl(url: string): string {
 
 function UsersContent() {
   const { t } = useLang()
-  const pathname = usePathname()
-  const searchParams = useSearchParams()
-  const highlightIdParam = searchParams.get('highlight')
+  const { selectedRowId, handleRowSelect } = useHighlightRow()
 
   const [users, setUsers] = useState<UserItem[]>([])
   const [total, setTotal] = useState(0)
@@ -52,19 +51,9 @@ function UsersContent() {
   const [appliedSearch, setAppliedSearch] = useState('')
   const [loading, setLoading] = useState(true)
   const [selectedIds, setSelectedIds] = useState<string[]>([])
-  const [selectedRowId, setSelectedRowId] = useState<string | null>(highlightIdParam)
   const [deleteModal, setDeleteModal] = useState<{ open: boolean; userId?: string; userName?: string; bulk?: boolean }>({ open: false })
   const [resetLinkModal, setResetLinkModal] = useState<{ open: boolean; link?: string; loading?: boolean }>({ open: false })
   const [deleting, setDeleting] = useState(false)
-
-  useEffect(() => {
-    if (highlightIdParam) {
-      setSelectedRowId(highlightIdParam)
-      const params = new URLSearchParams(searchParams.toString())
-      params.delete('highlight')
-      window.history.replaceState(null, '', `${pathname}?${params.toString()}`)
-    }
-  }, [highlightIdParam, pathname, searchParams])
 
   const fetchUsers = async (currentPage: number, keyword: string = '') => {
     setLoading(true)
@@ -172,83 +161,60 @@ function UsersContent() {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 flex flex-col flex-1 min-h-0">
-        {/* Toolbar */}
-        <div className="flex flex-col sm:flex-row gap-3 justify-between items-start sm:items-center px-6 py-4 border-b border-gray-100">
-          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-            <select className="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 sm:min-w-[140px]">
-              <option>{t.admin.all}</option>
-              <option>{t.users.fieldUsername}</option>
-              <option>{t.users.fieldEmail}</option>
-            </select>
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && handleSearchTrigger()}
-              placeholder={t.users.searchPlaceholder}
-              className="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent placeholder-gray-400 sm:min-w-[220px]"
-            />
-            <button
-              onClick={handleSearchTrigger}
-              className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm rounded-lg transition-colors flex items-center justify-center gap-1.5"
-            >
-              <Search className="w-4 h-4" />
-            </button>
-          </div>
-          <div className="flex gap-2 w-full sm:w-auto justify-end">
-            <button
-              onClick={() => window.location.href = '/administration/users/invite'}
-              className="px-5 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium rounded-lg transition-colors uppercase"
-            >
-              {t.users.addUser}
-            </button>
-            <button
-              onClick={() => setDeleteModal({ open: true, bulk: true })}
-              disabled={selectedIds.length === 0}
-              className="px-5 py-2 text-sm font-medium text-red-600 border border-red-200 hover:bg-red-50 rounded-lg transition-colors uppercase disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              {t.admin.delete}
-            </button>
-          </div>
+      {/* Toolbar */}
+      <div className="flex flex-col sm:flex-row gap-3 justify-between items-start sm:items-center mb-3">
+        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+          <select className="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 sm:min-w-[140px]">
+            <option>{t.admin.all}</option>
+            <option>{t.users.fieldUsername}</option>
+            <option>{t.users.fieldEmail}</option>
+          </select>
+          <input type="text" value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleSearchTrigger()}
+            placeholder={t.users.searchPlaceholder}
+            className="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent placeholder-gray-400 sm:min-w-[220px]" />
+          <button onClick={handleSearchTrigger}
+            className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm rounded-lg transition-colors flex items-center justify-center gap-1.5">
+            <Search className="w-4 h-4" />
+          </button>
         </div>
+        <div className="flex gap-2 w-full sm:w-auto justify-end">
+          <button onClick={() => window.location.href = '/administration/users/invite'}
+            className="flex items-center gap-1.5 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold rounded-full shadow-sm transition-all hover:shadow-md">
+            <UserPlus className="w-4 h-4" />{t.users.addUser}
+          </button>
+          <button onClick={() => setDeleteModal({ open: true, bulk: true })} disabled={selectedIds.length === 0}
+            className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-red-500 bg-red-50 hover:bg-red-100 rounded-full transition-all disabled:opacity-40 disabled:cursor-not-allowed">
+            <Trash2 className="w-3.5 h-3.5" />{t.admin.delete}
+          </button>
+        </div>
+      </div>
 
-        {/* Table */}
+      <div className="flex flex-col flex-1 min-h-0">
         <div className="overflow-x-auto flex-1 min-h-0">
-          <table className="min-w-full">
+          <table className="min-w-full border-separate" style={{ borderSpacing: '0 5px' }}>
             <thead>
-              <tr className="bg-gray-50/70 border-b border-gray-100">
-                <th className="w-12 px-6 py-3.5">
-                  <input
-                    type="checkbox"
-                    checked={filteredUsers.length > 0 && selectedIds.length === filteredUsers.length}
-                    onChange={toggleAll}
-                    className="rounded border-gray-300 text-primary-600 focus:ring-primary-500 w-4 h-4"
-                  />
+              <tr>
+                <th className="w-12 px-4 pb-1">
+                  <input type="checkbox" checked={filteredUsers.length > 0 && selectedIds.length === filteredUsers.length}
+                    onChange={toggleAll} className="w-4 h-4 rounded accent-primary-600 cursor-pointer" />
                 </th>
-                <th className="px-6 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">{t.users.colUsername}</th>
-                <th className="px-6 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">{t.users.colEmail}</th>
-                <th className="px-6 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">{t.users.colTags}</th>
-                <th className="px-6 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">{t.users.colCustomRole}</th>
-                <th className="px-6 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">{t.users.colRoles}</th>
-                <th className="px-6 py-3.5 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">{t.users.colInitialUser}</th>
-                <th className="px-6 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">{t.users.colStatus}</th>
-                <th className="w-14 px-4 py-3.5 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">{t.users.colAction}</th>
+                <th className="px-4 pb-1 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">{t.users.colUsername}</th>
+                <th className="px-4 pb-1 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">{t.users.colTags}</th>
+                <th className="px-4 pb-1 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">{t.users.colCustomRole}</th>
+                <th className="px-4 pb-1 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">{t.users.colRoles}</th>
+                <th className="px-4 pb-1 text-center text-xs font-semibold text-gray-400 uppercase tracking-wider">{t.users.colInitialUser}</th>
+                <th className="px-4 pb-1 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">{t.users.colStatus}</th>
+                <th className="w-14 px-4 pb-1 text-center text-xs font-semibold text-gray-400 uppercase tracking-wider">{t.users.colAction}</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={9} className="py-20 text-center"><LoadingSpinner /></td></tr>
+                <tr><td colSpan={8} className="py-20 text-center"><LoadingSpinner /></td></tr>
               ) : filteredUsers.length === 0 ? (
-                <tr>
-                  <td colSpan={9} className="py-20 text-center">
-                    <EmptyState
-                      icon={<Users className="w-7 h-7 text-gray-400" />}
-                      title={t.users.noUsersFound}
-                      subtitle={t.users.noUsersSubtitle}
-                    />
-                  </td>
-                </tr>
+                <tr><td colSpan={8} className="py-20 text-center">
+                  <EmptyState icon={<Users className="w-7 h-7 text-gray-400" />} title={t.users.noUsersFound} subtitle={t.users.noUsersSubtitle} />
+                </td></tr>
               ) : filteredUsers.map(user => {
                 const tagList = parseCsv(user.tags)
                 const roleList = parseCsv(user.rolesList)
@@ -257,65 +223,56 @@ function UsersContent() {
                 const isInitial = user.isOrgInitialUser === 'YES'
                 const isSelected = selectedRowId === user.orgUserId
                 const isOwner = user.rolesList?.includes('OWNER') ?? false
+                const statusColor = user.userStatus?.toLowerCase() === 'active' ? 'bg-emerald-100 text-emerald-700' :
+                  user.userStatus?.toLowerCase() === 'disabled' ? 'bg-gray-100 text-gray-500' :
+                  user.userStatus?.toLowerCase() === 'pending' ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-500'
+                const initials = (user.userName || '?').slice(0, 2).toUpperCase()
                 return (
-                  <tr
-                    key={user.orgUserId}
-                    onClick={() => setSelectedRowId(user.orgUserId)}
-                    className={clsx(
-                      'border-l-[3px] transition-all cursor-pointer',
-                      isSelected ? '!bg-primary-100 border-l-primary-500' : 'border-l-transparent hover:bg-gray-50/50'
-                    )}
-                  >
-                    <td className="px-6 py-4" onClick={e => e.stopPropagation()}>
-                      <input
-                        type="checkbox"
-                        checked={selectedIds.includes(user.orgUserId)}
-                        onChange={() => toggleOne(user.orgUserId)}
-                        className="rounded border-gray-300 text-primary-600 focus:ring-primary-500 w-4 h-4"
-                      />
+                  <tr key={user.orgUserId} onClick={() => handleRowSelect(user.orgUserId)}
+                    className={clsx('cursor-pointer transition-all',
+                      isSelected ? '!bg-primary-100 shadow-sm' : 'bg-white shadow-sm hover:shadow-md hover:bg-amber-50/20')}>
+                    <td className={clsx('pl-4 pr-2 py-3.5 rounded-l-xl border-l-[3px]', isSelected ? 'border-primary-500' : 'border-transparent')} onClick={e => e.stopPropagation()}>
+                      <input type="checkbox" checked={selectedIds.includes(user.orgUserId)} onChange={() => toggleOne(user.orgUserId)}
+                        className="w-4 h-4 rounded accent-primary-600 cursor-pointer" />
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={e => { e.stopPropagation(); window.location.href = `/administration/users/${user.orgUserId}/update` }}
-                          className={clsx('text-sm font-semibold hover:underline text-left', isSelected ? 'text-primary-700' : 'text-gray-900 hover:text-primary-600')}
-                        >
-                          {user.userName}
-                        </button>
-                        {isOwner && <span className="px-1.5 py-0.5 text-xs bg-amber-100 text-amber-700 rounded font-medium">Owner</span>}
+                    <td className="px-4 py-3.5">
+                      <div className="flex items-center gap-3">
+                        <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0"
+                          style={{ background: 'linear-gradient(135deg, #92400e, #d97706)' }}>
+                          {initials}
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <button onClick={e => { e.stopPropagation(); window.location.href = `/administration/users/${user.orgUserId}/update` }}
+                              className={clsx('text-sm font-semibold hover:underline text-left', isSelected ? 'text-primary-700' : 'text-gray-900 hover:text-primary-600')}>
+                              {user.userName}
+                            </button>
+                            {isOwner && <span className="px-1.5 py-0.5 text-[10px] bg-amber-100 text-amber-700 rounded font-semibold">Owner</span>}
+                          </div>
+                          <p className="text-xs text-gray-400 truncate max-w-[180px]">{user.userEmail || user.tmpUserEmail || ''}</p>
+                        </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-500">{user.userEmail || user.tmpUserEmail || '—'}</td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-3.5">
                       <div className="flex flex-wrap gap-1">
-                        {tagList.length
-                          ? tagList.map(tag => <TagBadge key={tag}>{tag}</TagBadge>)
-                          : <span className="text-sm text-gray-400">—</span>}
+                        {tagList.length ? tagList.map(tag => <TagBadge key={tag}>{tag}</TagBadge>) : <span className="text-sm text-gray-400">—</span>}
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">{user.customRoleName || '—'}</td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-3.5 text-sm text-gray-600">{user.customRoleName || '—'}</td>
+                    <td className="px-4 py-3.5">
                       <div className="flex flex-wrap gap-1">
-                        {roleList.length
-                          ? roleList.map(r => <span key={r} className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-primary-600 text-white">{r}</span>)
-                          : <span className="text-sm text-gray-400">—</span>}
+                        {roleList.length ? roleList.map(r => <span key={r} className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-primary-600 text-white">{r}</span>) : <span className="text-sm text-gray-400">—</span>}
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-center">
-                      {isInitial
-                        ? <Check className="w-4 h-4 text-emerald-500 mx-auto" />
-                        : <X className="w-4 h-4 text-gray-300 mx-auto" />}
+                    <td className="px-4 py-3.5 text-center">
+                      {isInitial ? <Check className="w-4 h-4 text-emerald-500 mx-auto" /> : <X className="w-4 h-4 text-gray-200 mx-auto" />}
                     </td>
-                    <td className="px-6 py-4">
-                      <span className={clsx('text-sm font-medium',
-                        user.userStatus?.toLowerCase() === 'active' ? 'text-emerald-600' :
-                        user.userStatus?.toLowerCase() === 'disabled' ? 'text-gray-400' :
-                        user.userStatus?.toLowerCase() === 'pending' ? 'text-amber-500' : 'text-gray-500'
-                      )}>
+                    <td className="px-4 py-3.5">
+                      <span className={clsx('inline-flex px-2.5 py-1 rounded-full text-xs font-semibold', statusColor)}>
                         {user.userStatus || 'Active'}
                       </span>
                     </td>
-                    <td className="px-4 py-4 text-center" onClick={e => e.stopPropagation()}>
+                    <td className="px-2 pr-4 py-3.5 text-center rounded-r-xl" onClick={e => e.stopPropagation()}>
                       <RowActions items={[
                         { label: t.users.disableUser, icon: <Ban className="w-4 h-4" />, danger: true, disabled: isPending || !active, onClick: () => handleDisable(user) },
                         { label: t.users.enableUser, icon: <CheckCircle className="w-4 h-4" />, disabled: isPending || active, onClick: () => handleEnable(user) },
@@ -330,14 +287,11 @@ function UsersContent() {
         </div>
 
         {/* Pagination */}
-        <div className="flex items-center justify-end px-6 py-3 border-t border-gray-100 gap-4 sm:gap-6">
+        <div className="flex items-center justify-end px-4 py-3 bg-white rounded-xl shadow-sm mt-1 gap-4 sm:gap-6">
           <div className="flex items-center gap-2 text-sm text-gray-500">
             <span>{t.admin.rowsPerPage}</span>
-            <select
-              value={itemsPerPage}
-              onChange={e => { setItemsPerPage(Number(e.target.value)); setPage(1) }}
-              className="bg-transparent border-none text-gray-700 focus:ring-0 cursor-pointer font-medium outline-none text-sm"
-            >
+            <select value={itemsPerPage} onChange={e => { setItemsPerPage(Number(e.target.value)); setPage(1) }}
+              className="bg-transparent border-none text-gray-700 focus:ring-0 cursor-pointer font-medium outline-none text-sm">
               {[25, 50, 100, 200].map(n => <option key={n} value={n}>{n}</option>)}
             </select>
           </div>

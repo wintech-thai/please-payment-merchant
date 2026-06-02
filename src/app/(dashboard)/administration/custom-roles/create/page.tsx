@@ -105,6 +105,7 @@ function CustomRoleCreateContent() {
       })
       const newId = (res.data as any)?.customRole?.roleId ?? (res.data as any)?.roleId ?? null
       toast.success(tc.createdSuccess)
+      await new Promise(r => setTimeout(r, 800))
       window.location.href = newId ? `/administration/custom-roles?highlight=${newId}` : '/administration/custom-roles'
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : tc.failedToCreate)

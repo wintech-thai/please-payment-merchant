@@ -10,6 +10,7 @@ import clsx from 'clsx'
 import { toast } from 'sonner'
 import ProfileModal from '@/components/ProfileModal'
 import ChangePasswordModal from '@/components/ChangePasswordModal'
+import { AppVersionDisplay } from '@/components/AppVersionDisplay'
 
 interface MerchantOption {
   orgId: string
@@ -40,7 +41,7 @@ export default function Navbar() {
     try {
       const stored = localStorage.getItem('merchants')
       if (stored) setMerchants(JSON.parse(stored))
-    } catch { /* ignore */ }
+    } catch { }
   }, [])
 
   useEffect(() => {
@@ -101,7 +102,7 @@ export default function Navbar() {
             <img src="/img/please-payment.svg" alt="Please Payment" className="w-9 h-9" />
             <div className="hidden sm:block">
               <p className="text-white font-bold text-sm leading-tight">PLEASE-PAYMENT</p>
-              <p className="text-orange-300 text-xs leading-tight font-semibold tracking-wide">Merchant</p>
+              <p className="text-amber-300 text-xs leading-tight font-semibold tracking-wide">Merchant</p>
             </div>
           </Link>
 
@@ -127,16 +128,9 @@ export default function Navbar() {
                 <div className="absolute left-0 top-full mt-1.5 w-56 bg-white rounded-xl shadow-xl border border-gray-100 py-1 z-50">
                   <p className="px-4 py-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Switch Merchant</p>
                   {merchants.map(m => (
-                    <button
-                      key={m.orgId}
-                      onClick={() => handleSwitchMerchant(m.orgId)}
-                      className={clsx(
-                        'w-full text-left px-4 py-2.5 text-sm transition-colors flex items-center justify-between',
-                        m.orgId === currentOrgId
-                          ? 'text-primary-700 font-semibold bg-primary-50'
-                          : 'text-gray-700 hover:bg-gray-50'
-                      )}
-                    >
+                    <button key={m.orgId} onClick={() => handleSwitchMerchant(m.orgId)}
+                      className={clsx('w-full text-left px-4 py-2.5 text-sm transition-colors flex items-center justify-between',
+                        m.orgId === currentOrgId ? 'text-primary-700 font-semibold bg-primary-50' : 'text-gray-700 hover:bg-gray-50')}>
                       <span>{m.merchantCode || m.orgName}</span>
                       {m.orgId === currentOrgId && (
                         <svg className="w-4 h-4 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -168,12 +162,11 @@ export default function Navbar() {
                 </svg>
               </button>
               {merchantNavOpen && (
-                <div className="absolute left-0 top-full mt-1.5 w-52 bg-white rounded-xl shadow-xl border border-gray-100 py-1 z-50">
+                <div className="absolute left-0 top-full w-52 bg-white rounded-xl shadow-xl border border-gray-100 py-1 z-50">
                   {merchantChildren.map(item => (
                     <Link key={item.href} href={item.href} onClick={() => setMerchantNavOpen(false)}
                       className={clsx('flex items-center px-4 py-2.5 text-sm transition-colors',
-                        pathname.startsWith(item.href) ? 'text-primary-700 font-semibold bg-primary-50' : 'text-gray-700 hover:bg-gray-50'
-                      )}>
+                        pathname.startsWith(item.href) ? 'text-primary-700 font-semibold bg-primary-50' : 'text-gray-700 hover:bg-gray-50')}>
                       {item.label}
                     </Link>
                   ))}
@@ -195,14 +188,16 @@ export default function Navbar() {
           </nav>
 
           {/* Right side */}
-          <div className="ml-auto flex items-center gap-2">
+          <div className="ml-auto flex items-center gap-3">
+            {/* Version */}
+            <AppVersionDisplay className="hidden lg:flex" />
+
             {/* Language switcher */}
             <div className="hidden sm:flex items-center gap-1 bg-white/10 rounded-lg p-0.5">
               {(['th', 'en'] as Lang[]).map((l) => (
                 <button key={l} onClick={() => setLang(l)}
                   className={clsx('px-2.5 py-1 rounded-md text-xs font-medium transition-colors',
-                    lang === l ? 'bg-white/30 text-white' : 'text-white hover:text-white'
-                  )}>
+                    lang === l ? 'bg-white/30 text-white' : 'text-white hover:text-white')}>
                   {l === 'th' ? 'TH' : 'EN'}
                 </button>
               ))}
@@ -244,8 +239,7 @@ export default function Navbar() {
                         {(['th', 'en'] as Lang[]).map((l) => (
                           <button key={l} onClick={() => { setLang(l); setUserMenuOpen(false) }}
                             className={clsx('flex-1 py-1 rounded-md text-xs font-medium transition-colors',
-                              lang === l ? 'bg-primary-100 text-primary-800' : 'text-gray-500 hover:text-gray-700'
-                            )}>
+                              lang === l ? 'bg-primary-100 text-primary-800' : 'text-gray-500 hover:text-gray-700')}>
                             {l === 'th' ? 'TH' : 'EN'}
                           </button>
                         ))}
@@ -283,38 +277,43 @@ export default function Navbar() {
           <nav className="md:hidden border-t border-white/10 px-3 pb-3 pt-2 flex flex-col gap-1">
             <Link href="/overview" onClick={() => setMobileMenuOpen(false)}
               className={clsx('flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
-                pathname.startsWith('/overview') ? 'bg-white/20 text-white' : 'text-white hover:bg-white/15'
-              )}>{t.nav.overview}</Link>
+                pathname.startsWith('/overview') ? 'bg-white/20 text-white' : 'text-white hover:bg-white/15')}>
+              {t.nav.overview}
+            </Link>
 
             <div className="px-3 py-1.5">
-              <p className="text-xs font-semibold text-orange-300/60 uppercase tracking-wider mb-1">Merchant</p>
+              <p className="text-xs font-semibold text-amber-300/60 uppercase tracking-wider mb-1">Merchant</p>
               {merchantChildren.map(item => (
                 <Link key={item.href} href={item.href} onClick={() => setMobileMenuOpen(false)}
                   className={clsx('flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors ml-2',
-                    pathname.startsWith(item.href) ? 'bg-white/20 text-white' : 'text-white hover:bg-white/15'
-                  )}>{item.label}</Link>
+                    pathname.startsWith(item.href) ? 'bg-white/20 text-white' : 'text-white hover:bg-white/15')}>
+                  {item.label}
+                </Link>
               ))}
             </div>
 
             <Link href="/report-analytic" onClick={() => setMobileMenuOpen(false)}
               className={clsx('flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
-                pathname.startsWith('/report-analytic') ? 'bg-white/20 text-white' : 'text-white hover:bg-white/15'
-              )}>{t.nav.reportAndAnalytic}</Link>
+                pathname.startsWith('/report-analytic') ? 'bg-white/20 text-white' : 'text-white hover:bg-white/15')}>
+              {t.nav.reportAndAnalytic}
+            </Link>
 
             <div className="px-3 py-1.5">
-              <p className="text-xs font-semibold text-orange-300/60 uppercase tracking-wider mb-1">{t.nav.administrator}</p>
+              <p className="text-xs font-semibold text-amber-300/60 uppercase tracking-wider mb-1">{t.nav.administrator}</p>
               {adminChildren.map(item => (
                 <Link key={item.href} href={item.href} onClick={() => setMobileMenuOpen(false)}
                   className={clsx('flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors ml-2',
-                    pathname.startsWith(item.href) ? 'bg-white/20 text-white' : 'text-white hover:bg-white/15'
-                  )}>{item.label}</Link>
+                    pathname.startsWith(item.href) ? 'bg-white/20 text-white' : 'text-white hover:bg-white/15')}>
+                  {item.label}
+                </Link>
               ))}
             </div>
 
             <Link href="/setting" onClick={() => setMobileMenuOpen(false)}
               className={clsx('flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
-                pathname.startsWith('/setting') ? 'bg-white/20 text-white' : 'text-white hover:bg-white/15'
-              )}>{t.nav.setting}</Link>
+                pathname.startsWith('/setting') ? 'bg-white/20 text-white' : 'text-white hover:bg-white/15')}>
+              {t.nav.setting}
+            </Link>
           </nav>
         )}
       </header>

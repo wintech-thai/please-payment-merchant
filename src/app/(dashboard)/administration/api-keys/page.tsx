@@ -5,7 +5,8 @@ import { useSearchParams, usePathname } from 'next/navigation'
 import { client } from '@/lib/axios'
 import { userApi } from '@/lib/api/user.api'
 import { toast } from 'sonner'
-import { Search, ChevronLeft, ChevronRight, Trash2, Ban, CheckCircle, MoreHorizontal, Key } from 'lucide-react'
+import { Search, ChevronLeft, ChevronRight, Trash2, Ban, CheckCircle, MoreHorizontal, Key, Plus } from 'lucide-react'
+import { useHighlightRow } from '@/hooks/useHighlightRow'
 import clsx from 'clsx'
 import { useLang } from '@/context/LanguageContext'
 
@@ -32,9 +33,7 @@ function getOrgId() { return typeof window !== 'undefined' ? localStorage.getIte
 
 function ApiKeysContent() {
   const { t } = useLang()
-  const pathname = usePathname()
-  const searchParams = useSearchParams()
-  const highlightIdParam = searchParams.get('highlight')
+  const { selectedRowId, handleRowSelect } = useHighlightRow()
 
   const [keys, setKeys] = useState<ApiKeyItem[]>([])
   const [total, setTotal] = useState(0)
@@ -44,18 +43,8 @@ function ApiKeysContent() {
   const [appliedSearch, setAppliedSearch] = useState('')
   const [loading, setLoading] = useState(true)
   const [selectedIds, setSelectedIds] = useState<string[]>([])
-  const [selectedRowId, setSelectedRowId] = useState<string | null>(highlightIdParam)
   const [deleteModal, setDeleteModal] = useState<{ open: boolean; keyId?: string; keyName?: string; bulk?: boolean }>({ open: false })
   const [deleting, setDeleting] = useState(false)
-
-  useEffect(() => {
-    if (highlightIdParam) {
-      setSelectedRowId(highlightIdParam)
-      const params = new URLSearchParams(searchParams.toString())
-      params.delete('highlight')
-      window.history.replaceState(null, '', `${pathname}?${params.toString()}`)
-    }
-  }, [highlightIdParam, pathname, searchParams])
 
   const fetchKeys = async (currentPage: number, keyword: string = '') => {
     setLoading(true)
@@ -147,126 +136,97 @@ function ApiKeysContent() {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 flex flex-col flex-1 min-h-0">
-        {/* Toolbar */}
-        <div className="flex flex-col sm:flex-row gap-3 justify-between items-start sm:items-center px-6 py-4 border-b border-gray-100">
-          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-            <select className="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 sm:min-w-[140px]">
-              <option>{t.apiKeys.filterAll}</option>
-              <option>{t.apiKeys.filterName}</option>
-              <option>{t.apiKeys.filterDescription}</option>
-            </select>
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && handleSearchTrigger()}
-              placeholder={t.apiKeys.searchPlaceholder}
-              className="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent placeholder-gray-400 sm:min-w-[220px]"
-            />
-            <button
-              onClick={handleSearchTrigger}
-              className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm rounded-lg transition-colors flex items-center justify-center gap-1.5"
-            >
-              <Search className="w-4 h-4" />
-            </button>
-          </div>
-          <div className="flex gap-2 w-full sm:w-auto justify-end">
-            <button
-              onClick={() => window.location.href = '/administration/api-keys/create'}
-              className="px-5 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium rounded-lg transition-colors uppercase"
-            >
-              {t.apiKeys.addKey}
-            </button>
-            <button
-              onClick={() => setDeleteModal({ open: true, bulk: true })}
-              disabled={selectedIds.length === 0}
-              className="px-5 py-2 text-sm font-medium text-red-600 border border-red-200 hover:bg-red-50 rounded-lg transition-colors uppercase disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              {t.admin.delete}
-            </button>
-          </div>
+      {/* Toolbar */}
+      <div className="flex flex-col sm:flex-row gap-3 justify-between items-start sm:items-center mb-3">
+        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+          <select className="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 sm:min-w-[140px]">
+            <option>{t.apiKeys.filterAll}</option>
+            <option>{t.apiKeys.filterName}</option>
+            <option>{t.apiKeys.filterDescription}</option>
+          </select>
+          <input type="text" value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleSearchTrigger()}
+            placeholder={t.apiKeys.searchPlaceholder}
+            className="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent placeholder-gray-400 sm:min-w-[220px]" />
+          <button onClick={handleSearchTrigger}
+            className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm rounded-lg transition-colors flex items-center justify-center gap-1.5">
+            <Search className="w-4 h-4" />
+          </button>
         </div>
+        <div className="flex gap-2 w-full sm:w-auto justify-end">
+          <button onClick={() => window.location.href = '/administration/api-keys/create'}
+            className="flex items-center gap-1.5 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold rounded-full shadow-sm transition-all hover:shadow-md">
+            <Plus className="w-4 h-4" />{t.apiKeys.addKey}
+          </button>
+          <button onClick={() => setDeleteModal({ open: true, bulk: true })} disabled={selectedIds.length === 0}
+            className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-red-500 bg-red-50 hover:bg-red-100 rounded-full transition-all disabled:opacity-40 disabled:cursor-not-allowed">
+            <Trash2 className="w-3.5 h-3.5" />{t.admin.delete}
+          </button>
+        </div>
+      </div>
 
-        {/* Table */}
+      <div className="flex flex-col flex-1 min-h-0">
         <div className="overflow-x-auto flex-1 min-h-0">
-          <table className="min-w-full">
+          <table className="min-w-full border-separate" style={{ borderSpacing: '0 5px' }}>
             <thead>
-              <tr className="bg-gray-50/70 border-b border-gray-100">
-                <th className="w-12 px-6 py-3.5">
-                  <input
-                    type="checkbox"
-                    checked={filteredKeys.length > 0 && selectedIds.length === filteredKeys.length}
-                    onChange={toggleAll}
-                    className="rounded border-gray-300 text-primary-600 focus:ring-primary-500 w-4 h-4"
-                  />
+              <tr>
+                <th className="w-12 px-4 pb-1">
+                  <input type="checkbox" checked={filteredKeys.length > 0 && selectedIds.length === filteredKeys.length}
+                    onChange={toggleAll} className="w-4 h-4 rounded accent-primary-600 cursor-pointer" />
                 </th>
-                <th className="px-6 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">{t.apiKeys.colKeyName}</th>
-                <th className="px-6 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">{t.apiKeys.colDescription}</th>
-                <th className="px-6 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">{t.apiKeys.colCustomRole}</th>
-                <th className="px-6 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">{t.apiKeys.colRoles}</th>
-                <th className="px-6 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">{t.apiKeys.colStatus}</th>
-                <th className="w-14 px-4 py-3.5 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">{t.apiKeys.colAction}</th>
+                <th className="px-4 pb-1 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">{t.apiKeys.colKeyName}</th>
+                <th className="px-4 pb-1 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">{t.apiKeys.colDescription}</th>
+                <th className="px-4 pb-1 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">{t.apiKeys.colCustomRole}</th>
+                <th className="px-4 pb-1 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">{t.apiKeys.colRoles}</th>
+                <th className="px-4 pb-1 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">{t.apiKeys.colStatus}</th>
+                <th className="w-14 px-4 pb-1 text-center text-xs font-semibold text-gray-400 uppercase tracking-wider">{t.apiKeys.colAction}</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr><td colSpan={7} className="py-20 text-center"><LoadingSpinner /></td></tr>
               ) : filteredKeys.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="py-20 text-center">
-                    <EmptyState
-                      icon={<Key className="w-7 h-7 text-gray-400" />}
-                      title={t.apiKeys.noKeysFound}
-                      subtitle={t.apiKeys.noKeysSubtitle}
-                    />
-                  </td>
-                </tr>
+                <tr><td colSpan={7} className="py-20 text-center">
+                  <EmptyState icon={<Key className="w-7 h-7 text-gray-400" />} title={t.apiKeys.noKeysFound} subtitle={t.apiKeys.noKeysSubtitle} />
+                </td></tr>
               ) : filteredKeys.map(key => {
                 const id = getId(key)
                 const active = isKeyActive(key.keyStatus)
                 const roleList = parseCsv(key.rolesList)
                 const isSelected = selectedRowId === id
                 return (
-                  <tr
-                    key={id}
-                    onClick={() => setSelectedRowId(id)}
-                    className={clsx(
-                      'border-l-[3px] transition-all cursor-pointer',
-                      isSelected ? '!bg-primary-100 border-l-primary-500' : 'border-l-transparent hover:bg-gray-50/50'
-                    )}
-                  >
-                    <td className="px-6 py-4" onClick={e => e.stopPropagation()}>
-                      <input
-                        type="checkbox"
-                        checked={selectedIds.includes(id)}
-                        onChange={() => toggleOne(id)}
-                        className="rounded border-gray-300 text-primary-600 focus:ring-primary-500 w-4 h-4"
-                      />
+                  <tr key={id} onClick={() => handleRowSelect(id)}
+                    className={clsx('cursor-pointer transition-all',
+                      isSelected ? '!bg-primary-100 shadow-sm' : 'bg-white shadow-sm hover:shadow-md hover:bg-amber-50/20')}>
+                    <td className={clsx('pl-4 pr-2 py-3.5 rounded-l-xl border-l-[3px]', isSelected ? 'border-primary-500' : 'border-transparent')} onClick={e => e.stopPropagation()}>
+                      <input type="checkbox" checked={selectedIds.includes(id)} onChange={() => toggleOne(id)}
+                        className="w-4 h-4 rounded accent-primary-600 cursor-pointer" />
                     </td>
-                    <td className="px-6 py-4">
-                      <button
-                        onClick={e => { e.stopPropagation(); window.location.href = `/administration/api-keys/${id}/update` }}
-                        className={clsx('text-sm font-semibold hover:underline text-left', isSelected ? 'text-primary-700' : 'text-gray-900 hover:text-primary-600')}
-                      >
-                        {getName(key) || `Key ${id.slice(0, 8)}`}
-                      </button>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-500 max-w-[240px] truncate">{key.keyDescription || '—'}</td>
-                    <td className="px-6 py-4 text-sm text-gray-600">{key.customRoleName || '—'}</td>
-                    <td className="px-6 py-4">
-                      <div className="flex flex-wrap gap-1">
-                        {roleList.length
-                          ? roleList.map(r => <span key={r} className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-primary-600 text-white">{r}</span>)
-                          : <span className="text-sm text-gray-400">—</span>}
+                    <td className="px-4 py-3.5">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-7 h-7 rounded-lg bg-primary-100 flex items-center justify-center flex-shrink-0">
+                          <Key className="w-3.5 h-3.5 text-primary-600" />
+                        </div>
+                        <button onClick={e => { e.stopPropagation(); window.location.href = `/administration/api-keys/${id}/update` }}
+                          className={clsx('text-sm font-semibold hover:underline text-left', isSelected ? 'text-primary-700' : 'text-gray-900 hover:text-primary-600')}>
+                          {getName(key) || `Key ${id.slice(0, 8)}`}
+                        </button>
                       </div>
                     </td>
-                    <td className="px-6 py-4">
-                      <span className={clsx('text-sm font-medium', active ? 'text-emerald-600' : 'text-gray-400')}>
+                    <td className="px-4 py-3.5 text-sm text-gray-500 max-w-[200px] truncate">{key.keyDescription || '—'}</td>
+                    <td className="px-4 py-3.5 text-sm text-gray-600">{key.customRoleName || '—'}</td>
+                    <td className="px-4 py-3.5">
+                      <div className="flex flex-wrap gap-1">
+                        {roleList.length ? roleList.map(r => <span key={r} className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-primary-600 text-white">{r}</span>) : <span className="text-sm text-gray-400">—</span>}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3.5">
+                      <span className={clsx('inline-flex px-2.5 py-1 rounded-full text-xs font-semibold',
+                        active ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500')}>
                         {key.keyStatus || 'Active'}
                       </span>
                     </td>
-                    <td className="px-4 py-4 text-center" onClick={e => e.stopPropagation()}>
+                    <td className="px-2 pr-4 py-3.5 text-center rounded-r-xl" onClick={e => e.stopPropagation()}>
                       <RowActions items={[
                         { label: t.apiKeys.disableKey, icon: <Ban className="w-4 h-4" />, danger: true, disabled: !active, onClick: () => handleToggleActive(key) },
                         { label: t.apiKeys.enableKey, icon: <CheckCircle className="w-4 h-4" />, disabled: active, onClick: () => handleToggleActive(key) },
@@ -278,28 +238,19 @@ function ApiKeysContent() {
             </tbody>
           </table>
         </div>
-
-        {/* Pagination */}
-        <div className="flex items-center justify-end px-6 py-3 border-t border-gray-100 gap-4 sm:gap-6">
+        <div className="flex items-center justify-end px-4 py-3 bg-white rounded-xl shadow-sm mt-1 gap-4 sm:gap-6">
           <div className="flex items-center gap-2 text-sm text-gray-500">
             <span>{t.admin.rowsPerPage}</span>
-            <select
-              value={itemsPerPage}
-              onChange={e => { setItemsPerPage(Number(e.target.value)); setPage(1) }}
-              className="bg-transparent border-none text-gray-700 focus:ring-0 cursor-pointer font-medium outline-none text-sm"
-            >
+            <select value={itemsPerPage} onChange={e => { setItemsPerPage(Number(e.target.value)); setPage(1) }}
+              className="bg-transparent border-none text-gray-700 focus:ring-0 cursor-pointer font-medium outline-none text-sm">
               {[25, 50, 100, 200].map(n => <option key={n} value={n}>{n}</option>)}
             </select>
           </div>
           <div className="flex items-center gap-4">
             <span className="text-xs text-gray-400">{displayTotal === 0 ? '0-0' : `${startRow}-${endRow}`} of {displayTotal}</span>
             <div className="flex items-center gap-1">
-              <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page <= 1 || loading} className="p-1.5 rounded hover:bg-gray-100 text-gray-400 disabled:opacity-30 transition-colors">
-                <ChevronLeft className="w-5 h-5" />
-              </button>
-              <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page >= totalPages || displayTotal === 0 || loading} className="p-1.5 rounded hover:bg-gray-100 text-gray-400 disabled:opacity-30 transition-colors">
-                <ChevronRight className="w-5 h-5" />
-              </button>
+              <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page <= 1 || loading} className="p-1.5 rounded hover:bg-gray-100 text-gray-400 disabled:opacity-30 transition-colors"><ChevronLeft className="w-5 h-5" /></button>
+              <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page >= totalPages || displayTotal === 0 || loading} className="p-1.5 rounded hover:bg-gray-100 text-gray-400 disabled:opacity-30 transition-colors"><ChevronRight className="w-5 h-5" /></button>
             </div>
           </div>
         </div>
