@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, Suspense } from 'react'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import { userApi } from '@/lib/api/user.api'
 import { toast } from 'sonner'
 import { ArrowLeft, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react'
@@ -63,6 +63,7 @@ function RolePanel({ title, roles, checked, onToggle, emptyText, countColor }: {
 
 function ApiKeyUpdateContent() {
   const { t } = useLang()
+  const router = useRouter()
   const tk = t.apiKeys
   const params = useParams()
   const keyId = params?.id as string
@@ -158,14 +159,14 @@ function ApiKeyUpdateContent() {
       })
       setIsDirty(false)
       toast.success(tk.updatedSuccess)
-      window.location.href = `/administration/api-keys?highlight=${keyId}`
+      router.push(`/administration/api-keys?highlight=${keyId}`)
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : tk.failedToUpdate)
       setSaving(false)
     }
   }
 
-  const goBack = () => guardNavigation(() => { window.location.href = '/administration/api-keys' })
+  const goBack = () => guardNavigation(() => { router.push('/administration/api-keys') })
 
   if (loading) {
     return (

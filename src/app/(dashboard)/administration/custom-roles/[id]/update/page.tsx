@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, Suspense } from 'react'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import { userApi } from '@/lib/api/user.api'
 import { toast } from 'sonner'
 import { ArrowLeft, Search, Loader2 } from 'lucide-react'
@@ -35,6 +35,7 @@ function FormField({ label, required, children }: { label: string; required?: bo
 
 function CustomRoleUpdateContent() {
   const { t } = useLang()
+  const router = useRouter()
   const tc = t.customRoles
   const params = useParams()
   const roleId = params?.id as string
@@ -134,7 +135,7 @@ function CustomRoleUpdateContent() {
     ))
   }
 
-  const goBack = () => guardNavigation(() => { window.location.href = '/administration/custom-roles' })
+  const goBack = () => guardNavigation(() => { router.push('/administration/custom-roles') })
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -151,7 +152,7 @@ function CustomRoleUpdateContent() {
       })
       setIsDirty(false)
       toast.success(tc.updatedSuccess)
-      window.location.href = `/administration/custom-roles?highlight=${roleId}`
+      router.push(`/administration/custom-roles?highlight=${roleId}`)
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : tc.failedToUpdate)
       setSaving(false)

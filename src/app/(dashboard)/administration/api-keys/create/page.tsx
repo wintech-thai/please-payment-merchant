@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, Suspense } from 'react'
+import { useRouter } from 'next/navigation'
 import { userApi } from '@/lib/api/user.api'
 import { toast } from 'sonner'
 import { ArrowLeft, ChevronLeft, ChevronRight, Check, Copy } from 'lucide-react'
@@ -62,6 +63,7 @@ function RolePanel({ title, roles, checked, onToggle, emptyText, countColor }: {
 
 function ApiKeyCreateContent() {
   const { t } = useLang()
+  const router = useRouter()
   const tk = t.apiKeys
 
   const [keyName, setKeyName] = useState('')
@@ -159,12 +161,13 @@ function ApiKeyCreateContent() {
   }
 
   const handleDone = () => {
-    window.location.href = createdKey?.id
+    router.push(createdKey?.id
       ? `/administration/api-keys?highlight=${createdKey.id}`
       : '/administration/api-keys'
+    )
   }
 
-  const goBack = () => guardNavigation(() => { window.location.href = '/administration/api-keys' })
+  const goBack = () => guardNavigation(() => { router.push('/administration/api-keys') })
 
   return (
     <div className="flex flex-col overflow-hidden h-[calc(100dvh-5rem)] sm:h-[calc(100dvh-6.5rem)]">
@@ -175,7 +178,7 @@ function ApiKeyCreateContent() {
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden">
             <div className="flex flex-col items-center text-center px-8 pt-10 pb-8"
-              style={{ background: 'linear-gradient(135deg, #78350f 0%, #92400e 40%, #d97706 100%)' }}>
+              style={{ background: 'linear-gradient(135deg, rgb(var(--color-primary-900)) 0%, rgb(var(--color-primary-800)) 40%, rgb(var(--color-primary-500)) 100%)' }}>
               <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center mb-5">
                 <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />

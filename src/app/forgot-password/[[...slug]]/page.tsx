@@ -131,7 +131,7 @@ function ForgotPasswordContent() {
             {/* Header */}
             <div
               className="px-8 pt-8 pb-6 text-white"
-              style={{ background: 'linear-gradient(135deg, #78350f 0%, #92400e 40%, #d97706 100%)' }}
+              style={{ background: 'linear-gradient(135deg, rgb(var(--color-primary-900)) 0%, rgb(var(--color-primary-800)) 40%, rgb(var(--color-primary-500)) 100%)' }}
             >
               <h1 className="text-xl font-bold text-white mb-1">{fp.title}</h1>
               <p className="text-sm text-orange-200">{fp.subtitle}</p>

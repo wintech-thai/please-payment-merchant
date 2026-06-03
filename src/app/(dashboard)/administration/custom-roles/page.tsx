@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, Suspense } from 'react'
-import { useSearchParams, usePathname } from 'next/navigation'
+import { useSearchParams, usePathname, useRouter } from 'next/navigation'
 import { useHighlightRow } from '@/hooks/useHighlightRow'
 import { userApi } from '@/lib/api/user.api'
 import { toast } from 'sonner'
@@ -22,6 +22,7 @@ const getDesc = (r: CustomRoleItem) => r.roleDescription || r.description || ''
 
 function CustomRolesContent() {
   const { t } = useLang()
+  const router = useRouter()
   const { selectedRowId, handleRowSelect } = useHighlightRow()
 
   const [roles, setRoles] = useState<CustomRoleItem[]>([])
@@ -121,7 +122,7 @@ function CustomRolesContent() {
           </button>
         </div>
         <div className="flex gap-2 w-full sm:w-auto justify-end">
-          <button onClick={() => window.location.href = '/administration/custom-roles/create'}
+          <button onClick={() => router.push('/administration/custom-roles/create')}
             className="flex items-center gap-1.5 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold rounded-full shadow-sm transition-all hover:shadow-md">
             <Plus className="w-4 h-4" />{t.customRoles.addRole}
           </button>
@@ -170,7 +171,7 @@ function CustomRolesContent() {
                         className="w-4 h-4 rounded accent-primary-600 cursor-pointer" />
                     </td>
                     <td className="px-4 py-3.5">
-                      <button onClick={e => { e.stopPropagation(); window.location.href = `/administration/custom-roles/${id}/update` }}
+                      <button onClick={e => { e.stopPropagation(); router.push(`/administration/custom-roles/${id}/update`) }}
                         className={clsx('text-sm font-semibold hover:underline text-left', isSelected ? 'text-primary-700' : 'text-gray-900 hover:text-primary-600')}>
                         {getName(role)}
                       </button>

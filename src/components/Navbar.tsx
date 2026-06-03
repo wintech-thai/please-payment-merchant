@@ -11,6 +11,7 @@ import { toast } from 'sonner'
 import ProfileModal from '@/components/ProfileModal'
 import ChangePasswordModal from '@/components/ChangePasswordModal'
 import { AppVersionDisplay } from '@/components/AppVersionDisplay'
+import { useBrand } from '@/context/BrandContext'
 
 interface MerchantOption {
   orgId: string
@@ -22,6 +23,7 @@ export default function Navbar() {
   const pathname = usePathname()
   const router = useRouter()
   const { t, lang, setLang } = useLang()
+  const { logoUrl, brandName } = useBrand()
   const [loggingOut, setLoggingOut] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const [merchantMenuOpen, setMerchantMenuOpen] = useState(false)
@@ -99,9 +101,9 @@ export default function Navbar() {
 
           {/* Brand */}
           <Link href="/overview" className="flex items-center gap-2.5 flex-shrink-0">
-            <img src="/img/please-payment.svg" alt="Please Payment" className="w-9 h-9" />
+            <img src={logoUrl || '/img/please-payment.svg'} alt="logo" className="w-9 h-9 object-contain" />
             <div className="hidden sm:block">
-              <p className="text-white font-bold text-sm leading-tight">PLEASE-PAYMENT</p>
+              <p className="text-white font-bold text-sm leading-tight">{brandName || 'PLEASE-PAYMENT'}</p>
               <p className="text-amber-300 text-xs leading-tight font-semibold tracking-wide">Merchant</p>
             </div>
           </Link>

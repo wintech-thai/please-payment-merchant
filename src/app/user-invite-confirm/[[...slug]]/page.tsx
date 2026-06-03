@@ -28,6 +28,7 @@ function InviteConfirmContent() {
 
   const [inviteInfo, setInviteInfo] = useState<InviteInfo | null>(null)
   const [errorDecode, setErrorDecode] = useState(false)
+  const [submitError, setSubmitError] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [isMounted, setIsMounted] = useState(false)
 
@@ -72,8 +73,9 @@ function InviteConfirmContent() {
       await new Promise(resolve => setTimeout(resolve, 1000))
       router.push('/login')
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : ti.errorMsg
-      toast.error(msg)
+      const raw = err instanceof Error ? err.message : ''
+      const isTechnical = !raw || raw.startsWith('Request failed') || raw.includes('Network Error')
+      setSubmitError(isTechnical ? ti.errorMsg : raw)
       setSubmitting(false)
     }
   }
@@ -90,7 +92,7 @@ function InviteConfirmContent() {
             {/* Header */}
             <div
               className="px-8 pt-8 pb-6 text-white"
-              style={{ background: 'linear-gradient(135deg, #78350f 0%, #92400e 40%, #d97706 100%)' }}
+              style={{ background: 'linear-gradient(135deg, rgb(var(--color-primary-900)) 0%, rgb(var(--color-primary-800)) 40%, rgb(var(--color-primary-500)) 100%)' }}
             >
               <div className="flex items-center gap-3 mb-3">
                 <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0">
@@ -109,6 +111,17 @@ function InviteConfirmContent() {
                 <div className="flex flex-col items-center py-6 text-center">
                   <AlertCircle className="w-12 h-12 text-red-400 mb-3" />
                   <p className="text-red-600 font-medium text-sm">{ti.invalidLink}</p>
+                </div>
+              ) : submitError ? (
+                <div className="flex flex-col items-center py-6 text-center">
+                  <div className="w-14 h-14 rounded-full bg-red-50 flex items-center justify-center mb-4">
+                    <svg className="w-7 h-7 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 10.5V6.75a4.5 4.5 0 119 0v3.75M3.75 21.75h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H3.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+                    </svg>
+                  </div>
+                  <p className="text-gray-800 font-semibold text-base mb-2">Invitation Failed</p>
+                  <p className="text-red-500 text-sm font-medium mb-3">{submitError}</p>
+                  <p className="text-xs text-gray-400">กรุณาติดต่อผู้ดูแลระบบเพื่อขอ link ใหม่</p>
                 </div>
               ) : !inviteInfo ? (
                 <div className="flex flex-col items-center py-8 text-gray-400">

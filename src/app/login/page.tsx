@@ -4,9 +4,11 @@ import { useState, FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { LanguageProvider, useLang } from '@/context/LanguageContext'
+import { useBrand } from '@/context/BrandContext'
 
 function LoginForm() {
   const { t } = useLang()
+  const { logoUrl, brandName } = useBrand()
   const router = useRouter()
 
   const [username, setUsername] = useState('')
@@ -62,7 +64,7 @@ function LoginForm() {
       <div
         className="hidden lg:flex lg:w-1/2 flex-col justify-between p-12 relative overflow-hidden"
         style={{
-          background: 'linear-gradient(135deg, #c2510c 0%, #92400e 40%, #d97706 100%)',
+          background: 'linear-gradient(135deg, rgb(var(--color-primary-800)) 0%, rgb(var(--color-primary-700)) 40%, rgb(var(--color-primary-500)) 100%)',
         }}
       >
         {/* Grid overlay */}
@@ -80,27 +82,31 @@ function LoginForm() {
 
         {/* Top: Logo + name */}
         <div className="relative z-10 flex items-center gap-3">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none" className="w-11 h-11 flex-shrink-0">
-            <defs>
-              <linearGradient id="lp1MbGrad" x1="20%" y1="0%" x2="80%" y2="100%">
-                <stop offset="0%" stopColor="#fb923c" />
-                <stop offset="60%" stopColor="#d97706" />
-                <stop offset="100%" stopColor="#92400e" />
-              </linearGradient>
-              <filter id="lp1MbGlow" x="-20%" y="-20%" width="140%" height="140%">
-                <feDropShadow dx="0" dy="2" stdDeviation="5" floodColor="#d97706" floodOpacity="0.5" />
-              </filter>
-            </defs>
-            <g filter="url(#lp1MbGlow)">
-              <ellipse cx="60" cy="20" rx="11" ry="7" fill="url(#lp1MbGrad)" />
-              <rect x="49" y="24" width="22" height="16" rx="5" fill="url(#lp1MbGrad)" />
-              <ellipse cx="60" cy="76" rx="40" ry="36" fill="url(#lp1MbGrad)" />
-              <ellipse cx="45" cy="60" rx="9" ry="6" fill="white" fillOpacity="0.2" transform="rotate(-35 45 60)" />
-              <text x="60" y="89" textAnchor="middle" fill="white" fontSize="42" fontWeight="bold" fontFamily="Arial, sans-serif">฿</text>
-            </g>
-          </svg>
+          {logoUrl ? (
+            <img src={logoUrl} alt="logo" className="h-11 w-auto object-contain flex-shrink-0" />
+          ) : (
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none" className="w-11 h-11 flex-shrink-0">
+              <defs>
+                <linearGradient id="lp1MbGrad" x1="20%" y1="0%" x2="80%" y2="100%">
+                  <stop offset="0%" stopColor="#fb923c" />
+                  <stop offset="60%" stopColor="#d97706" />
+                  <stop offset="100%" stopColor="#92400e" />
+                </linearGradient>
+                <filter id="lp1MbGlow" x="-20%" y="-20%" width="140%" height="140%">
+                  <feDropShadow dx="0" dy="2" stdDeviation="5" floodColor="#d97706" floodOpacity="0.5" />
+                </filter>
+              </defs>
+              <g filter="url(#lp1MbGlow)">
+                <ellipse cx="60" cy="20" rx="11" ry="7" fill="url(#lp1MbGrad)" />
+                <rect x="49" y="24" width="22" height="16" rx="5" fill="url(#lp1MbGrad)" />
+                <ellipse cx="60" cy="76" rx="40" ry="36" fill="url(#lp1MbGrad)" />
+                <ellipse cx="45" cy="60" rx="9" ry="6" fill="white" fillOpacity="0.2" transform="rotate(-35 45 60)" />
+                <text x="60" y="89" textAnchor="middle" fill="white" fontSize="42" fontWeight="bold" fontFamily="Arial, sans-serif">฿</text>
+              </g>
+            </svg>
+          )}
           <div>
-            <p className="text-white font-bold text-sm tracking-wide">PLEASE-PAYMENT</p>
+            <p className="text-white font-bold text-sm tracking-wide">{brandName || 'PLEASE-PAYMENT'}</p>
             <p className="text-orange-200 text-xs">Merchant</p>
           </div>
         </div>
@@ -108,7 +114,7 @@ function LoginForm() {
         {/* Center: headline */}
         <div className="relative z-10">
           <h1 className="text-4xl font-bold text-white leading-tight mb-4">
-            Payment Merchant
+            {brandName || 'Payment Merchant'}<br />Dashboard
           </h1>
           <p className="text-orange-200 text-base mb-10">{t.appSubtitle}</p>
 

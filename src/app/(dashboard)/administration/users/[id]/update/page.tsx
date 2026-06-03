@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, Suspense } from 'react'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import { userApi } from '@/lib/api/user.api'
 import { toast } from 'sonner'
 import { ArrowLeft, ChevronLeft, ChevronRight, Loader2, X } from 'lucide-react'
@@ -63,6 +63,7 @@ function RolePanel({ title, roles, checked, onToggle, emptyText, countColor }: {
 
 function UsersUpdateContent() {
   const { t } = useLang()
+  const router = useRouter()
   const tu = t.users
   const params = useParams()
   const orgUserId = params?.id as string
@@ -168,11 +169,11 @@ function UsersUpdateContent() {
     setIsDirty(true)
   }
 
-  const goBack = () => guardNavigation(() => { window.location.href = `/administration/users?highlight=${orgUserId}` })
+  const goBack = () => guardNavigation(() => { router.push(`/administration/users?highlight=${orgUserId}`) })
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!isDirty) { window.location.href = `/administration/users?highlight=${orgUserId}`; return }
+    if (!isDirty) { router.push(`/administration/users?highlight=${orgUserId}`); return }
     setSaving(true)
     try {
       const pendingTag = tagInput.trim()
@@ -185,7 +186,7 @@ function UsersUpdateContent() {
       })
       setIsDirty(false)
       toast.success(tu.updatedSuccess)
-      window.location.href = `/administration/users?highlight=${orgUserId}`
+      router.push(`/administration/users?highlight=${orgUserId}`)
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : tu.failedToUpdate)
       setSaving(false)

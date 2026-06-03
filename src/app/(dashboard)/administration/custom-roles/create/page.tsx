@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, Suspense } from 'react'
+import { useRouter } from 'next/navigation'
 import { userApi } from '@/lib/api/user.api'
 import { toast } from 'sonner'
 import { ArrowLeft, Search } from 'lucide-react'
@@ -35,6 +36,7 @@ function FormField({ label, required, children }: { label: string; required?: bo
 
 function CustomRoleCreateContent() {
   const { t } = useLang()
+  const router = useRouter()
   const tc = t.customRoles
 
   const [roleName, setRoleName] = useState('')
@@ -88,7 +90,7 @@ function CustomRoleCreateContent() {
     ))
   }
 
-  const goBack = () => guardNavigation(() => { window.location.href = '/administration/custom-roles' })
+  const goBack = () => guardNavigation(() => { router.push('/administration/custom-roles') })
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -106,7 +108,7 @@ function CustomRoleCreateContent() {
       const newId = (res.data as any)?.customRole?.roleId ?? (res.data as any)?.roleId ?? null
       toast.success(tc.createdSuccess)
       await new Promise(r => setTimeout(r, 800))
-      window.location.href = newId ? `/administration/custom-roles?highlight=${newId}` : '/administration/custom-roles'
+      router.push(newId ? `/administration/custom-roles?highlight=${newId}` : '/administration/custom-roles')
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : tc.failedToCreate)
       setSaving(false)

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, Suspense } from 'react'
-import { useSearchParams, usePathname } from 'next/navigation'
+import { useSearchParams, usePathname, useRouter } from 'next/navigation'
 import { userApi } from '@/lib/api/user.api'
 import { toast } from 'sonner'
 import { Search, ChevronLeft, ChevronRight, Trash2, Key, Ban, CheckCircle, MoreHorizontal, X, Users, Check, Plus, UserPlus } from 'lucide-react'
@@ -41,6 +41,7 @@ function processUrl(url: string): string {
 
 function UsersContent() {
   const { t } = useLang()
+  const router = useRouter()
   const { selectedRowId, handleRowSelect } = useHighlightRow()
 
   const [users, setUsers] = useState<UserItem[]>([])
@@ -179,7 +180,7 @@ function UsersContent() {
           </button>
         </div>
         <div className="flex gap-2 w-full sm:w-auto justify-end">
-          <button onClick={() => window.location.href = '/administration/users/invite'}
+          <button onClick={() => router.push('/administration/users/invite')}
             className="flex items-center gap-1.5 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold rounded-full shadow-sm transition-all hover:shadow-md">
             <UserPlus className="w-4 h-4" />{t.users.addUser}
           </button>
@@ -238,12 +239,12 @@ function UsersContent() {
                     <td className="px-4 py-3.5">
                       <div className="flex items-center gap-3">
                         <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0"
-                          style={{ background: 'linear-gradient(135deg, #92400e, #d97706)' }}>
+                          style={{ background: 'linear-gradient(135deg, rgb(var(--color-primary-800)), rgb(var(--color-primary-500)))' }}>
                           {initials}
                         </div>
                         <div className="min-w-0">
                           <div className="flex items-center gap-1.5 flex-wrap">
-                            <button onClick={e => { e.stopPropagation(); window.location.href = `/administration/users/${user.orgUserId}/update` }}
+                            <button onClick={e => { e.stopPropagation(); router.push(`/administration/users/${user.orgUserId}/update`) }}
                               className={clsx('text-sm font-semibold hover:underline text-left', isSelected ? 'text-primary-700' : 'text-gray-900 hover:text-primary-600')}>
                               {user.userName}
                             </button>
@@ -361,7 +362,7 @@ function ResetLinkModal({ link, loading, onClose }: { link?: string; loading?: b
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={onClose}>
       <div className="w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
-        <div className="px-7 py-5 flex items-center justify-between" style={{ background: 'linear-gradient(135deg, #78350f 0%, #92400e 40%, #d97706 100%)' }}>
+        <div className="px-7 py-5 flex items-center justify-between" style={{ background: 'linear-gradient(135deg, rgb(var(--color-primary-900)) 0%, rgb(var(--color-primary-800)) 40%, rgb(var(--color-primary-500)) 100%)' }}>
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-lg bg-white/15 flex items-center justify-center flex-shrink-0">
               <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>

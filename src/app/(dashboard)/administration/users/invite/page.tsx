@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, Suspense } from 'react'
+import { useRouter } from 'next/navigation'
 import { userApi } from '@/lib/api/user.api'
 import { toast } from 'sonner'
 import { ArrowLeft, ChevronLeft, ChevronRight, Check, Copy, X } from 'lucide-react'
@@ -86,6 +87,7 @@ function processRegistrationUrl(url: string): string {
 
 function UsersInviteContent() {
   const { t } = useLang()
+  const router = useRouter()
   const tu = t.users
 
   const [userName, setUserName] = useState('')
@@ -206,10 +208,10 @@ function UsersInviteContent() {
 
   const handleDone = () => {
     const id = inviteResult?.newId
-    window.location.href = id ? `/administration/users?highlight=${id}` : '/administration/users'
+    router.push(id ? `/administration/users?highlight=${id}` : '/administration/users')
   }
 
-  const goBack = () => guardNavigation(() => { window.location.href = '/administration/users' })
+  const goBack = () => guardNavigation(() => { router.push('/administration/users') })
 
   return (
     <div className="flex flex-col overflow-hidden h-[calc(100dvh-5rem)] sm:h-[calc(100dvh-6.5rem)]">
@@ -220,7 +222,7 @@ function UsersInviteContent() {
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <div className="w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden">
             <div className="flex flex-col items-center text-center px-8 pt-10 pb-6"
-              style={{ background: 'linear-gradient(135deg, #78350f 0%, #92400e 40%, #d97706 100%)' }}>
+              style={{ background: 'linear-gradient(135deg, rgb(var(--color-primary-900)) 0%, rgb(var(--color-primary-800)) 40%, rgb(var(--color-primary-500)) 100%)' }}>
               <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center mb-5">
                 <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />

@@ -37,6 +37,7 @@ function SignupConfirmContent() {
 
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null)
   const [errorDecode, setErrorDecode] = useState(false)
+  const [submitError, setSubmitError] = useState('')
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
   const [password, setPassword] = useState('')
@@ -110,8 +111,9 @@ function SignupConfirmContent() {
       await new Promise(resolve => setTimeout(resolve, 1000))
       router.push('/login')
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : sc.errorMsg
-      toast.error(msg)
+      const raw = err instanceof Error ? err.message : ''
+      const isTechnical = !raw || raw.startsWith('Request failed') || raw.includes('Network Error')
+      setSubmitError(isTechnical ? sc.errorMsg : raw)
     } finally {
       setSubmitting(false)
     }
@@ -129,7 +131,7 @@ function SignupConfirmContent() {
             {/* Header */}
             <div
               className="px-8 pt-8 pb-6 text-white"
-              style={{ background: 'linear-gradient(135deg, #78350f 0%, #92400e 40%, #d97706 100%)' }}
+              style={{ background: 'linear-gradient(135deg, rgb(var(--color-primary-900)) 0%, rgb(var(--color-primary-800)) 40%, rgb(var(--color-primary-500)) 100%)' }}
             >
               <h1 className="text-xl font-bold text-white mb-1">{sc.title}</h1>
               <p className="text-sm text-orange-200">{sc.subtitle}</p>
@@ -141,6 +143,17 @@ function SignupConfirmContent() {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
                 </svg>
                 <p className="text-red-600 font-medium text-sm">{sc.invalidLink}</p>
+              </div>
+            ) : submitError ? (
+              <div className="px-8 py-10 flex flex-col items-center text-center">
+                <div className="w-14 h-14 rounded-full bg-red-50 flex items-center justify-center mb-4">
+                  <svg className="w-7 h-7 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 10.5V6.75a4.5 4.5 0 119 0v3.75M3.75 21.75h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H3.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+                  </svg>
+                </div>
+                <p className="text-gray-800 font-semibold text-base mb-2">Registration Failed</p>
+                <p className="text-red-500 text-sm font-medium mb-3">{submitError}</p>
+                <p className="text-xs text-gray-400">กรุณาติดต่อผู้ดูแลระบบเพื่อขอ link ใหม่</p>
               </div>
             ) : !userInfo ? (
               <div className="px-8 py-10 flex flex-col items-center text-gray-400">
