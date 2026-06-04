@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import { Toaster } from 'sonner'
+import { BrandProvider } from '@/context/BrandContext'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -19,8 +20,22 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="th">
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: `
+          try {
+            var v = localStorage.getItem('brandThemeVars');
+            if (v) {
+              var vars = JSON.parse(v);
+              var root = document.documentElement;
+              Object.keys(vars).forEach(function(k){ root.style.setProperty(k, vars[k]); });
+            }
+          } catch(e) {}
+        `}} />
+      </head>
       <body>
-        {children}
+        <BrandProvider>
+          {children}
+        </BrandProvider>
         <Toaster
           position="top-right"
           richColors
@@ -32,6 +47,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           }}
         />
       </body>
+
     </html>
   )
 }

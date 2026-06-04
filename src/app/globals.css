@@ -2,6 +2,20 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --color-primary-50:  255 248 240;
+  --color-primary-100: 254 238 221;
+  --color-primary-200: 253 216 180;
+  --color-primary-300: 251 185 127;
+  --color-primary-400: 248 145 70;
+  --color-primary-500: 240 107 30;
+  --color-primary-600: 216 85 16;
+  --color-primary-700: 184 68 13;
+  --color-primary-800: 150 55 11;
+  --color-primary-900: 118 44 9;
+  --color-primary-950: 74 27 5;
+}
+
 @font-face {
   font-family: 'Prompt';
   src: url('/fonts/Prompt-Light.ttf') format('truetype');

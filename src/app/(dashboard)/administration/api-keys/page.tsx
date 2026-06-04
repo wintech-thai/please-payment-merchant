@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, Suspense } from 'react'
-import { useSearchParams, usePathname } from 'next/navigation'
+import { useSearchParams, usePathname, useRouter } from 'next/navigation'
 import { client } from '@/lib/axios'
 import { userApi } from '@/lib/api/user.api'
 import { toast } from 'sonner'
@@ -33,6 +33,7 @@ function getOrgId() { return typeof window !== 'undefined' ? localStorage.getIte
 
 function ApiKeysContent() {
   const { t } = useLang()
+  const router = useRouter()
   const { selectedRowId, handleRowSelect } = useHighlightRow()
 
   const [keys, setKeys] = useState<ApiKeyItem[]>([])
@@ -154,7 +155,7 @@ function ApiKeysContent() {
           </button>
         </div>
         <div className="flex gap-2 w-full sm:w-auto justify-end">
-          <button onClick={() => window.location.href = '/administration/api-keys/create'}
+          <button onClick={() => router.push('/administration/api-keys/create')}
             className="flex items-center gap-1.5 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold rounded-full shadow-sm transition-all hover:shadow-md">
             <Plus className="w-4 h-4" />{t.apiKeys.addKey}
           </button>
@@ -207,7 +208,7 @@ function ApiKeysContent() {
                         <div className="w-7 h-7 rounded-lg bg-primary-100 flex items-center justify-center flex-shrink-0">
                           <Key className="w-3.5 h-3.5 text-primary-600" />
                         </div>
-                        <button onClick={e => { e.stopPropagation(); window.location.href = `/administration/api-keys/${id}/update` }}
+                        <button onClick={e => { e.stopPropagation(); router.push(`/administration/api-keys/${id}/update`) }}
                           className={clsx('text-sm font-semibold hover:underline text-left', isSelected ? 'text-primary-700' : 'text-gray-900 hover:text-primary-600')}>
                           {getName(key) || `Key ${id.slice(0, 8)}`}
                         </button>
