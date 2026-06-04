@@ -154,8 +154,8 @@ function UsersContent() {
   const totalPages = Math.ceil(displayTotal / itemsPerPage)
 
   return (
-    <div className="flex flex-col min-h-full">
-      <div className="flex items-start justify-between mb-6">
+    <div className="flex flex-col overflow-hidden h-[calc(100dvh-5rem)] sm:h-[calc(100dvh-6.5rem)]">
+      <div className="flex items-start justify-between mb-4 flex-none">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">{t.users.title}</h1>
           <p className="text-base text-gray-500 mt-1">{t.users.subtitle}</p>
@@ -163,7 +163,7 @@ function UsersContent() {
       </div>
 
       {/* Toolbar */}
-      <div className="flex flex-col sm:flex-row gap-3 justify-between items-start sm:items-center mb-3">
+      <div className="flex flex-col sm:flex-row gap-3 justify-between items-start sm:items-center mb-3 flex-none">
         <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
           <select className="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 sm:min-w-[140px]">
             <option>{t.admin.all}</option>
@@ -288,7 +288,7 @@ function UsersContent() {
         </div>
 
         {/* Pagination */}
-        <div className="flex items-center justify-end px-4 py-3 bg-white rounded-xl shadow-sm mt-1 gap-4 sm:gap-6">
+        <div className="flex items-center justify-end px-4 py-3 bg-white rounded-xl shadow-sm mt-1 gap-4 sm:gap-6 flex-none">
           <div className="flex items-center gap-2 text-sm text-gray-500">
             <span>{t.admin.rowsPerPage}</span>
             <select value={itemsPerPage} onChange={e => { setItemsPerPage(Number(e.target.value)); setPage(1) }}
