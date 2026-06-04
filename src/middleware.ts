@@ -9,7 +9,7 @@ export function middleware(request: NextRequest) {
   const token = request.cookies.get('accessToken')?.value
 
   if (
-    pathname.startsWith('/api/auth/') ||
+    pathname.startsWith('/api/') ||
     pathname.startsWith('/_next/') ||
     pathname.startsWith('/favicon')
   ) {
