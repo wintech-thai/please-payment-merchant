@@ -28,14 +28,14 @@ export default function Navbar() {
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const [merchantMenuOpen, setMerchantMenuOpen] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [merchantNavOpen, setMerchantNavOpen] = useState(false)
+  const [businessNavOpen, setBusinessNavOpen] = useState(false)
   const [modal, setModal] = useState<'profile' | 'changePassword' | null>(null)
   const [username, setUsername] = useState('')
   const [currentOrgId, setCurrentOrgId] = useState('')
   const [merchants, setMerchants] = useState<MerchantOption[]>([])
 
-  const merchantNavRef = useRef<HTMLDivElement>(null)
   const merchantSwitcherRef = useRef<HTMLDivElement>(null)
+  const businessNavRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     setUsername(localStorage.getItem('username') || '')
@@ -48,8 +48,8 @@ export default function Navbar() {
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
-      if (merchantNavRef.current && !merchantNavRef.current.contains(e.target as Node)) setMerchantNavOpen(false)
       if (merchantSwitcherRef.current && !merchantSwitcherRef.current.contains(e.target as Node)) setMerchantMenuOpen(false)
+      if (businessNavRef.current && !businessNavRef.current.contains(e.target as Node)) setBusinessNavOpen(false)
     }
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
@@ -73,13 +73,13 @@ export default function Navbar() {
   }
 
   const currentMerchant = merchants.find(m => m.orgId === currentOrgId)
-  const isMerchantActive = pathname.startsWith('/merchant')
+  const isBusinessActive = pathname.startsWith('/merchant') || pathname.startsWith('/payment')
   const isAdminActive = pathname.startsWith('/administration')
 
-  const merchantChildren = [
-    { href: '/merchant/pay-in-requests', label: 'Pay-In Requests' },
-    { href: '/merchant/pay-in-transactions', label: 'Pay-In Transactions' },
-    { href: '/merchant/pay-out-requests', label: 'Pay-Out Requests' },
+  const paymentChildren = [
+    { href: '/payment/pay-in-requests', label: 'Pay-In Requests' },
+    { href: '/payment/pay-in-transactions', label: 'Pay-In Transactions' },
+    { href: '/payment/pay-out-requests', label: 'Pay-Out Requests' },
   ]
 
   const adminChildren = [
@@ -155,23 +155,26 @@ export default function Navbar() {
               {t.nav.overview}
             </Link>
 
-            {/* Merchant dropdown */}
-            <div className="relative" ref={merchantNavRef}>
-              <button onClick={() => setMerchantNavOpen(v => !v)} className={navItemClass(isMerchantActive)}>
-                <span>Merchant</span>
-                <svg className={clsx('w-3 h-3 flex-shrink-0 transition-transform', merchantNavOpen && 'rotate-180')} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            {/* Business dropdown */}
+            <div className="relative" ref={businessNavRef}>
+              <button onClick={() => setBusinessNavOpen(v => !v)} className={navItemClass(isBusinessActive)}>
+                <span>{t.nav.business}</span>
+                <svg className={clsx('w-3 h-3 flex-shrink-0 transition-transform', businessNavOpen && 'rotate-180')} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
                 </svg>
               </button>
-              {merchantNavOpen && (
-                <div className="absolute left-0 top-full w-52 bg-white rounded-xl shadow-xl border border-gray-100 py-1 z-50">
-                  {merchantChildren.map(item => (
-                    <Link key={item.href} href={item.href} onClick={() => setMerchantNavOpen(false)}
-                      className={clsx('flex items-center px-4 py-2.5 text-sm transition-colors',
-                        pathname.startsWith(item.href) ? 'text-primary-700 font-semibold bg-primary-50' : 'text-gray-700 hover:bg-gray-50')}>
-                      {item.label}
-                    </Link>
-                  ))}
+              {businessNavOpen && (
+                <div className="absolute left-0 top-full w-48 bg-white rounded-xl shadow-xl border border-gray-100 py-1 z-50">
+                  <Link href="/merchant" onClick={() => setBusinessNavOpen(false)}
+                    className={clsx('flex items-center px-4 py-2.5 text-sm transition-colors',
+                      pathname.startsWith('/merchant') ? 'text-primary-700 font-semibold bg-primary-50' : 'text-gray-700 hover:bg-gray-50')}>
+                    {t.nav.merchantInfo}
+                  </Link>
+                  <Link href="/payment/pay-in-requests" onClick={() => setBusinessNavOpen(false)}
+                    className={clsx('flex items-center px-4 py-2.5 text-sm transition-colors',
+                      pathname.startsWith('/payment') ? 'text-primary-700 font-semibold bg-primary-50' : 'text-gray-700 hover:bg-gray-50')}>
+                    {t.nav.payment}
+                  </Link>
                 </div>
               )}
             </div>
@@ -284,10 +287,16 @@ export default function Navbar() {
             </Link>
 
             <div className="px-3 py-1.5">
-              <p className="text-xs font-semibold text-amber-300/60 uppercase tracking-wider mb-1">Merchant</p>
-              {merchantChildren.map(item => (
+              <p className="text-xs font-semibold text-amber-300/60 uppercase tracking-wider mb-1">{t.nav.business}</p>
+              <Link href="/merchant" onClick={() => setMobileMenuOpen(false)}
+                className={clsx('flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors ml-2',
+                  pathname === '/merchant' ? 'bg-white/20 text-white' : 'text-white hover:bg-white/15')}>
+                {t.nav.merchantInfo}
+              </Link>
+              <p className="text-[10px] font-semibold text-white/30 uppercase tracking-wider ml-2 mt-2 mb-1">{t.nav.payment}</p>
+              {paymentChildren.map(item => (
                 <Link key={item.href} href={item.href} onClick={() => setMobileMenuOpen(false)}
-                  className={clsx('flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors ml-2',
+                  className={clsx('flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors ml-4',
                     pathname.startsWith(item.href) ? 'bg-white/20 text-white' : 'text-white hover:bg-white/15')}>
                   {item.label}
                 </Link>

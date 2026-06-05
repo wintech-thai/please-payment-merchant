@@ -140,6 +140,37 @@ export const userApi = {
     return client.post(`/api/ApiKey/org/${orgId}/action/UpdateApiKeyById/${keyId}`, payload)
   },
 
+  // ── Organization / Merchant Info ──────────────────────────────────────────
+  getMerchantInfo: () => {
+    const orgId = getOrgId()
+    return client.get(`/api/Organization/org/${orgId}/action/GetOrganization`)
+  },
+
+  getMyMerchantInfo: () => {
+    const orgId = getOrgId()
+    return client.get(`/api/Merchant/org/${orgId}/action/GetMyMerchantInfo`)
+  },
+
+  getMerchantPaymentEndpoint: () => {
+    const orgId = getOrgId()
+    return client.get(`/api/Merchant/org/${orgId}/action/GetMerchantPaymentEndpoint`)
+  },
+
+  getMerchantWebhooks: () => {
+    const orgId = getOrgId()
+    return client.get(`/api/Merchant/org/${orgId}/action/GetMerchantWebhooks`)
+  },
+
+  getMerchantWallet: () => {
+    const orgId = getOrgId()
+    return client.get(`/api/Merchant/org/${orgId}/action/GetMerchantWallet`)
+  },
+
+  getMerchantWalletTransactions: (walletId: string, payload?: { offset?: number; limit?: number }) => {
+    const orgId = getOrgId()
+    return client.post(`/api/Merchant/org/${orgId}/action/GetMerchantWalletTxs/${walletId}`, payload || {})
+  },
+
   // ── Registration (signup confirm) ──────────────────────────────────────────
   confirmInvite: (orgId: string, token: string, payload: {
     username: string; email: string; password: string; firstName: string; lastName: string; orgUserId?: string

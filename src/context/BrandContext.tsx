@@ -141,17 +141,19 @@ function BrandApplier({ config, loading }: { config: Config | null; loading: boo
 export function BrandProvider({ children }: { children: React.ReactNode }) {
   const [config, setConfig] = useState<Config | null>(null)
   const [loading, setLoading] = useState(true)
+  const [fetchFailed, setFetchFailed] = useState(false)
   const [cachedName, setCachedName] = useState('')
   const [cachedLogo, setCachedLogo] = useState('')
 
-  // Read display cache before first paint to prevent navbar flash
+  // Read display cache before first paint — also apply cached theme to prevent flash
   useLayoutEffect(() => {
     try {
       const raw = localStorage.getItem(BRAND_DISPLAY_CACHE_KEY)
       if (raw) {
-        const { n = '', l = '' } = JSON.parse(raw)
+        const { n = '', l = '', t = '' } = JSON.parse(raw)
         if (n) setCachedName(n)
         if (l) setCachedLogo(l)
+        if (t) applyTheme(t as ThemeName)
       }
     } catch {}
   }, [])
@@ -159,7 +161,24 @@ export function BrandProvider({ children }: { children: React.ReactNode }) {
   async function load() {
     cachedFaviconDataUrl = null
     setLoading(true)
+    setFetchFailed(false)
     const data = await fetchBrandConfig()
+
+    if (!data) {
+      // API call failed (likely expired token or network error)
+      // Fall back to cached theme — do NOT clear cache or reset to default
+      try {
+        const raw = localStorage.getItem(BRAND_DISPLAY_CACHE_KEY)
+        if (raw) {
+          const { t = '' } = JSON.parse(raw)
+          if (t) applyTheme(t as ThemeName)
+        }
+      } catch {}
+      setFetchFailed(true)
+      setLoading(false)
+      return
+    }
+
     setConfig(data)
     applyBrandToDOM(data)
 
@@ -167,9 +186,10 @@ export function BrandProvider({ children }: { children: React.ReactNode }) {
     if (active) {
       const n = data!.brandConfig!.brandName || ''
       const l = data!.brandConfig!.logoImageUrl ? resolveStorageUrl(data!.brandConfig!.logoImageUrl) : ''
+      const t = data!.brandConfig!.themeName || ''
       setCachedName(n)
       setCachedLogo(l)
-      try { localStorage.setItem(BRAND_DISPLAY_CACHE_KEY, JSON.stringify({ n, l })) } catch {}
+      try { localStorage.setItem(BRAND_DISPLAY_CACHE_KEY, JSON.stringify({ n, l, t })) } catch {}
     } else {
       setCachedName('')
       setCachedLogo('')
@@ -189,9 +209,9 @@ export function BrandProvider({ children }: { children: React.ReactNode }) {
     ? config.brandConfig.brandName
     : ''
 
-  // Show cached values during initial load to prevent flash
-  const logoUrl = loading ? cachedLogo : resolvedLogoUrl
-  const brandName = loading ? cachedName : resolvedBrandName
+  // Show cached values during initial load or when API fetch failed (expired token)
+  const logoUrl = (loading || fetchFailed) ? cachedLogo : resolvedLogoUrl
+  const brandName = (loading || fetchFailed) ? cachedName : resolvedBrandName
 
   return (
     <BrandContext.Provider value={{ config, loading, logoUrl, brandName, refresh: load }}>
