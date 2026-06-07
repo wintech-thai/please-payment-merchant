@@ -83,6 +83,12 @@ body {
   background: #f59e0b;
 }
 
+.json-key    { color: #1d4ed8; font-weight: 600; }
+.json-string { color: #15803d; }
+.json-bool   { color: #b45309; }
+.json-null   { color: #9ca3af; }
+.json-number { color: #7c3aed; }
+
 @layer components {
   .btn-primary {
     @apply bg-primary-700 hover:bg-primary-800 active:bg-primary-900 text-white font-semibold py-2.5 px-6 rounded-lg transition-colors duration-200 disabled:opacity-60 disabled:cursor-not-allowed;

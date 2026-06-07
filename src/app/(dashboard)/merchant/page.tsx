@@ -300,7 +300,7 @@ export default function MerchantInfoPage() {
 
           {/* ── Endpoint tab ── */}
           {activeTab === 'endpoint' && (
-            <div className="max-w-3xl">
+            <div>
               <SectionHeader>{mi.sectionEndpoint}</SectionHeader>
               <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">
                 {mi.endpointLabel}
@@ -334,10 +334,10 @@ export default function MerchantInfoPage() {
                 <table className="w-full text-sm">
                   <thead className="bg-gray-50 border-b border-gray-100">
                     <tr>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">{mi.colWebhookEvent}</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 w-[180px]">{mi.colWebhookEvent}</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">{mi.colWebhookDescription}</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">{mi.colWebhookEndpoint}</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">{mi.colWebhookStatus}</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 w-[40%]">{mi.colWebhookEndpoint}</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 w-[120px]">{mi.colWebhookStatus}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -346,13 +346,27 @@ export default function MerchantInfoPage() {
                         <td className="px-4 py-3 text-gray-700 font-medium">{wh.eventName ?? wh.event ?? '—'}</td>
                         <td className="px-4 py-3 text-gray-600">{wh.description ?? '—'}</td>
                         <td className="px-4 py-3 text-gray-600">
-                          <div className="text-xs font-mono break-all">{wh.endpointUrl ?? wh.url ?? '—'}</div>
+                          <div className="text-sm font-mono break-all">{wh.endpointUrl ?? wh.url ?? '—'}</div>
                           {(wh.method ?? wh.httpMethod) && (
-                            <div className="text-[10px] text-gray-400 mt-0.5 font-semibold">{wh.method ?? wh.httpMethod}</div>
+                            <div className="text-xs text-gray-400 mt-0.5 font-semibold">{wh.method ?? wh.httpMethod}</div>
                           )}
                         </td>
                         <td className="px-4 py-3">
-                          {wh.status ? <StatusBadge status={wh.status} /> : <span className="text-gray-300">—</span>}
+                          <span className={clsx(
+                            'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border',
+                            wh.isActive
+                              ? 'bg-green-50 text-green-700 border-green-200'
+                              : 'bg-gray-100 text-gray-500 border-gray-200'
+                          )}>
+                            <span className={clsx('w-1.5 h-1.5 rounded-full', wh.isActive ? 'bg-green-500' : 'bg-gray-400')} />
+                            {wh.isActive ? 'Active' : 'Inactive'}
+                          </span>
+                          {wh.lastCalledDate && (
+                            <div className="text-[10px] text-gray-400 mt-1">{new Date(wh.lastCalledDate).toLocaleString('th-TH')}</div>
+                          )}
+                          {wh.lastStatus && (
+                            <div className="text-[10px] text-gray-500 mt-0.5 font-mono">{wh.lastStatus}</div>
+                          )}
                         </td>
                       </tr>
                     )) : (

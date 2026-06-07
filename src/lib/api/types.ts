@@ -285,6 +285,8 @@ export interface BankAccountItem {
   status?: string | null
   createdDate?: string | null
   merchantLinkCount?: number | null
+  currentBalance?: number | null
+  currentBalanceDecimal?: number | null
   currentWalletBalance?: number | null
   currentWalletBalanceDecimal?: number | null
 }
@@ -399,13 +401,13 @@ export interface PayInRequestDetail extends PayInRequestItem {
 }
 
 export interface GetPayInRequestsPayload {
-  FullTextSearch?: string
-  Direction?: string
-  Status?: string
-  FromDate?: string
-  ToDate?: string
-  Page?: number
-  Limit?: number
+  fullTextSearch?: string
+  direction?: string
+  status?: string
+  fromDate?: string
+  toDate?: string
+  offset?: number
+  limit?: number
 }
 
 // ─── Pay-In Transactions ─────────────────────────────────────────────────────
@@ -472,12 +474,12 @@ export interface PayInTxDetail extends PayInTxItem {
 }
 
 export interface GetPayInTxPayload {
-  FullTextSearch?: string
-  Status?: string
-  FromDate?: string
-  ToDate?: string
-  Page?: number
-  Limit?: number
+  fullTextSearch?: string
+  status?: string
+  fromDate?: string
+  toDate?: string
+  offset?: number
+  limit?: number
 }
 
 // ─── Wallet ──────────────────────────────────────────────────────────────────
@@ -638,8 +640,10 @@ export interface PayInSlipItem {
 export interface PayInSlipDetail extends PayInSlipItem {}
 
 export interface GetPayInDocumentsPayload {
-  FullTextSearch?: string
-  Status?: string
+  fullTextSearch?: string
+  status?: string
+  offset?: number
+  limit?: number
 }
 
 export interface GetPresignedUrlPayload {
@@ -737,12 +741,12 @@ export interface PayOutRequestDetail extends PayOutRequestItem {
 }
 
 export interface GetPayOutRequestsPayload {
-  FullTextSearch?: string
-  Status?: string
-  FromDate?: string
-  ToDate?: string
-  Page?: number
-  Limit?: number
+  fullTextSearch?: string
+  status?: string
+  fromDate?: string
+  toDate?: string
+  offset?: number
+  limit?: number
 }
 
 export interface CreatePayOutRequestPayload {
@@ -760,7 +764,7 @@ export interface CreatePayOutRequestPayload {
 
 export interface UpdatePayOutRequestPayload {
   MerchantId?: string
-  PayoutBankAccountId?: string
+  PayinBankAccountId?: string
   Description?: string
   RefId?: string
 }
