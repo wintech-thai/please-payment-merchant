@@ -64,6 +64,8 @@ export default function AddPayOutRequestPage() {
   const [merchantCode, setMerchantCode] = useState('')
   const [merchantName, setMerchantName] = useState('')
   const [merchantId, setMerchantId] = useState('')
+  const [payoutMinAmount, setPayoutMinAmount] = useState<number | null>(null)
+  const [payoutMaxAmount, setPayoutMaxAmount] = useState<number | null>(null)
   const [bankAccounts, setBankAccounts] = useState<BankAccountItem[]>([])
   const [loadingInit, setLoadingInit] = useState(true)
 
@@ -83,7 +85,7 @@ export default function AddPayOutRequestPage() {
     const init = async () => {
       const [merchantRes, bankRes] = await Promise.allSettled([
         userApi.getMyMerchantInfo(),
-        bankAccountApi.getBankAccounts({ AccountCategory: 'PayIn' }),
+        bankAccountApi.getPayOutBankAccounts(),
       ])
       if (merchantRes.status === 'fulfilled') {
         const d = merchantRes.value.data as any
@@ -91,6 +93,8 @@ export default function AddPayOutRequestPage() {
         setMerchantId(m?.id ?? m?.merchantId ?? '')
         setMerchantCode(m?.code ?? '')
         setMerchantName(m?.name ?? '')
+        setPayoutMinAmount(m?.payoutMinAmount ?? null)
+        setPayoutMaxAmount(m?.payoutMaxAmount ?? null)
       }
       if (bankRes.status === 'fulfilled') {
         const d = bankRes.value.data as any
@@ -123,11 +127,11 @@ export default function AddPayOutRequestPage() {
     } else {
       const n = parseFloat(requestedAmount)
       if (isNaN(n) || n <= 0) errs.amount = tr.amountInvalid
-      else if (selectedBank) {
-        if (selectedBank.payoutMinAmount != null && n < selectedBank.payoutMinAmount)
-          errs.amount = `${tr.amountBelowMin} (min: ${selectedBank.payoutMinAmount.toLocaleString('th-TH')})`
-        if (selectedBank.payoutMaxAmount != null && n > selectedBank.payoutMaxAmount)
-          errs.amount = `${tr.amountAboveMax} (max: ${selectedBank.payoutMaxAmount.toLocaleString('th-TH')})`
+      else {
+        if (payoutMinAmount != null && n < payoutMinAmount)
+          errs.amount = `${tr.amountBelowMin} (min: ${payoutMinAmount.toLocaleString('th-TH')})`
+        if (payoutMaxAmount != null && n > payoutMaxAmount)
+          errs.amount = `${tr.amountAboveMax} (max: ${payoutMaxAmount.toLocaleString('th-TH')})`
       }
     }
     setErrors(errs)
@@ -183,15 +187,34 @@ export default function AddPayOutRequestPage() {
             {/* Section 1: Merchant Info (read-only) */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 px-7 py-6">
               <SectionHeader>{tr.sectionMerchant}</SectionHeader>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl">
-                <div>
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">{t.merchant.fieldCode}</p>
-                  <p className="text-sm text-gray-800 font-medium">{merchantCode || '—'}</p>
+              <div className="flex flex-wrap items-end gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">{t.merchant.fieldCode}</p>
+                    <p className="text-sm text-gray-800 font-medium">{merchantCode || '—'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">{t.merchant.fieldName}</p>
+                    <p className="text-sm text-gray-800">{merchantName || '—'}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">{t.merchant.fieldName}</p>
-                  <p className="text-sm text-gray-800">{merchantName || '—'}</p>
-                </div>
+                {(payoutMinAmount != null || payoutMaxAmount != null) && (
+                  <div>
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">{tr.payoutRange}</p>
+                    <div className="flex items-center gap-2 text-sm">
+                      {payoutMinAmount != null && (
+                        <span className="px-2 py-0.5 bg-gray-100 rounded text-gray-700">
+                          MIN {payoutMinAmount.toLocaleString('th-TH', { minimumFractionDigits: 2 })}
+                        </span>
+                      )}
+                      {payoutMaxAmount != null && (
+                        <span className="px-2 py-0.5 bg-gray-100 rounded text-gray-700">
+                          MAX {payoutMaxAmount.toLocaleString('th-TH', { minimumFractionDigits: 2 })}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -284,7 +307,7 @@ export default function AddPayOutRequestPage() {
                   </div>
                 )}
 
-                <p className="text-xs text-gray-400 italic mt-3">{tr.autoSelectInfo}</p>
+
               </div>
             </div>
 

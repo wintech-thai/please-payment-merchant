@@ -11,7 +11,7 @@ function normalize(raw: any): { bankAccounts: BankAccountItem[] } {
   return {
     bankAccounts: items.map(item => ({
       ...item,
-      accountId: item.accountId ?? item.bankAccountId ?? '',
+      accountId: item.accountId ?? item.bankAccountId ?? item.id ?? '',
       status: item.status ?? item.bankAccountStatus ?? null,
     })),
   }
@@ -20,6 +20,11 @@ function normalize(raw: any): { bankAccounts: BankAccountItem[] } {
 export const bankAccountApi = {
   getBankAccounts: async (payload: GetBankAccountsPayload = {}, orgId?: string) => {
     const res = await client.get<any>(`${getBase(orgId)}/GetPayInBankAccountsForMerchant`)
+    return { ...res, data: normalize(res.data) }
+  },
+
+  getPayOutBankAccounts: async (orgId?: string) => {
+    const res = await client.get<any>(`${getBase(orgId)}/GetPayOutBankAccountsForMerchant`)
     return { ...res, data: normalize(res.data) }
   },
 }

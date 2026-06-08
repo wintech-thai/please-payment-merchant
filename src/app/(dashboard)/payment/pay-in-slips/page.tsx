@@ -61,6 +61,7 @@ export default function PayInSlipsPage() {
       const payload = {
         fullTextSearch: q.trim() || undefined,
         status: st || undefined,
+        direction: 'PayIn',
         offset: (currentPage - 1) * limit,
         limit,
       }

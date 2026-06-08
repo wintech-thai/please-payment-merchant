@@ -476,6 +476,7 @@ export interface PayInTxDetail extends PayInTxItem {
 export interface GetPayInTxPayload {
   fullTextSearch?: string
   status?: string
+  direction?: string
   fromDate?: string
   toDate?: string
   offset?: number
@@ -642,6 +643,7 @@ export interface PayInSlipDetail extends PayInSlipItem {}
 export interface GetPayInDocumentsPayload {
   fullTextSearch?: string
   status?: string
+  direction?: string
   offset?: number
   limit?: number
 }

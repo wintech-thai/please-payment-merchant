@@ -1,25 +1,13 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { useLang } from '@/context/LanguageContext'
 import { paymentRequestApi } from '@/lib/api/payment-request.api'
-import { bankAccountApi } from '@/lib/api/bank-account.api'
 import type { PayOutRequestDetail } from '@/lib/api/types'
 import { toast } from 'sonner'
-import { ChevronLeft, CheckCircle, AlertCircle, Clock, Search, X } from 'lucide-react'
+import { ChevronLeft, CheckCircle, AlertCircle, Clock } from 'lucide-react'
 import QRCode from 'react-qr-code'
-import clsx from 'clsx'
-
-interface AccountOption {
-  id: string
-  bankCode?: string | null
-  accountNumber?: string | null
-  accountName?: string | null
-  accountType?: string | null
-  promptPayId?: string | null
-  currentBalance?: number | null
-}
 
 function formatAmount(n?: number | null): string {
   if (n == null) return '—'
@@ -88,14 +76,7 @@ function AccountTypeBadge({ accountType, promptPayId }: { accountType?: string |
   )
 }
 
-function Spinner() {
-  return (
-    <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-    </svg>
-  )
-}
+
 
 export default function PayOutRequestDetailPage() {
   const { t } = useLang()
@@ -105,97 +86,26 @@ export default function PayOutRequestDetailPage() {
   const id = params.id as string
 
   const [detail, setDetail] = useState<PayOutRequestDetail | null>(null)
-  const [allAccounts, setAllAccounts] = useState<AccountOption[]>([])
-  const [selectedAccountId, setSelectedAccountId] = useState('')
-  const [accountSearch, setAccountSearch] = useState('')
-  const [showDropdown, setShowDropdown] = useState(false)
-  const [bankError, setBankError] = useState('')
-  const dropdownRef = useRef<HTMLDivElement>(null)
-
   const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
 
-  const isPending = detail?.status?.toLowerCase() === 'pending'
   const isRejected = detail?.status?.toLowerCase() === 'rejected'
-
-  const accountLabel = (a: AccountOption) =>
-    [a.bankCode, a.accountNumber, a.accountName ? `— ${a.accountName}` : ''].filter(Boolean).join(' ')
-
-  const filteredAccounts = accountSearch.trim()
-    ? allAccounts.filter(a => {
-        const q = accountSearch.toLowerCase()
-        return (
-          a.bankCode?.toLowerCase().includes(q) ||
-          a.accountNumber?.toLowerCase().includes(q) ||
-          a.accountName?.toLowerCase().includes(q)
-        )
-      })
-    : allAccounts
 
   useEffect(() => {
     const load = async () => {
       setLoading(true)
       try {
-        const [detailRes, bankRes] = await Promise.allSettled([
-          paymentRequestApi.getPayOutRequestById(id),
-          bankAccountApi.getBankAccounts(),
-        ])
-
-        let req: PayOutRequestDetail | null = null
-        if (detailRes.status === 'fulfilled') {
-          const data = detailRes.value.data as any
-          req = data?.paymentRequest ?? data?.data ?? data
-          setDetail(req)
-        } else {
-          toast.error(tr.toastFailedToLoad)
-          router.push('/payment/pay-out-requests')
-          return
-        }
-
-        if (bankRes.status === 'fulfilled') {
-          const mapped: AccountOption[] = bankRes.value.data.bankAccounts.map(b => ({
-            id: b.accountId ?? b.bankAccountId ?? '',
-            bankCode: b.bankCode,
-            accountNumber: b.accountNumber,
-            accountName: b.accountName,
-            accountType: b.accountType,
-            promptPayId: b.promptPayId,
-            currentBalance: b.currentBalance ?? b.currentWalletBalance ?? null,
-          }))
-          setAllAccounts(mapped)
-
-          const savedId = req?.payinBankAccountId ?? null
-          if (savedId) {
-            const saved = mapped.find(a => a.id === savedId)
-            if (saved) {
-              setSelectedAccountId(savedId)
-              setAccountSearch(accountLabel(saved))
-            }
-          }
-        } else {
-          toast.error(tr.toastFailedToLoadBanks)
-        }
+        const res = await paymentRequestApi.getPayOutRequestById(id)
+        const data = res.data as any
+        setDetail(data?.paymentRequest ?? data?.data ?? data)
+      } catch {
+        toast.error(tr.toastFailedToLoad)
+        router.push('/payment/pay-out-requests')
       } finally {
         setLoading(false)
       }
     }
     load()
   }, [id])
-
-  const handleSave = async () => {
-    setSaving(true)
-    try {
-      await paymentRequestApi.updatePayOutRequestById(id, {
-        PayinBankAccountId: selectedAccountId || undefined,
-      })
-      toast.success(tr.toastSaveSuccess)
-      router.push('/payment/pay-out-requests')
-    } catch (err: any) {
-      toast.error(err?.message ?? tr.toastSaveFailed)
-    } finally {
-      setSaving(false)
-    }
-  }
 
   if (loading) {
     return (
@@ -331,123 +241,6 @@ export default function PayOutRequestDetailPage() {
           </div>
         </div>
 
-        {/* Section 2: Source Bank (editable when Pending, read-only otherwise) */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 px-7 py-6">
-          <SectionHeader>{tr.sectionPayoutBank}</SectionHeader>
-
-          {isPending ? (
-            <div className="max-w-md">
-              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
-                {tr.fieldPayoutBankAccount} <span className="text-red-500">*</span>
-              </label>
-              <div className="relative" ref={dropdownRef}>
-                <div className={clsx(
-                  'flex items-center border rounded-lg bg-white overflow-hidden',
-                  bankError ? 'border-red-400' : 'border-gray-200',
-                )}>
-                  <Search className="w-4 h-4 text-gray-400 ml-3 flex-shrink-0" />
-                  <input
-                    type="text"
-                    value={accountSearch}
-                    onChange={e => {
-                      setAccountSearch(e.target.value)
-                      setSelectedAccountId('')
-                      setBankError('')
-                      setShowDropdown(true)
-                    }}
-                    onFocus={() => setShowDropdown(true)}
-                    onBlur={() => setTimeout(() => setShowDropdown(false), 150)}
-                    placeholder={tr.placeholderPayoutBankAccount}
-                    className="flex-1 px-3 py-2.5 text-sm focus:outline-none bg-transparent"
-                  />
-                  {(accountSearch || selectedAccountId) && (
-                    <button
-                      type="button"
-                      onMouseDown={e => e.preventDefault()}
-                      onClick={() => { setAccountSearch(''); setSelectedAccountId(''); setBankError('') }}
-                      className="p-2 text-gray-400 hover:text-gray-600"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                </div>
-
-                {showDropdown && (
-                  <div className="absolute z-20 w-full bottom-full mb-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-52 overflow-y-auto">
-                    {filteredAccounts.length === 0 ? (
-                      <p className="px-4 py-3 text-sm text-gray-400">{tr.noPayoutBankAccounts}</p>
-                    ) : (
-                      filteredAccounts.map(a => (
-                        <button
-                          key={a.id}
-                          type="button"
-                          onMouseDown={e => e.preventDefault()}
-                          onClick={() => {
-                            setSelectedAccountId(a.id)
-                            setAccountSearch(accountLabel(a))
-                            setBankError('')
-                            setShowDropdown(false)
-                          }}
-                          className={clsx(
-                            'w-full px-4 py-2.5 text-left text-sm transition-colors',
-                            selectedAccountId === a.id
-                              ? 'bg-primary-50 text-primary-700 font-semibold'
-                              : 'hover:bg-gray-50 text-gray-700'
-                          )}
-                        >
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className="font-medium">{a.bankCode}</span>
-                            {a.accountNumber && <span>{a.accountNumber}</span>}
-                            {a.accountName && <span className="text-gray-400 text-xs">— {a.accountName}</span>}
-                            {a.accountType && (
-                              <span className="px-1.5 py-0.5 bg-blue-50 text-blue-700 text-[10px] font-bold rounded-full ring-1 ring-blue-200">
-                                {a.accountType}
-                              </span>
-                            )}
-                          </div>
-                          {a.promptPayId && a.accountType?.toLowerCase() === 'promptpay' && (
-                            <div className="mt-0.5 text-[10px] text-gray-400">{a.promptPayId}</div>
-                          )}
-                          {a.currentBalance != null && (
-                            <div className="mt-1 flex items-center gap-1">
-                              <span className="text-[10px] text-gray-400">Balance:</span>
-                              <span className={clsx(
-                                'text-xs font-semibold tabular-nums',
-                                a.currentBalance > 0 ? 'text-emerald-600' : 'text-red-500'
-                              )}>
-                                {a.currentBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                              </span>
-                            </div>
-                          )}
-                        </button>
-                      ))
-                    )}
-                  </div>
-                )}
-              </div>
-              {bankError && <p className="text-red-500 text-xs mt-1">{bankError}</p>}
-              {selectedAccountId && (
-                <p className="text-xs text-emerald-600 mt-1">✓ Selected</p>
-              )}
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-              <InfoRow label={tr.fieldPayoutBankAccount}>
-                {detail?.payinBankCode || detail?.payinBankAccountNo ? (
-                  <div className="flex flex-col gap-0.5">
-                    <span className="font-semibold">
-                      {[detail.payinBankCode, detail.payinBankAccountNo].filter(Boolean).join(' · ')}
-                    </span>
-                    {detail.payinBankAccountName && (
-                      <span className="text-gray-500 text-xs">{detail.payinBankAccountName}</span>
-                    )}
-                    <AccountTypeBadge accountType={detail.payinAccountType} promptPayId={detail.payinPromptPayId} />
-                  </div>
-                ) : '—'}
-              </InfoRow>
-            </div>
-          )}
-        </div>
 
       </div>
 
@@ -458,16 +251,7 @@ export default function PayOutRequestDetailPage() {
           onClick={() => router.push('/payment/pay-out-requests')}
           className="px-5 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
         >
-          {t.admin.cancel}
-        </button>
-        <button
-          type="button"
-          onClick={handleSave}
-          disabled={saving || !isPending}
-          className="flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-60 transition-colors"
-        >
-          {saving && <Spinner />}
-          {saving ? tr.btnSaving : tr.btnSave}
+          {t.admin.back}
         </button>
       </div>
     </div>

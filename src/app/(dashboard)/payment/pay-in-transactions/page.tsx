@@ -121,7 +121,7 @@ export default function PayInTransactionsPage() {
     setLoading(true)
     try {
       const { fromDate, toDate } = getTimeFilter(tr)
-      const payload: Record<string, unknown> = { offset: (currentPage - 1) * limit, limit, fromDate, toDate }
+      const payload: Record<string, unknown> = { offset: (currentPage - 1) * limit, limit, fromDate, toDate, direction: 'PayIn' }
       if (q.trim()) payload.fullTextSearch = q.trim()
       if (status) payload.status = status
 

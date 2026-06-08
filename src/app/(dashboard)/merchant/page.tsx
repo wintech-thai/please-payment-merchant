@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import { userApi } from '@/lib/api/user.api'
 import { useLang } from '@/context/LanguageContext'
 import { toast } from 'sonner'
@@ -459,6 +460,7 @@ export default function MerchantInfoPage() {
                           const isPayIn = tx.txType === 1
                           const amount = tx.txAmountDecimal ?? tx.txAmount
                           const tags = typeof tx.tags === 'string' ? tx.tags : Array.isArray(tx.tags) ? tx.tags.join(', ') : ''
+                          const payOutMatch = tags.match(/PayOutRequestId=\[([^\]]+)\]/)
                           return (
                             <tr key={idx} className="border-b border-gray-100 last:border-0 hover:bg-gray-50/50 transition">
                               <td className="px-4 py-3 text-gray-700 text-sm whitespace-nowrap">
@@ -467,7 +469,11 @@ export default function MerchantInfoPage() {
                                   : '—'}
                               </td>
                               <td className="px-4 py-3 text-gray-500 text-sm max-w-[200px] truncate">
-                                {tags || <span className="text-gray-300">—</span>}
+                                {tags
+                                  ? payOutMatch
+                                    ? <Link href={`/payment/pay-out-requests/${payOutMatch[1]}`} className="text-orange-600 hover:underline">{tags}</Link>
+                                    : tags
+                                  : <span className="text-gray-300">—</span>}
                               </td>
                               <td className="px-4 py-3 text-gray-600 text-sm max-w-[160px] truncate">
                                 {tx.description ?? <span className="text-gray-300">—</span>}
