@@ -119,12 +119,14 @@ function applyFaviconDataUrl() {
     .catch(() => {})
 }
 
-function BrandApplier({ config, loading }: { config: Config | null; loading: boolean }) {
+function BrandApplier({ config, loading, fetchFailed }: { config: Config | null; loading: boolean; fetchFailed: boolean }) {
   const pathname = usePathname()
 
   useLayoutEffect(() => {
     // Skip during initial load to preserve localStorage theme (prevents flash)
     if (loading && config === null) return
+    // Skip if API failed — keep whatever theme is already applied from localStorage
+    if (fetchFailed) return
 
     applyBrandToDOM(config)
 
@@ -133,7 +135,7 @@ function BrandApplier({ config, loading }: { config: Config | null; loading: boo
     if (isActive && config?.brandConfig?.logoImageUrl) {
       applyFaviconDataUrl()
     }
-  }, [pathname, config, loading])
+  }, [pathname, config, loading, fetchFailed])
 
   return null
 }
@@ -215,7 +217,7 @@ export function BrandProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <BrandContext.Provider value={{ config, loading, logoUrl, brandName, refresh: load }}>
-      <BrandApplier config={config} loading={loading} />
+      <BrandApplier config={config} loading={loading} fetchFailed={fetchFailed} />
       {children}
     </BrandContext.Provider>
   )

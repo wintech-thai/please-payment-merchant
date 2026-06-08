@@ -227,6 +227,7 @@ export const translations = {
       rowsPerPage: 'จำนวนแถวต่อหน้า',
       all: 'ทั้งหมด',
       customRoleOptional: 'บทบาทกำหนดเอง (ไม่บังคับ)',
+      back: 'กลับ',
     },
     users: {
       title: 'ผู้ใช้',
@@ -1228,6 +1229,12 @@ export const translations = {
       maxAmount: 'สูงสุด',
       amountBelowMin: 'ยอดเงินต่ำกว่าขั้นต่ำ',
       amountAboveMax: 'ยอดเงินเกินขีดสูงสุด',
+      deleteModalTitle: 'ลบ Pay-Out Request',
+      deleteModalDesc: 'คุณต้องการลบรายการนี้ใช่ไหม? การดำเนินการนี้ไม่สามารถย้อนกลับได้',
+      btnDelete: 'ลบ',
+      btnDeleting: 'กำลังลบ...',
+      toastDeleteSuccess: 'ลบสำเร็จ',
+      toastDeleteFailed: 'ลบไม่สำเร็จ',
     },
     merchantInfo: {
       pageTitle: 'ข้อมูลร้านค้า',
@@ -1516,6 +1523,7 @@ export const translations = {
       rowsPerPage: 'Rows per page',
       all: 'All',
       customRoleOptional: 'Custom Role (Optional)',
+      back: 'Back',
     },
     users: {
       title: 'Users',
@@ -2517,6 +2525,12 @@ export const translations = {
       maxAmount: 'Max',
       amountBelowMin: 'Amount is below minimum',
       amountAboveMax: 'Amount exceeds maximum',
+      deleteModalTitle: 'Delete Pay-Out Request',
+      deleteModalDesc: 'Are you sure you want to delete this request? This action cannot be undone.',
+      btnDelete: 'Delete',
+      btnDeleting: 'Deleting...',
+      toastDeleteSuccess: 'Deleted successfully',
+      toastDeleteFailed: 'Failed to delete',
     },
     merchantInfo: {
       pageTitle: 'Merchant Info',
