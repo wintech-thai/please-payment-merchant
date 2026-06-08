@@ -461,6 +461,12 @@ export default function MerchantInfoPage() {
                           const amount = tx.txAmountDecimal ?? tx.txAmount
                           const tags = typeof tx.tags === 'string' ? tx.tags : Array.isArray(tx.tags) ? tx.tags.join(', ') : ''
                           const payOutMatch = tags.match(/PayOutRequestId=\[([^\]]+)\]/)
+                          const payInTxMatch = tags.match(/PaymentTxId=\[([^\]]+)\]/)
+                          const tagLink = payOutMatch
+                            ? `/payment/pay-out-requests/${payOutMatch[1]}`
+                            : payInTxMatch
+                            ? `/payment/pay-in-transactions/${payInTxMatch[1]}`
+                            : null
                           return (
                             <tr key={idx} className="border-b border-gray-100 last:border-0 hover:bg-gray-50/50 transition">
                               <td className="px-4 py-3 text-gray-700 text-sm whitespace-nowrap">
@@ -470,8 +476,8 @@ export default function MerchantInfoPage() {
                               </td>
                               <td className="px-4 py-3 text-gray-500 text-sm max-w-[200px] truncate">
                                 {tags
-                                  ? payOutMatch
-                                    ? <Link href={`/payment/pay-out-requests/${payOutMatch[1]}`} className="text-orange-600 hover:underline">{tags}</Link>
+                                  ? tagLink
+                                    ? <Link href={tagLink} target="_blank" rel="noopener noreferrer" className="text-orange-600 hover:underline">{tags}</Link>
                                     : tags
                                   : <span className="text-gray-300">—</span>}
                               </td>
