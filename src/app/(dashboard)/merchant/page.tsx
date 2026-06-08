@@ -462,10 +462,13 @@ export default function MerchantInfoPage() {
                           const tags = typeof tx.tags === 'string' ? tx.tags : Array.isArray(tx.tags) ? tx.tags.join(', ') : ''
                           const payOutMatch = tags.match(/PayOutRequestId=\[([^\]]+)\]/)
                           const payInTxMatch = tags.match(/PaymentTxId=\[([^\]]+)\]/)
+                          const payInReqMatch = tags.match(/PaymentRequestId=\[([^\]]+)\]/)
                           const tagLink = payOutMatch
                             ? `/payment/pay-out-requests/${payOutMatch[1]}`
                             : payInTxMatch
                             ? `/payment/pay-in-transactions/${payInTxMatch[1]}`
+                            : payInReqMatch
+                            ? `/payment/pay-in-requests/${payInReqMatch[1]}`
                             : null
                           return (
                             <tr key={idx} className="border-b border-gray-100 last:border-0 hover:bg-gray-50/50 transition">
