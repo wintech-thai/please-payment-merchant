@@ -197,19 +197,6 @@ export default function PayOutRequestDetailPage() {
                 <span className="text-gray-600">{detail?.description ?? '—'}</span>
               </InfoRow>
 
-              <InfoRow label={tr.fieldDestBank}>
-                {detail?.payinBankCode || detail?.payinBankAccountNo ? (
-                  <div className="flex flex-col gap-0.5">
-                    <span className="font-semibold">
-                      {[detail.payinBankCode, detail.payinBankAccountNo].filter(Boolean).join(' · ')}
-                    </span>
-                    {detail.payinBankAccountName && (
-                      <span className="text-gray-500 text-xs">{detail.payinBankAccountName}</span>
-                    )}
-                    <AccountTypeBadge accountType={detail.payinAccountType} promptPayId={detail.payinPromptPayId} />
-                  </div>
-                ) : '—'}
-              </InfoRow>
 
               {isRejected && detail?.rejectReason && (
                 <div className="sm:col-span-2">
@@ -241,6 +228,32 @@ export default function PayOutRequestDetailPage() {
           </div>
         </div>
 
+        {/* Source Bank Account (Pay-In) */}
+        {(detail?.payinBankCode || detail?.payinBankAccountNo) && (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 px-7 py-6">
+            <h2 className="flex items-center gap-2.5 text-sm font-bold text-gray-900 mb-5">
+              <span className="w-1 h-5 bg-emerald-500 rounded-full flex-shrink-0" />
+              {tr.sectionSource}
+            </h2>
+            <div className="flex flex-col gap-1">
+              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">
+                {tr.fieldSourceAccount}
+              </p>
+              <p className="text-sm font-bold text-gray-800">
+                {[detail.payinBankCode, detail.payinBankAccountNo].filter(Boolean).join(' · ')}
+              </p>
+              {detail.payinBankAccountName && (
+                <p className="text-sm text-gray-500">{detail.payinBankAccountName}</p>
+              )}
+              {detail.payinPromptPayId && (
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="px-2 py-0.5 bg-blue-50 text-blue-700 text-xs font-bold rounded-full ring-1 ring-blue-200">PromptPay</span>
+                  <span className="text-sm text-gray-600">{detail.payinPromptPayId}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
       </div>
 

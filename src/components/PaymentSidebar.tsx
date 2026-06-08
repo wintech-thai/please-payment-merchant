@@ -6,7 +6,9 @@ import { useState } from 'react'
 import clsx from 'clsx'
 import { useLang } from '@/context/LanguageContext'
 
-const menuItems = [
+type MenuItem = { href: string; label: string; icon: React.ReactNode } | { divider: true }
+
+const menuItems: MenuItem[] = [
   {
     href: '/payment/pay-in-requests',
     label: 'Pay-In Requests',
@@ -34,6 +36,7 @@ const menuItems = [
       </svg>
     ),
   },
+  { divider: true },
   {
     href: '/payment/pay-out-requests',
     label: 'Pay-Out Requests',
@@ -83,7 +86,10 @@ export default function PaymentSidebar() {
 
       {/* Nav items */}
       <nav className="flex flex-col gap-0.5 px-2 pb-4">
-        {menuItems.map((item) => {
+        {menuItems.map((item, i) => {
+          if ('divider' in item) {
+            return <hr key={`divider-${i}`} className="my-1.5 border-white/10" />
+          }
           const isActive = pathname.startsWith(item.href)
           return (
             <Link

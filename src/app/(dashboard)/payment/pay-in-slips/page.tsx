@@ -122,20 +122,22 @@ export default function PayInSlipsPage() {
 
       {/* Filters */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-4 py-3 flex flex-wrap gap-2 items-center flex-none">
-        <div className="relative flex-1 min-w-[180px]">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+        <div className="flex items-center gap-2 flex-1 min-w-[220px]">
+          <select className="text-sm border border-gray-200 rounded-lg px-3 py-2 text-gray-600 bg-gray-50 focus:outline-none focus:ring-1 focus:ring-primary-300 whitespace-nowrap flex-shrink-0">
+            <option>{tr.searchField}</option>
+          </select>
           <input
             value={inputSearch}
             onChange={e => setInputSearch(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleSearch()}
             placeholder={tr.search}
-            className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+            className="flex-1 text-sm border border-gray-200 rounded-lg px-3 py-2 text-gray-700 focus:outline-none focus:ring-1 focus:ring-primary-300"
           />
+          <button onClick={handleSearch} disabled={loading}
+            className="px-3 py-2 rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition disabled:opacity-60">
+            <Search className="w-4 h-4" />
+          </button>
         </div>
-        <button onClick={handleSearch} disabled={loading}
-          className="px-3 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors disabled:opacity-60">
-          <Search className="w-4 h-4" />
-        </button>
         <select value={status} onChange={e => { setStatus(e.target.value); setPage(1); load(1, pageSize, search, e.target.value) }}
           className="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500">
           <option value="">{tr.filterAll}</option>

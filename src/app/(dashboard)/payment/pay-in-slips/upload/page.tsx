@@ -295,6 +295,7 @@ export default function UploadPayInSlipPage() {
   const [merchantId, setMerchantId] = useState('')
   const [bankAccounts, setBankAccounts] = useState<BankAccountItem[]>([])
   const [bankAccountId, setBankAccountId] = useState('')
+  const [bankDropdownOpen, setBankDropdownOpen] = useState(false)
   const [amount, setAmount] = useState('')
   const [refId, setRefId] = useState('')
   const [saving, setSaving] = useState(false)
@@ -303,6 +304,16 @@ export default function UploadPayInSlipPage() {
 
   // Pre-warm Tesseract worker on mount
   useEffect(() => { getTesseractWorker() }, [])
+
+  useEffect(() => {
+    if (!bankDropdownOpen) return
+    const handler = (e: MouseEvent) => {
+      const target = e.target as HTMLElement
+      if (!target.closest('.bank-dropdown-root')) setBankDropdownOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [bankDropdownOpen])
 
   // Load current merchant info + bank accounts
   useEffect(() => {
@@ -598,7 +609,7 @@ export default function UploadPayInSlipPage() {
 
           {/* Right — Form fields + Actions */}
           <div className="space-y-5">
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
               {loadingInit ? (
                 <div className="p-8 flex items-center justify-center">
                   <svg className="w-6 h-6 animate-spin text-primary-500" fill="none" viewBox="0 0 24 24">
@@ -635,21 +646,57 @@ export default function UploadPayInSlipPage() {
                     <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
                       {tr.labelBankAccount} <span className="text-red-500">*</span>
                     </label>
-                    <select
-                      value={bankAccountId}
-                      onChange={e => setBankAccountId(e.target.value)}
-                      disabled={loadingBanks}
-                      className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-400 bg-white disabled:bg-gray-50 disabled:text-gray-400"
-                    >
-                      <option value="">
-                        {loadingBanks ? 'Loading...' : tr.placeholderBankAccount}
-                      </option>
-                      {bankAccounts.map(ba => (
-                        <option key={ba.accountId} value={ba.accountId}>
-                          {ba.bankCode} — {ba.accountNumber} {ba.accountName ? `(${ba.accountName})` : ''}
-                        </option>
-                      ))}
-                    </select>
+                    <div className="relative bank-dropdown-root">
+                      <button
+                        type="button"
+                        disabled={loadingBanks}
+                        onClick={() => setBankDropdownOpen(o => !o)}
+                        className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-xl bg-white disabled:bg-gray-50 disabled:text-gray-400 text-left flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-primary-400"
+                      >
+                        {bankAccountId
+                          ? (() => {
+                              const ba = bankAccounts.find(b => b.accountId === bankAccountId)
+                              return ba ? `${ba.bankCode} — ${ba.accountNumber}${ba.accountName ? ` (${ba.accountName})` : ''}` : tr.placeholderBankAccount
+                            })()
+                          : <span className="text-gray-400">{loadingBanks ? 'Loading...' : tr.placeholderBankAccount}</span>
+                        }
+                        <svg className="w-4 h-4 text-gray-400 flex-none" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                      </button>
+                      {bankDropdownOpen && (
+                        <div className="absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-lg max-h-64 overflow-auto">
+                          <div
+                            className="px-3 py-2.5 text-sm text-gray-400 hover:bg-gray-50 cursor-pointer"
+                            onClick={() => { setBankAccountId(''); setBankDropdownOpen(false) }}
+                          >
+                            {tr.placeholderBankAccount}
+                          </div>
+                          {bankAccounts.map(ba => (
+                            <div
+                              key={ba.accountId}
+                              onClick={() => { setBankAccountId(ba.accountId); setBankDropdownOpen(false) }}
+                              className={clsx(
+                                'px-3 py-2.5 cursor-pointer hover:bg-gray-50 flex items-start justify-between gap-2',
+                                ba.accountId === bankAccountId && 'bg-primary-50'
+                              )}
+                            >
+                              <span className="text-sm text-gray-700">
+                                <span className="font-semibold">{ba.bankCode}</span>
+                                {' · '}{ba.accountNumber}
+                                {ba.accountName && <span className="text-gray-500"> — {ba.accountName}</span>}
+                              </span>
+                              <span className="flex items-center gap-1 flex-none">
+                                {ba.accountType === 'PromptPay' && (
+                                  <span className="px-1.5 py-0.5 text-[10px] font-bold rounded bg-blue-100 text-blue-700">PromptPay</span>
+                                )}
+                                {ba.accountLevel === 'Global' && (
+                                  <span className="px-1.5 py-0.5 text-[10px] font-bold rounded bg-purple-100 text-purple-700">Global</span>
+                                )}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   {/* Amount */}

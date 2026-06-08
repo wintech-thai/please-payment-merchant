@@ -135,6 +135,7 @@ export default function MerchantInfoPage() {
   const [copied, setCopied] = useState(false)
   const [walletPage, setWalletPage] = useState(1)
   const [walletPageSize, setWalletPageSize] = useState(25)
+  const [highlightedTxIdx, setHighlightedTxIdx] = useState<number | null>(null)
 
   useEffect(() => {
     const load = async () => {
@@ -463,6 +464,7 @@ export default function MerchantInfoPage() {
                           const payOutMatch = tags.match(/PayOutRequestId=\[([^\]]+)\]/)
                           const payInTxMatch = tags.match(/PaymentTxId=\[([^\]]+)\]/)
                           const payInReqMatch = tags.match(/PaymentRequestId=\[([^\]]+)\]/)
+                          const tagUuid = (payOutMatch ?? payInTxMatch ?? payInReqMatch)?.[1] ?? null
                           const tagLink = payOutMatch
                             ? `/payment/pay-out-requests/${payOutMatch[1]}`
                             : payInTxMatch
@@ -470,8 +472,17 @@ export default function MerchantInfoPage() {
                             : payInReqMatch
                             ? `/payment/pay-in-requests/${payInReqMatch[1]}`
                             : null
+                          const globalIdx = (walletPage - 1) * walletPageSize + idx
+                          const isHighlighted = highlightedTxIdx === globalIdx
                           return (
-                            <tr key={idx} className="border-b border-gray-100 last:border-0 hover:bg-gray-50/50 transition">
+                            <tr key={idx}
+                              onClick={() => setHighlightedTxIdx(isHighlighted ? null : globalIdx)}
+                              className={clsx(
+                                'border-b border-gray-100 last:border-0 cursor-pointer transition-colors',
+                                isHighlighted
+                                  ? '!bg-primary-100 border-l-[3px] border-l-primary-500'
+                                  : 'hover:bg-gray-50/50'
+                              )}>
                               <td className="px-4 py-3 text-gray-700 text-sm whitespace-nowrap">
                                 {(tx.createdDate ?? tx.createdAt)
                                   ? new Date(tx.createdDate ?? tx.createdAt).toLocaleString('th-TH')
@@ -479,9 +490,16 @@ export default function MerchantInfoPage() {
                               </td>
                               <td className="px-4 py-3 text-gray-500 text-sm max-w-[200px] truncate">
                                 {tags
-                                  ? tagLink
-                                    ? <Link href={tagLink} target="_blank" rel="noopener noreferrer" className="text-orange-600 hover:underline">{tags}</Link>
-                                    : tags
+                                  ? tagLink && tagUuid
+                                    ? <Link href={tagLink} target="_blank" rel="noopener noreferrer" className={clsx(
+                                        'inline-block px-2 py-0.5 rounded text-xs font-semibold hover:opacity-80 transition-opacity',
+                                        payOutMatch && 'bg-red-100 text-red-700',
+                                        payInTxMatch && 'bg-green-100 text-green-700',
+                                        payInReqMatch && 'bg-blue-100 text-blue-700',
+                                      )}>
+                                        {payOutMatch ? 'Pay-Out' : payInTxMatch ? 'Pay-In Tx' : 'Pay-In Req'}
+                                      </Link>
+                                    : <span className="text-gray-500 text-xs">{tags}</span>
                                   : <span className="text-gray-300">—</span>}
                               </td>
                               <td className="px-4 py-3 text-gray-600 text-sm max-w-[160px] truncate">
@@ -499,8 +517,8 @@ export default function MerchantInfoPage() {
                               </td>
                               <td className="px-4 py-3">
                                 <span className={clsx(
-                                  'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold',
-                                  isPayIn ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'
+                                  'inline-block px-2 py-0.5 rounded text-xs font-semibold',
+                                  isPayIn ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
                                 )}>
                                   {isPayIn ? 'Pay-In' : 'Pay-Out'}
                                 </span>

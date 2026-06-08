@@ -77,6 +77,7 @@ export default function PayOutRequestsPage() {
   const [highlightedId, setHighlightedId] = useState<string>(() =>
     typeof window !== 'undefined' ? sessionStorage.getItem(HIGHLIGHTED_KEY) ?? '' : ''
   )
+  const [refreshKey, setRefreshKey] = useState(0)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -106,7 +107,7 @@ export default function PayOutRequestsPage() {
     } finally {
       setLoading(false)
     }
-  }, [search, status, timeRange, page, pageSize])
+  }, [search, status, timeRange, page, pageSize, refreshKey])
 
   useEffect(() => { load() }, [load])
 
@@ -178,7 +179,7 @@ export default function PayOutRequestsPage() {
           <option value="Paid">Paid</option>
         </select>
         <AdvancedTimeRangeSelector value={timeRange} onChange={handleTimeRangeChange} disabled={loading} />
-        <button onClick={() => { setSearch(inputSearch); setPage(1) }} disabled={loading} title={tr.refresh}
+        <button onClick={() => { setSearch(inputSearch); setPage(1); setRefreshKey(k => k + 1) }} disabled={loading} title={tr.refresh}
           className="p-2 text-gray-500 hover:text-gray-700 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-60">
           <RefreshCw className={clsx('w-4 h-4', loading && 'animate-spin')} />
         </button>

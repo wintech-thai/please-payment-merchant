@@ -158,17 +158,25 @@ export default function PayOutRequestDetailPage() {
         )}
 
         <Section title="Source Bank Account (Pay-In)" accent="bg-emerald-500">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-            <Field label="Bank Code">{detail?.payinBankCode ?? '—'}</Field>
-            <Field label="Account No">{detail?.payinBankAccountNo ?? '—'}</Field>
-            <Field label="Account Name">{detail?.payinBankAccountName ?? '—'}</Field>
-            <Field label="Account Type">
-              {detail?.payinAccountType ? (
-                <span className="px-2 py-0.5 bg-blue-50 text-blue-700 text-xs font-bold rounded-full ring-1 ring-blue-200">{detail.payinAccountType}</span>
-              ) : '—'}
-            </Field>
-            {detail?.payinPromptPayId && <Field label="PromptPay ID">{detail.payinPromptPayId}</Field>}
-          </div>
+          {detail?.payinBankCode || detail?.payinBankAccountNo ? (
+            <div className="flex flex-col gap-1">
+              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Source Bank Account (Pay-In)</p>
+              <p className="text-sm font-bold text-gray-800">
+                {[detail.payinBankCode, detail.payinBankAccountNo].filter(Boolean).join(' · ')}
+              </p>
+              {detail.payinBankAccountName && (
+                <p className="text-sm text-gray-500">{detail.payinBankAccountName}</p>
+              )}
+              {detail.payinPromptPayId && (
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="px-2 py-0.5 bg-blue-50 text-blue-700 text-xs font-bold rounded-full ring-1 ring-blue-200">PromptPay</span>
+                  <span className="text-sm text-gray-600">{detail.payinPromptPayId}</span>
+                </div>
+              )}
+            </div>
+          ) : (
+            <span className="text-sm text-gray-400">—</span>
+          )}
         </Section>
 
         <Section title="Destination Bank Account (Pay-Out)" accent="bg-rose-500">

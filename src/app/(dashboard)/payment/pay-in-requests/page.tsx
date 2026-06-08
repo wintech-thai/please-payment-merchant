@@ -6,7 +6,7 @@ import { useLang } from '@/context/LanguageContext'
 import { paymentRequestApi } from '@/lib/api/payment-request.api'
 import type { PayInRequestItem } from '@/lib/api/types'
 import { toast } from 'sonner'
-import { Loader2, ChevronLeft, ChevronRight, Search, ExternalLink } from 'lucide-react'
+import { Loader2, ChevronLeft, ChevronRight, Search, ExternalLink, RefreshCw } from 'lucide-react'
 import clsx from 'clsx'
 import { AdvancedTimeRangeSelector, type TimeRangeValue } from '@/components/AdvancedTimeRangeSelector'
 
@@ -193,11 +193,9 @@ export default function PayInRequestsPage() {
           <option value="Error">Error</option>
         </select>
         <AdvancedTimeRangeSelector value={timeRange} onChange={handleTimeRangeChange} disabled={loading} />
-        <button
-          onClick={() => { setPage(1); load() }}
-          className="text-sm px-4 py-2 rounded-lg bg-primary-600 text-white font-medium hover:bg-primary-700 transition"
-        >
-          {tr.refresh}
+        <button onClick={() => { setPage(1); load() }} disabled={loading} title={tr.refresh}
+          className="p-2 text-gray-500 hover:text-gray-700 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-60">
+          <RefreshCw className={clsx('w-4 h-4', loading && 'animate-spin')} />
         </button>
       </div>
 
