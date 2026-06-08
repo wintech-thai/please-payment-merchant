@@ -227,6 +227,7 @@ export const translations = {
       rowsPerPage: 'จำนวนแถวต่อหน้า',
       all: 'ทั้งหมด',
       customRoleOptional: 'บทบาทกำหนดเอง (ไม่บังคับ)',
+      back: 'กลับ',
     },
     users: {
       title: 'ผู้ใช้',
@@ -1522,6 +1523,7 @@ export const translations = {
       rowsPerPage: 'Rows per page',
       all: 'All',
       customRoleOptional: 'Custom Role (Optional)',
+      back: 'Back',
     },
     users: {
       title: 'Users',
