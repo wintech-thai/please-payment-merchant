@@ -1,6 +1,6 @@
-import React from 'react'
-
 declare module 'react-qr-code' {
+  import React from 'react'
+
   interface QRCodeProps {
     value: string
     size?: number
@@ -12,6 +12,7 @@ declare module 'react-qr-code' {
     viewBox?: string
     title?: string
   }
+
   const QRCode: React.FC<QRCodeProps>
   export default QRCode
   export { QRCode }
