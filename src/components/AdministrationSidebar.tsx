@@ -44,7 +44,7 @@ const menuItems = [
     ),
   },
 ]
-
+// comment for push
 export default function AdministrationSidebar() {
   const { t } = useLang()
   const pathname = usePathname()
