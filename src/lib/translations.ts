@@ -634,8 +634,8 @@ export const translations = {
       of: 'จาก',
     },
     revenueSummary: {
-      title: 'รายงานสรุปรายได้',
-      subtitle: 'สรุปรายได้ค่าธรรมเนียมและยอดธุรกรรม',
+      title: 'สรุปธุรกรรม',
+      subtitle: 'ภาพรวมยอด Pay-In, Pay-Out และค่าธรรมเนียม',
       refresh: 'รีเฟรช',
       preset1D: '1 วัน',
       preset7D: '7 วัน',
@@ -1941,8 +1941,8 @@ export const translations = {
       of: 'of',
     },
     revenueSummary: {
-      title: 'Revenue Summary',
-      subtitle: 'Fee income and transaction summary',
+      title: 'Transaction Summary',
+      subtitle: 'Overview of Pay-In, Pay-Out and fees',
       refresh: 'Refresh',
       preset1D: '1 Day',
       preset7D: '7 Days',

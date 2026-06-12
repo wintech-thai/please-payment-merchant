@@ -6,7 +6,7 @@ import { summaryApi, type MerchantOverviewSummary, type MerchantDailySummaryItem
 import { AdvancedTimeRangeSelector, type TimeRangeValue } from '@/components/AdvancedTimeRangeSelector'
 import clsx from 'clsx'
 import {
-  BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Legend,
 } from 'recharts'
 import { RefreshCw } from 'lucide-react'
@@ -120,6 +120,12 @@ export default function ReportAnalyticPage() {
 
   useEffect(() => { load() }, [load])
 
+  useEffect(() => {
+    const handler = () => setRefreshKey(k => k + 1)
+    window.addEventListener('orgchange', handler)
+    return () => window.removeEventListener('orgchange', handler)
+  }, [])
+
   const payInAmount  = summary?.totalPayInAmount  ?? null
   const payOutAmount = summary?.totalPayOutAmount ?? null
   const payInFee     = summary?.totalPayInFee     ?? null
@@ -137,9 +143,13 @@ export default function ReportAnalyticPage() {
     [ov.labelPayOut]: item.payOutAmount ?? 0,
   }))
 
+  const FEE_PAYIN  = `${ov.labelPayIn} Fee`
+  const FEE_PAYOUT = `${ov.labelPayOut} Fee`
+
   const chartFeeData = dailyItems.map(item => ({
     date: fmtDate(item.date),
-    [ov.totalFee]: (item.payInFee ?? 0) + (item.payOutFee ?? 0),
+    [FEE_PAYIN]:  item.payInFee  ?? 0,
+    [FEE_PAYOUT]: item.payOutFee ?? 0,
   }))
 
   const noDataEl = (
@@ -159,8 +169,8 @@ export default function ReportAnalyticPage() {
       {/* Header */}
       <div className="flex-none flex items-center justify-between mb-5 gap-3 flex-wrap">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">{t.nav.reportAndAnalytic}</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Dashboard</p>
+          <h1 className="text-xl font-bold text-gray-900">{t.revenueSummary.title}</h1>
+          <p className="text-sm text-gray-500 mt-0.5">{t.revenueSummary.subtitle}</p>
         </div>
         <div className="flex items-center gap-2">
           <AdvancedTimeRangeSelector value={timeRange} onChange={setTimeRange} disabled={loading} />
@@ -206,19 +216,20 @@ export default function ReportAnalyticPage() {
           ) : noDataEl}
         </ChartSection>
 
-        {/* Chart 2: Daily Fee Trend */}
+        {/* Chart 2: Daily Fee Stacked Bar */}
         <ChartSection title={ov.totalFee}>
           {chartFeeData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={180}>
-              <LineChart data={chartFeeData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+            <ResponsiveContainer width="100%" height={200}>
+              <BarChart data={chartFeeData} margin={{ top: 0, right: 8, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
                 <XAxis dataKey="date" tick={{ fontSize: 11, fill: '#9ca3af' }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 11, fill: '#9ca3af' }} axisLine={false} tickLine={false} tickFormatter={fmtAxisNum} width={48} />
-                <Tooltip content={<CustomTooltip />} />
+                <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f9fafb' }} />
                 <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }}
                   formatter={(v) => <span className="text-gray-600 font-medium">{v}</span>} />
-                <Line dataKey={ov.totalFee} stroke="#f97316" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
-              </LineChart>
+                <Bar dataKey={FEE_PAYIN}  stackId="fee" fill="#10b981" maxBarSize={28} />
+                <Bar dataKey={FEE_PAYOUT} stackId="fee" fill="#f97316" radius={[3, 3, 0, 0]} maxBarSize={28} />
+              </BarChart>
             </ResponsiveContainer>
           ) : noDataEl}
         </ChartSection>

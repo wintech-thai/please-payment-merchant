@@ -73,7 +73,7 @@ export default function ReportSidebar() {
               <span className={clsx('flex items-center justify-center flex-shrink-0 rounded-lg', isActive ? 'text-white' : 'text-white/60')}>
                 {item.icon}
               </span>
-              {!collapsed && <span className="truncate">{label}</span>}
+              {!collapsed && <span className="leading-tight">{label}</span>}
               {!collapsed && isActive && (
                 <span className="ml-auto w-1.5 h-1.5 rounded-full bg-white/70 flex-shrink-0" />
               )}

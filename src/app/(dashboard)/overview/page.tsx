@@ -117,6 +117,12 @@ export default function OverviewPage() {
 
   useEffect(() => { load() }, [load])
 
+  useEffect(() => {
+    const handler = () => setRefreshKey(k => k + 1)
+    window.addEventListener('orgchange', handler)
+    return () => window.removeEventListener('orgchange', handler)
+  }, [])
+
   const payInAmount  = summary?.totalPayInAmount  ?? null
   const payOutAmount = summary?.totalPayOutAmount ?? null
   const payInFee     = summary?.totalPayInFee     ?? null
