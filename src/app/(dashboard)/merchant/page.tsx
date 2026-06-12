@@ -128,6 +128,8 @@ export default function MerchantInfoPage() {
   const [activeTab, setActiveTab] = useState<Tab>('info')
   const [data, setData] = useState<MerchantData | null>(null)
   const [endpointUrl, setEndpointUrl] = useState('')
+  const [payOutEndpointUrl, setPayOutEndpointUrl] = useState('')
+  const [copiedPayOut, setCopiedPayOut] = useState(false)
   const [webhooksData, setWebhooksData] = useState<any[]>([])
   const [walletData, setWalletData] = useState<any | null>(null)
   const [walletTxs, setWalletTxs] = useState<any[]>([])
@@ -141,9 +143,10 @@ export default function MerchantInfoPage() {
     const load = async () => {
       try {
         // Call all merchant endpoints in parallel — backend resolves merchantId from current user
-        const [detailRes, endpointRes, webhooksRes, walletRes] = await Promise.allSettled([
+        const [detailRes, endpointRes, payOutEndpointRes, webhooksRes, walletRes] = await Promise.allSettled([
           userApi.getMyMerchantInfo(),
           userApi.getMerchantPaymentEndpoint(),
+          userApi.getMerchantPayOutEndpoint(),
           userApi.getMerchantWebhooks(),
           userApi.getMerchantWallet(),
         ])
@@ -158,6 +161,12 @@ export default function MerchantInfoPage() {
           const d = endpointRes.value.data as any
           const raw = d?.paymentRequestEndpointUrl ?? d?.url ?? d?.endpointUrl ?? d?.paymentRequestUrl ?? ''
           setEndpointUrl(raw ? processPaymentUrl(raw) : '')
+        }
+
+        if (payOutEndpointRes.status === 'fulfilled') {
+          const d = payOutEndpointRes.value.data as any
+          const raw = d?.paymentRequestUrl ?? d?.payOutEndpointUrl ?? d?.payoutEndpointUrl ?? d?.paymentRequestEndpointUrl ?? d?.url ?? d?.endpointUrl ?? ''
+          setPayOutEndpointUrl(raw ? processPaymentUrl(raw) : '')
         }
 
         if (webhooksRes.status === 'fulfilled') {
@@ -201,10 +210,15 @@ export default function MerchantInfoPage() {
   const payOutMin = data?.payoutMinAmount ?? data?.payOutMinAmount
   const payOutMax = data?.payoutMaxAmount ?? data?.payOutMaxAmount
 
-  function handleCopy(text: string) {
+  function handleCopy(text: string, type: 'payin' | 'payout' = 'payin') {
     navigator.clipboard.writeText(text).then(() => {
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
+      if (type === 'payout') {
+        setCopiedPayOut(true)
+        setTimeout(() => setCopiedPayOut(false), 2000)
+      } else {
+        setCopied(true)
+        setTimeout(() => setCopied(false), 2000)
+      }
     })
   }
 
@@ -302,28 +316,55 @@ export default function MerchantInfoPage() {
 
           {/* ── Endpoint tab ── */}
           {activeTab === 'endpoint' && (
-            <div>
+            <div className="flex flex-col gap-5">
               <SectionHeader>{mi.sectionEndpoint}</SectionHeader>
-              <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">
-                {mi.endpointLabel}
-              </label>
-              <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-xl border border-gray-200">
-                {endpointUrl
-                  ? <p className="flex-1 text-xs font-mono text-gray-700 break-all">{endpointUrl}</p>
-                  : <p className="flex-1 text-xs text-gray-300 italic">—</p>}
-                <button
-                  onClick={() => endpointUrl && handleCopy(endpointUrl)}
-                  disabled={!endpointUrl}
-                  className={clsx(
-                    'flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors',
-                    copied ? 'bg-green-100 text-green-700'
-                    : endpointUrl ? 'bg-primary-100 text-primary-700 hover:bg-primary-200'
-                    : 'bg-gray-100 text-gray-300 cursor-not-allowed'
-                  )}
-                >
-                  {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                  {copied ? mi.copied : mi.copy}
-                </button>
+              {/* Pay-In */}
+              <div>
+                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">
+                  {mi.endpointLabel}
+                </label>
+                <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-xl border border-gray-200">
+                  {endpointUrl
+                    ? <p className="flex-1 text-xs font-mono text-gray-700 break-all">{endpointUrl}</p>
+                    : <p className="flex-1 text-xs text-gray-300 italic">—</p>}
+                  <button
+                    onClick={() => endpointUrl && handleCopy(endpointUrl, 'payin')}
+                    disabled={!endpointUrl}
+                    className={clsx(
+                      'flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors',
+                      copied ? 'bg-green-100 text-green-700'
+                      : endpointUrl ? 'bg-primary-100 text-primary-700 hover:bg-primary-200'
+                      : 'bg-gray-100 text-gray-300 cursor-not-allowed'
+                    )}
+                  >
+                    {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                    {copied ? mi.copied : mi.copy}
+                  </button>
+                </div>
+              </div>
+              {/* Pay-Out */}
+              <div>
+                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">
+                  {mi.endpointPayOutLabel}
+                </label>
+                <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-xl border border-gray-200">
+                  {payOutEndpointUrl
+                    ? <p className="flex-1 text-xs font-mono text-gray-700 break-all">{payOutEndpointUrl}</p>
+                    : <p className="flex-1 text-xs text-gray-300 italic">—</p>}
+                  <button
+                    onClick={() => payOutEndpointUrl && handleCopy(payOutEndpointUrl, 'payout')}
+                    disabled={!payOutEndpointUrl}
+                    className={clsx(
+                      'flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors',
+                      copiedPayOut ? 'bg-green-100 text-green-700'
+                      : payOutEndpointUrl ? 'bg-primary-100 text-primary-700 hover:bg-primary-200'
+                      : 'bg-gray-100 text-gray-300 cursor-not-allowed'
+                    )}
+                  >
+                    {copiedPayOut ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                    {copiedPayOut ? mi.copied : mi.copy}
+                  </button>
+                </div>
               </div>
             </div>
           )}

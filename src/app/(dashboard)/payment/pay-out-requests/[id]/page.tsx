@@ -96,7 +96,9 @@ export default function PayOutRequestDetailPage() {
       try {
         const res = await paymentRequestApi.getPayOutRequestById(id)
         const data = res.data as any
-        setDetail(data?.paymentRequest ?? data?.data ?? data)
+        const raw = data?.paymentRequest ?? data?.data ?? data
+        if (raw) raw.isPayInBankAccountOverride = raw.isPayInBankAccountOverride ?? raw.isPayinBankAccountOverride ?? false
+        setDetail(raw)
       } catch {
         toast.error(tr.toastFailedToLoad)
         router.push('/payment/pay-out-requests')
@@ -197,7 +199,6 @@ export default function PayOutRequestDetailPage() {
                 <span className="text-gray-600">{detail?.description ?? '—'}</span>
               </InfoRow>
 
-
               {isRejected && detail?.rejectReason && (
                 <div className="sm:col-span-2">
                   <InfoRow label={tr.labelRejectReason}>
@@ -205,6 +206,30 @@ export default function PayOutRequestDetailPage() {
                   </InfoRow>
                 </div>
               )}
+
+              {/* Destination Bank — inline in main section */}
+              {(() => {
+                const isOverride = detail?.isPayInBankAccountOverride
+                const bankCode = isOverride ? detail?.payinBankCodeOverride : detail?.payinBankCode
+                const bankAccountNo = isOverride ? detail?.payinBankAccountNoOverride : detail?.payinBankAccountNo
+                const bankAccountName = isOverride ? detail?.payinBankAccountNameOverride : detail?.payinBankAccountName
+                const promptPayId = isOverride ? detail?.payinPromptPayIdOverride : detail?.payinPromptPayId
+                const accountType = isOverride ? detail?.payinAccountTypeOverride : detail?.payinAccountType
+                if (!bankCode && !bankAccountNo) return null
+                return (
+                  <div className="sm:col-span-2 pt-2 border-t border-gray-100">
+                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">{tr.fieldDestBank}</p>
+                    <p className="text-sm font-bold text-gray-800">{[bankCode, bankAccountNo].filter(Boolean).join(' · ')}</p>
+                    {bankAccountName && <p className="text-sm text-gray-500 mt-0.5">{bankAccountName}</p>}
+                    <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                      {accountType && (
+                        <span className="px-2 py-0.5 bg-blue-50 text-blue-700 text-xs font-bold rounded-full ring-1 ring-blue-200">{accountType}</span>
+                      )}
+                      {promptPayId && <span className="text-sm text-gray-600">{promptPayId}</span>}
+                    </div>
+                  </div>
+                )
+              })()}
 
             </div>
 
@@ -228,30 +253,28 @@ export default function PayOutRequestDetailPage() {
           </div>
         </div>
 
-        {/* Source Bank Account (Pay-In) */}
-        {(detail?.payinBankCode || detail?.payinBankAccountNo) && (
+        {/* Source Bank Account (FROM) — hidden when Pending */}
+        {detail?.status?.toLowerCase() !== 'pending' && (
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 px-7 py-6">
             <h2 className="flex items-center gap-2.5 text-sm font-bold text-gray-900 mb-5">
-              <span className="w-1 h-5 bg-emerald-500 rounded-full flex-shrink-0" />
+              <span className="w-1 h-5 bg-rose-500 rounded-full flex-shrink-0" />
               {tr.sectionSource}
             </h2>
-            <div className="flex flex-col gap-1">
-              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">
-                {tr.fieldSourceAccount}
-              </p>
-              <p className="text-sm font-bold text-gray-800">
-                {[detail.payinBankCode, detail.payinBankAccountNo].filter(Boolean).join(' · ')}
-              </p>
-              {detail.payinBankAccountName && (
-                <p className="text-sm text-gray-500">{detail.payinBankAccountName}</p>
-              )}
-              {detail.payinPromptPayId && (
-                <div className="flex items-center gap-2 mt-1">
-                  <span className="px-2 py-0.5 bg-blue-50 text-blue-700 text-xs font-bold rounded-full ring-1 ring-blue-200">PromptPay</span>
-                  <span className="text-sm text-gray-600">{detail.payinPromptPayId}</span>
-                </div>
-              )}
-            </div>
+            {detail?.payoutBankCode || detail?.payoutBankAccountNo ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <InfoRow label="Bank Code">{detail.payoutBankCode ?? '—'}</InfoRow>
+                <InfoRow label="Account No">{detail.payoutBankAccountNo ?? '—'}</InfoRow>
+                {detail.payoutBankAccountName && <InfoRow label="Account Name">{detail.payoutBankAccountName}</InfoRow>}
+                {detail.payoutAccountType && (
+                  <InfoRow label="Account Type">
+                    <span className="px-2 py-0.5 bg-violet-50 text-violet-700 text-xs font-bold rounded-full ring-1 ring-violet-200">{detail.payoutAccountType}</span>
+                  </InfoRow>
+                )}
+                {detail.payoutPromptPayId && <InfoRow label="PromptPay ID">{detail.payoutPromptPayId}</InfoRow>}
+              </div>
+            ) : (
+              <span className="text-sm text-gray-400">—</span>
+            )}
           </div>
         )}
 

@@ -96,7 +96,11 @@ export default function PayOutRequestsPage() {
       ])
       if (listRes.status === 'fulfilled') {
         const d = listRes.value.data as any
-        setItems(Array.isArray(d) ? d : (d?.paymentRequests ?? d?.items ?? []))
+        const raw: any[] = Array.isArray(d) ? d : (d?.paymentRequests ?? d?.items ?? [])
+        setItems(raw.map((item: any) => ({
+          ...item,
+          isPayInBankAccountOverride: item.isPayInBankAccountOverride ?? item.isPayinBankAccountOverride ?? false,
+        })))
       }
       if (countRes.status === 'fulfilled') {
         const d = countRes.value.data as any
@@ -242,6 +246,33 @@ export default function PayOutRequestsPage() {
                     {item.payoutFeeDecimal != null ? Number(item.payoutFeeDecimal).toLocaleString('th-TH', { minimumFractionDigits: 2 }) : '—'}
                     {item.payoutFeePct != null && <div className="text-[10px] text-gray-400">{item.payoutFeePct}%</div>}
                   </td>
+                  {/* TO BANK ACCOUNT — payinBank fields (override if flag set) */}
+                  <td className="px-4 py-3 border-b border-gray-100">
+                    {(() => {
+                      const isOverride = item.isPayInBankAccountOverride
+                      const bankCode = isOverride ? item.payinBankCodeOverride : item.payinBankCode
+                      const bankAccountNo = isOverride ? item.payinBankAccountNoOverride : item.payinBankAccountNo
+                      const bankAccountName = isOverride ? item.payinBankAccountNameOverride : item.payinBankAccountName
+                      const promptPayId = isOverride ? item.payinPromptPayIdOverride : item.payinPromptPayId
+                      const accountType = isOverride ? item.payinAccountTypeOverride : item.payinAccountType
+                      if (!bankCode && !bankAccountNo) return <span className="text-gray-300">—</span>
+                      return (
+                        <>
+                          <div className="text-sm font-medium text-gray-800">
+                            {bankCode || '—'}{bankAccountNo ? ` · ${bankAccountNo}` : ''}
+                          </div>
+                          {bankAccountName && <div className="text-xs text-gray-400 mt-0.5">{bankAccountName}</div>}
+                          {(accountType || promptPayId) && (
+                            <div className="flex items-center gap-1.5 mt-1">
+                              {accountType && <AccountTypeBadge type={accountType} />}
+                              {promptPayId && <span className="text-[10px] text-gray-500">{promptPayId}</span>}
+                            </div>
+                          )}
+                        </>
+                      )
+                    })()}
+                  </td>
+                  {/* FROM BANK ACCOUNT — payoutBank fields (merchant's sending bank) */}
                   <td className="px-4 py-3 border-b border-gray-100">
                     {item.payoutBankCode || item.payoutBankAccountNo ? (
                       <>
@@ -254,24 +285,6 @@ export default function PayOutRequestsPage() {
                             <AccountTypeBadge type={item.payoutAccountType} />
                             {item.payoutAccountType?.toLowerCase() === 'promptpay' && item.payoutPromptPayId && (
                               <span className="text-[10px] text-gray-500">{item.payoutPromptPayId}</span>
-                            )}
-                          </div>
-                        )}
-                      </>
-                    ) : <span className="text-gray-300">—</span>}
-                  </td>
-                  <td className="px-4 py-3 border-b border-gray-100">
-                    {item.payinBankCode || item.payinBankAccountNo ? (
-                      <>
-                        <div className="text-sm font-medium text-gray-800">
-                          {item.payinBankCode || '—'}{item.payinBankAccountNo ? ` · ${item.payinBankAccountNo}` : ''}
-                        </div>
-                        {item.payinBankAccountName && <div className="text-xs text-gray-400 mt-0.5">{item.payinBankAccountName}</div>}
-                        {item.payinAccountType && (
-                          <div className="flex items-center gap-1.5 mt-1">
-                            <AccountTypeBadge type={item.payinAccountType} />
-                            {item.payinAccountType?.toLowerCase() === 'promptpay' && item.payinPromptPayId && (
-                              <span className="text-[10px] text-gray-500">{item.payinPromptPayId}</span>
                             )}
                           </div>
                         )}

@@ -8,7 +8,7 @@ import { bankAccountApi } from '@/lib/api/bank-account.api'
 import { userApi } from '@/lib/api/user.api'
 import type { BankAccountItem } from '@/lib/api/types'
 import { toast } from 'sonner'
-import { Loader2, ChevronLeft, RefreshCw } from 'lucide-react'
+import { Loader2, ChevronLeft, RefreshCw, Search } from 'lucide-react'
 import clsx from 'clsx'
 
 function genRefId() {
@@ -71,7 +71,13 @@ export default function AddPayOutRequestPage() {
 
   const [payinBankAccountId, setPayinBankAccountId] = useState('')
   const [bankOpen, setBankOpen] = useState(false)
+  const [bankSearch, setBankSearch] = useState('')
   const bankRef = useRef<HTMLDivElement>(null)
+  const [manualMode, setManualMode] = useState(false)
+  const [manualBankCode, setManualBankCode] = useState('')
+  const [manualBankAccountNo, setManualBankAccountNo] = useState('')
+  const [manualBankAccountName, setManualBankAccountName] = useState('')
+  const [manualPromptPayId, setManualPromptPayId] = useState('')
 
   const [requestedAmount, setRequestedAmount] = useState('')
   const [refId, setRefId] = useState(() => genRefId())
@@ -120,7 +126,8 @@ export default function AddPayOutRequestPage() {
 
   const validate = () => {
     const errs: Record<string, string> = {}
-    if (!payinBankAccountId) errs.bank = tr.payoutBankAccountRequired
+    if (!manualMode && !payinBankAccountId) errs.bank = tr.payoutBankAccountRequired
+    if (manualMode && !manualBankCode.trim() && !manualBankAccountNo.trim()) errs.bank = tr.payoutBankAccountRequired
     if (!refId.trim()) errs.refId = tr.refIdRequired
     if (!requestedAmount.trim()) {
       errs.amount = tr.amountRequired
@@ -151,7 +158,14 @@ export default function AddPayOutRequestPage() {
         Currency: 'THB',
         RequestedAmount: parseFloat(requestedAmount),
         QrProvider: 'PP',
-        PayinBankAccountId: payinBankAccountId,
+        ...(manualMode ? {
+          BankCode: manualBankCode.trim() || undefined,
+          BankAccountNo: manualBankAccountNo.trim() || undefined,
+          BankAccountName: manualBankAccountName.trim() || undefined,
+          PromptPayId: manualPromptPayId.trim() || undefined,
+        } : {
+          PayinBankAccountId: payinBankAccountId,
+        }),
       })
       toast.success(tr.toastCreateSuccess)
       router.push('/payment/pay-out-requests')
@@ -220,95 +234,129 @@ export default function AddPayOutRequestPage() {
 
             {/* Section 2: Destination Bank Account */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 px-7 py-6">
-              <SectionHeader>{tr.sectionPayoutBank}</SectionHeader>
-              <div className="max-w-md">
-                <FormField label={tr.fieldPayoutBankAccount} required error={errors.bank}>
-                  <div ref={bankRef} className="relative">
-                    <button
-                      type="button"
-                      onClick={() => setBankOpen(p => !p)}
-                      className={clsx(
-                        'w-full flex items-center justify-between gap-2 px-3 py-2.5 text-sm border rounded-lg text-left transition-colors focus:outline-none focus:ring-2 focus:border-transparent bg-white',
-                        errors.bank ? 'border-red-400 focus:ring-red-400' : 'border-gray-200 focus:ring-primary-500'
-                      )}
-                    >
-                      <span className="flex items-center gap-2 min-w-0 flex-1">
-                        {selectedBank ? (
-                          <span className="flex items-center flex-wrap gap-1.5 min-w-0 flex-1">
-                            <span className="font-semibold text-gray-900 text-sm">
-                              {[selectedBank.bankCode, selectedBank.accountNumber].filter(Boolean).join(' · ')}
-                            </span>
-                            {selectedBank.accountName && (
-                              <span className="text-gray-400 text-sm font-normal">— {selectedBank.accountName}</span>
-                            )}
-                            <AccountTypeBadge type={selectedBank.accountType} />
-                          </span>
-                        ) : (
-                          <span className="text-gray-400">{tr.placeholderPayoutBankAccount}</span>
-                        )}
-                      </span>
-                      <span className="text-gray-400 text-xs flex-shrink-0">▾</span>
-                    </button>
-
-                    {bankOpen && (
-                      <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-52 overflow-y-auto custom-scrollbar">
-                        <button
-                          type="button"
-                          onClick={() => { setPayinBankAccountId(''); setBankOpen(false); clearErr('bank') }}
-                          className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:bg-gray-50"
-                        >
-                          {tr.placeholderPayoutBankAccount}
-                        </button>
-                        {bankAccounts.length === 0 ? (
-                          <div className="px-3 py-2.5 text-sm text-gray-400">{tr.noPayoutBankAccounts}</div>
-                        ) : bankAccounts.map(ba => {
-                          const id = ba.accountId ?? ba.bankAccountId ?? ''
-                          return (
-                            <button
-                              key={id}
-                              type="button"
-                              onClick={() => { setPayinBankAccountId(id); setBankOpen(false); clearErr('bank') }}
-                              className={clsx(
-                                'w-full text-left px-4 py-3 flex items-center gap-3 transition-colors border-b border-gray-50 last:border-b-0',
-                                payinBankAccountId === id ? 'bg-primary-50' : 'hover:bg-gray-50'
-                              )}
-                            >
-                              <span className="flex-1 min-w-0 flex items-center flex-wrap gap-1.5">
-                                <span className={clsx('text-sm font-semibold', payinBankAccountId === id ? 'text-primary-700' : 'text-gray-900')}>
-                                  {[ba.bankCode, ba.accountNumber].filter(Boolean).join(' · ')}
-                                </span>
-                                {ba.accountName && (
-                                  <span className="text-sm text-gray-400 font-normal">— {ba.accountName}</span>
-                                )}
-                                <AccountTypeBadge type={ba.accountType} />
-                              </span>
-                            </button>
-                          )
-                        })}
-                      </div>
-                    )}
-                  </div>
-                </FormField>
-
-                {selectedBank && (selectedBank.payoutMinAmount != null || selectedBank.payoutMaxAmount != null) && (
-                  <div className="mt-3 flex gap-3">
-                    <div className="flex items-center gap-1.5 px-2 py-1 bg-gray-50 border border-gray-200 rounded-lg">
-                      <span className="text-[10px] text-gray-400 uppercase tracking-wide">{tr.minAmount}</span>
-                      <span className="text-sm font-semibold text-gray-700 tabular-nums">
-                        {selectedBank.payoutMinAmount?.toLocaleString('th-TH', { minimumFractionDigits: 2 }) ?? '—'}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1.5 px-2 py-1 bg-gray-50 border border-gray-200 rounded-lg">
-                      <span className="text-[10px] text-gray-400 uppercase tracking-wide">{tr.maxAmount}</span>
-                      <span className="text-sm font-semibold text-gray-700 tabular-nums">
-                        {selectedBank.payoutMaxAmount?.toLocaleString('th-TH', { minimumFractionDigits: 2 }) ?? '—'}
-                      </span>
-                    </div>
-                  </div>
-                )}
-
-
+              <div className="flex items-center justify-between mb-5">
+                <SectionHeader>{tr.sectionPayoutBank}</SectionHeader>
+                <button
+                  type="button"
+                  onClick={() => { setManualMode(p => !p); clearErr('bank') }}
+                  className="text-xs font-medium text-primary-600 hover:text-primary-800 underline underline-offset-2 transition-colors"
+                >
+                  {manualMode ? tr.placeholderPayoutBankAccount : (tr.manualEntryBtn ?? 'Enter manually')}
+                </button>
               </div>
+
+              {manualMode ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-xl">
+                  <FormField label="Bank Code" error={errors.bank}>
+                    <input
+                      value={manualBankCode}
+                      onChange={e => { setManualBankCode(e.target.value); clearErr('bank') }}
+                      placeholder="e.g. KBANK"
+                      className={inputCls(!!errors.bank)}
+                    />
+                  </FormField>
+                  <FormField label="Account No">
+                    <input
+                      value={manualBankAccountNo}
+                      onChange={e => setManualBankAccountNo(e.target.value)}
+                      placeholder="e.g. 1234567890"
+                      className={inputCls(false)}
+                    />
+                  </FormField>
+                  <FormField label="Account Name">
+                    <input
+                      value={manualBankAccountName}
+                      onChange={e => setManualBankAccountName(e.target.value)}
+                      placeholder="e.g. John Doe"
+                      className={inputCls(false)}
+                    />
+                  </FormField>
+                  <FormField label="PromptPay ID">
+                    <input
+                      value={manualPromptPayId}
+                      onChange={e => setManualPromptPayId(e.target.value)}
+                      placeholder="e.g. 0812345678"
+                      className={inputCls(false)}
+                    />
+                  </FormField>
+                </div>
+              ) : (
+                <div className="max-w-md">
+                  <FormField label={tr.fieldPayoutBankAccount} required error={errors.bank}>
+                    <div ref={bankRef} className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                      <input
+                        value={bankSearch || (selectedBank && !bankOpen
+                          ? [selectedBank.bankCode, selectedBank.accountNumber].filter(Boolean).join(' · ') + (selectedBank.accountName ? ` — ${selectedBank.accountName}` : '')
+                          : bankSearch)}
+                        onChange={e => { setBankSearch(e.target.value); setBankOpen(true); if (!e.target.value) setPayinBankAccountId('') }}
+                        onFocus={() => { setBankOpen(true); setBankSearch('') }}
+                        placeholder={tr.placeholderPayoutBankAccount}
+                        className={clsx(
+                          'w-full pl-9 pr-3 py-2.5 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:border-transparent bg-white transition-colors',
+                          errors.bank ? 'border-red-400 focus:ring-red-400' : 'border-gray-200 focus:ring-primary-500',
+                          'text-gray-800'
+                        )}
+                      />
+
+                      {bankOpen && (
+                        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg flex flex-col max-h-64">
+                          <div className="overflow-y-auto custom-scrollbar flex-1">
+                            {(() => {
+                              const filtered = bankAccounts.filter(ba => {
+                                const q = bankSearch.toLowerCase()
+                                return !q || [ba.bankCode, ba.accountNumber, ba.accountName].some(v => v?.toLowerCase().includes(q))
+                              })
+                              if (filtered.length === 0) return <div className="px-3 py-2.5 text-sm text-gray-400">{tr.noPayoutBankAccounts}</div>
+                              return filtered.map(ba => {
+                                const id = ba.accountId ?? ba.bankAccountId ?? ''
+                                return (
+                                  <button
+                                    key={id}
+                                    type="button"
+                                    onClick={() => { setPayinBankAccountId(id); setBankOpen(false); setBankSearch(''); clearErr('bank') }}
+                                    className={clsx(
+                                      'w-full text-left px-4 py-3 flex items-center gap-3 transition-colors border-b border-gray-50 last:border-b-0',
+                                      payinBankAccountId === id ? 'bg-primary-50' : 'hover:bg-gray-50'
+                                    )}
+                                  >
+                                    <span className="flex-1 min-w-0 flex items-center flex-wrap gap-1.5">
+                                      <span className={clsx('text-sm font-semibold', payinBankAccountId === id ? 'text-primary-700' : 'text-gray-900')}>
+                                        {[ba.bankCode, ba.accountNumber].filter(Boolean).join(' · ')}
+                                      </span>
+                                      {ba.accountName && (
+                                        <span className="text-sm text-gray-700 font-normal">— {ba.accountName}</span>
+                                      )}
+                                      <AccountTypeBadge type={ba.accountType} />
+                                    </span>
+                                  </button>
+                                )
+                              })
+                            })()}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </FormField>
+
+                  {selectedBank && (selectedBank.payoutMinAmount != null || selectedBank.payoutMaxAmount != null) && (
+                    <div className="mt-3 flex gap-3">
+                      <div className="flex items-center gap-1.5 px-2 py-1 bg-gray-50 border border-gray-200 rounded-lg">
+                        <span className="text-[10px] text-gray-400 uppercase tracking-wide">{tr.minAmount}</span>
+                        <span className="text-sm font-semibold text-gray-700 tabular-nums">
+                          {selectedBank.payoutMinAmount?.toLocaleString('th-TH', { minimumFractionDigits: 2 }) ?? '—'}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5 px-2 py-1 bg-gray-50 border border-gray-200 rounded-lg">
+                        <span className="text-[10px] text-gray-400 uppercase tracking-wide">{tr.maxAmount}</span>
+                        <span className="text-sm font-semibold text-gray-700 tabular-nums">
+                          {selectedBank.payoutMaxAmount?.toLocaleString('th-TH', { minimumFractionDigits: 2 }) ?? '—'}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Section 3: Request Details */}
