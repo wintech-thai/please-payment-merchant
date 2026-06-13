@@ -5,6 +5,7 @@ import { useLang } from '@/context/LanguageContext'
 import { summaryApi, type MerchantOverviewSummary, type MerchantDailySummaryItem } from '@/lib/api/summary.api'
 import { userApi } from '@/lib/api/user.api'
 import { AdvancedTimeRangeSelector, type TimeRangeValue } from '@/components/AdvancedTimeRangeSelector'
+import { useOrgChange } from '@/hooks/useOrgChange'
 import clsx from 'clsx'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
@@ -117,11 +118,7 @@ export default function OverviewPage() {
 
   useEffect(() => { load() }, [load])
 
-  useEffect(() => {
-    const handler = () => setRefreshKey(k => k + 1)
-    window.addEventListener('orgchange', handler)
-    return () => window.removeEventListener('orgchange', handler)
-  }, [])
+  useOrgChange(() => setRefreshKey(k => k + 1))
 
   const payInAmount  = summary?.totalPayInAmount  ?? null
   const payOutAmount = summary?.totalPayOutAmount ?? null

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { useOrgChange } from '@/hooks/useOrgChange'
 import { userApi } from '@/lib/api/user.api'
 import { useLang } from '@/context/LanguageContext'
 import { toast } from 'sonner'
@@ -138,6 +139,9 @@ export default function MerchantInfoPage() {
   const [walletPage, setWalletPage] = useState(1)
   const [walletPageSize, setWalletPageSize] = useState(25)
   const [highlightedTxIdx, setHighlightedTxIdx] = useState<number | null>(null)
+  const [reloadKey, setReloadKey] = useState(0)
+
+  useOrgChange(() => setReloadKey(k => k + 1))
 
   useEffect(() => {
     const load = async () => {
@@ -196,7 +200,7 @@ export default function MerchantInfoPage() {
       }
     }
     load()
-  }, [])
+  }, [reloadKey])
 
   const orgCode   = data?.code ?? data?.merchantCode ?? data?.orgCode ?? data?.orgCustomId ?? ''
   const orgName   = data?.name ?? data?.merchantName ?? data?.orgName ?? ''

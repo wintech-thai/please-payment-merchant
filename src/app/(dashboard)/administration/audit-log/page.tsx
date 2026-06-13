@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
+import { useOrgChange } from '@/hooks/useOrgChange'
 import { Search, RefreshCcw, Eye, ChevronLeft, ChevronRight } from 'lucide-react'
 import clsx from 'clsx'
 import type { AuditLogDocument } from '@/lib/api/audit-log.api'
@@ -170,6 +171,7 @@ export default function AuditLogPage() {
   }, [page, itemsPerPage, searchTerm, searchField, timeRange])
 
   useEffect(() => { fetchData() }, [fetchData])
+  useOrgChange(fetchData)
 
   const setAndSaveTimeRange = (val: TimeRangeValue) => { setTimeRange(val); setPage(1); saveTimeRange(val) }
   const handleSearch = () => { setPage(1); setSearchTerm(inputValue) }

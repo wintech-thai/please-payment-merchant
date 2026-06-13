@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, Suspense } from 'react'
 import { useSearchParams, usePathname, useRouter } from 'next/navigation'
+import { useOrgChange } from '@/hooks/useOrgChange'
 import { userApi } from '@/lib/api/user.api'
 import { toast } from 'sonner'
 import { Search, ChevronLeft, ChevronRight, Trash2, Key, Ban, CheckCircle, MoreHorizontal, X, Users, Check, Plus, UserPlus } from 'lucide-react'
@@ -75,6 +76,7 @@ function UsersContent() {
   }
 
   useEffect(() => { fetchUsers(page, appliedSearch) }, [page, itemsPerPage])
+  useOrgChange(() => fetchUsers(1, ''))
 
   const handleSearchTrigger = () => {
     setAppliedSearch(searchTerm)

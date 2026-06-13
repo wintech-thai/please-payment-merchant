@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useLang } from '@/context/LanguageContext'
 import { summaryApi, type MerchantOverviewSummary, type MerchantDailySummaryItem } from '@/lib/api/summary.api'
 import { AdvancedTimeRangeSelector, type TimeRangeValue } from '@/components/AdvancedTimeRangeSelector'
+import { useOrgChange } from '@/hooks/useOrgChange'
 import clsx from 'clsx'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -120,11 +121,7 @@ export default function ReportAnalyticPage() {
 
   useEffect(() => { load() }, [load])
 
-  useEffect(() => {
-    const handler = () => setRefreshKey(k => k + 1)
-    window.addEventListener('orgchange', handler)
-    return () => window.removeEventListener('orgchange', handler)
-  }, [])
+  useOrgChange(() => setRefreshKey(k => k + 1))
 
   const payInAmount  = summary?.totalPayInAmount  ?? null
   const payOutAmount = summary?.totalPayOutAmount ?? null

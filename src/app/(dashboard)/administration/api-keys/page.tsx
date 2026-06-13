@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, Suspense } from 'react'
 import { useSearchParams, usePathname, useRouter } from 'next/navigation'
+import { useOrgChange } from '@/hooks/useOrgChange'
 import { client } from '@/lib/axios'
 import { userApi } from '@/lib/api/user.api'
 import { toast } from 'sonner'
@@ -67,6 +68,7 @@ function ApiKeysContent() {
   }
 
   useEffect(() => { fetchKeys(page, appliedSearch) }, [page, itemsPerPage])
+  useOrgChange(() => fetchKeys(1, ''))
 
   const handleSearchTrigger = () => {
     setAppliedSearch(searchTerm)
