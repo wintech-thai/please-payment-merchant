@@ -56,6 +56,25 @@ const inputCls = (hasError: boolean) =>
     hasError ? 'border-red-400 focus:ring-red-400' : 'border-gray-200 focus:ring-primary-500'
   )
 
+const THAI_BANKS = [
+  { code: 'BBL',   name: 'Bangkok Bank' },
+  { code: 'KBANK', name: 'Kasikorn Bank' },
+  { code: 'KTB',   name: 'Krungthai Bank' },
+  { code: 'SCB',   name: 'Siam Commercial Bank' },
+  { code: 'BAY',   name: 'Bank of Ayudhya (Krungsri)' },
+  { code: 'TTB',   name: 'TMBThanachart Bank' },
+  { code: 'TMB',   name: 'TMB Bank' },
+  { code: 'GSB',   name: 'Government Savings Bank' },
+  { code: 'GHB',   name: 'Government Housing Bank' },
+  { code: 'BAAC',  name: 'Bank for Agriculture & Cooperatives' },
+  { code: 'UOB',   name: 'UOB Thailand' },
+  { code: 'CIMBT', name: 'CIMB Thai Bank' },
+  { code: 'TISCO', name: 'Tisco Bank' },
+  { code: 'KKP',   name: 'Kiatnakin Phatra Bank' },
+  { code: 'LHB',   name: 'Land and Houses Bank' },
+  { code: 'IBANK', name: 'Islamic Bank of Thailand' },
+]
+
 export default function AddPayOutRequestPage() {
   const { t } = useLang()
   const tr = t.payOutRequest
@@ -248,12 +267,16 @@ export default function AddPayOutRequestPage() {
               {manualMode ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-xl">
                   <FormField label="Bank Code" error={errors.bank}>
-                    <input
+                    <select
                       value={manualBankCode}
                       onChange={e => { setManualBankCode(e.target.value); clearErr('bank') }}
-                      placeholder="e.g. KBANK"
-                      className={inputCls(!!errors.bank)}
-                    />
+                      className={clsx(inputCls(!!errors.bank), 'cursor-pointer')}
+                    >
+                      <option value="">— Select bank —</option>
+                      {THAI_BANKS.map(b => (
+                        <option key={b.code} value={b.code}>{b.code} – {b.name}</option>
+                      ))}
+                    </select>
                   </FormField>
                   <FormField label="Account No">
                     <input

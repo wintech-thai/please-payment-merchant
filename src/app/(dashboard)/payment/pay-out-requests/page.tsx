@@ -293,7 +293,12 @@ export default function PayOutRequestsPage() {
                       </>
                     ) : <span className="text-gray-300">—</span>}
                   </td>
-                  <td className="px-4 py-3 border-b border-gray-100"><StatusBadge status={item.status} /></td>
+                  <td className="px-4 py-3 border-b border-gray-100">
+                    <StatusBadge status={item.status} />
+                    {item.rejectReason && (
+                      <p className="text-[11px] text-red-500 mt-1 truncate max-w-[140px]" title={item.rejectReason}>{item.rejectReason}</p>
+                    )}
+                  </td>
                   <td className="px-4 py-3 border-b border-gray-100 text-xs text-gray-600 max-w-[100px] truncate">{item.refId1 || '—'}</td>
                   <td className="px-4 py-3 border-b border-gray-100 text-xs text-gray-600 max-w-[100px] truncate">{item.refId2 || '—'}</td>
                   <td className="px-4 py-3 border-b border-gray-100" onClick={e => e.stopPropagation()}>
