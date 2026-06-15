@@ -33,6 +33,7 @@ export default function Navbar() {
   const [username, setUsername] = useState('')
   const [currentOrgId, setCurrentOrgId] = useState('')
   const [merchants, setMerchants] = useState<MerchantOption[]>([])
+  const [adminDocUrl, setAdminDocUrl] = useState('')
 
   const merchantSwitcherRef = useRef<HTMLDivElement>(null)
   const businessNavRef = useRef<HTMLDivElement>(null)
@@ -40,6 +41,9 @@ export default function Navbar() {
   useEffect(() => {
     setUsername(localStorage.getItem('username') || '')
     setCurrentOrgId(localStorage.getItem('orgId') || '')
+    const adminOrigin = process.env.NEXT_PUBLIC_ADMIN_URL ||
+      window.location.origin.replace('merchant', 'admin')
+    setAdminDocUrl(`${adminOrigin}/documents`)
     try {
       const stored = localStorage.getItem('merchants')
       if (stored) setMerchants(JSON.parse(stored))
@@ -194,6 +198,19 @@ export default function Navbar() {
 
           {/* Right side */}
           <div className="ml-auto flex items-center gap-3">
+            {/* API Document link */}
+            <a
+              href={adminDocUrl || '#'}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hidden md:flex items-center px-2.5 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors text-white hover:bg-white/15"
+            >
+              {t.nav.document}
+            </a>
+
+            {/* Divider */}
+            <div className="hidden md:block w-px h-6 bg-white/20 flex-shrink-0" />
+
             {/* Version */}
             <AppVersionDisplay className="hidden lg:flex" />
 
@@ -325,6 +342,16 @@ export default function Navbar() {
                 pathname.startsWith('/setting') ? 'bg-white/20 text-white' : 'text-white hover:bg-white/15')}>
               {t.nav.setting}
             </Link>
+
+            <a
+              href={adminDocUrl || '#'}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-white hover:bg-white/15"
+            >
+              {t.nav.document}
+            </a>
           </nav>
         )}
       </header>
