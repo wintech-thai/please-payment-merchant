@@ -197,15 +197,15 @@ export default function PayOutRequestsPage() {
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b border-gray-100 sticky top-0 z-10">
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 whitespace-nowrap">{tr.colDate}</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">{tr.colMerchant}</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600">{tr.colAmount}</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600">{tr.colFee}</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">{tr.colDestBank}</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">{tr.colSourceBank}</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">{tr.colStatus}</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">{tr.colRefId1}</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">{tr.colRefId2}</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">{tr.colDate}</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">{tr.colMerchant}</th>
+                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">{tr.colAmount}</th>
+                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">{tr.colFee}</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">{tr.colDestBank}</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">{tr.colSourceBank}</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">{tr.colStatus}</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">{tr.colRefId1}</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">{tr.colRefId2}</th>
                 <th className="px-4 py-3 w-10" />
               </tr>
             </thead>
@@ -234,7 +234,7 @@ export default function PayOutRequestsPage() {
                     <div className="text-sm font-medium text-gray-700 group-hover:text-primary-600 group-hover:underline">{item.createdDate ? new Date(item.createdDate).toLocaleString('th-TH') : '—'}</div>
                     <div className="text-xs text-gray-400 truncate max-w-[160px]">{item.refId || '—'}</div>
                   </td>
-                  <td className="px-4 py-3 border-b border-gray-100">
+                  <td className="px-4 py-3 border-b border-gray-100 whitespace-nowrap">
                     <div className="text-sm font-semibold text-gray-800">{item.merchantCode || '—'}</div>
                     <div className="text-xs text-gray-400">{item.merchantName || ''}</div>
                   </td>
@@ -244,9 +244,9 @@ export default function PayOutRequestsPage() {
                     </div>
                     <div className="text-[10px] text-gray-400">{item.currency || 'THB'}</div>
                   </td>
-                  <td className="px-4 py-3 border-b border-gray-100 text-right text-sm text-gray-600">
+                  <td className="px-4 py-3 border-b border-gray-100 text-right text-sm font-semibold text-gray-800">
                     {item.payoutFeeDecimal != null ? Number(item.payoutFeeDecimal).toLocaleString('th-TH', { minimumFractionDigits: 2 }) : '—'}
-                    {item.payoutFeePct != null && <div className="text-[10px] text-gray-400">{item.payoutFeePct}%</div>}
+                    {item.payoutFeePct != null && <div className="text-[10px] font-normal text-gray-400">{item.payoutFeePct}%</div>}
                   </td>
                   {/* TO BANK ACCOUNT — payinBank fields (override if flag set) */}
                   <td className="px-4 py-3 border-b border-gray-100">
@@ -260,7 +260,7 @@ export default function PayOutRequestsPage() {
                       if (!bankCode && !bankAccountNo) return <span className="text-gray-300">—</span>
                       return (
                         <>
-                          <div className="text-sm font-medium text-gray-800">
+                          <div className="text-sm font-semibold text-gray-800">
                             {bankCode || '—'}{bankAccountNo ? ` · ${bankAccountNo}` : ''}
                           </div>
                           {bankAccountName && <div className="text-xs text-gray-400 mt-0.5">{bankAccountName}</div>}
@@ -278,7 +278,7 @@ export default function PayOutRequestsPage() {
                   <td className="px-4 py-3 border-b border-gray-100">
                     {item.payoutBankCode || item.payoutBankAccountNo ? (
                       <>
-                        <div className="text-sm font-medium text-gray-800">
+                        <div className="text-sm font-semibold text-gray-800">
                           {item.payoutBankCode || '—'}{item.payoutBankAccountNo ? ` · ${item.payoutBankAccountNo}` : ''}
                         </div>
                         {item.payoutBankAccountName && <div className="text-xs text-gray-400 mt-0.5">{item.payoutBankAccountName}</div>}
