@@ -68,7 +68,7 @@ export default function Navbar() {
     localStorage.setItem('orgId', orgId)
     setCurrentOrgId(orgId)
     setMerchantMenuOpen(false)
-    router.push('/overview')
+    window.dispatchEvent(new CustomEvent('orgchange', { detail: { orgId } }))
     router.refresh()
   }
 

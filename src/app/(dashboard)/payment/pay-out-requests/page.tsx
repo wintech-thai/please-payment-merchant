@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import { useOrgChange } from '@/hooks/useOrgChange'
 import { useLang } from '@/context/LanguageContext'
 import { paymentRequestApi } from '@/lib/api/payment-request.api'
 import type { PayOutRequestItem } from '@/lib/api/types'
@@ -96,7 +97,11 @@ export default function PayOutRequestsPage() {
       ])
       if (listRes.status === 'fulfilled') {
         const d = listRes.value.data as any
-        setItems(Array.isArray(d) ? d : (d?.paymentRequests ?? d?.items ?? []))
+        const raw: any[] = Array.isArray(d) ? d : (d?.paymentRequests ?? d?.items ?? [])
+        setItems(raw.map((item: any) => ({
+          ...item,
+          isPayInBankAccountOverride: item.isPayInBankAccountOverride ?? item.isPayinBankAccountOverride ?? false,
+        })))
       }
       if (countRes.status === 'fulfilled') {
         const d = countRes.value.data as any
@@ -110,6 +115,7 @@ export default function PayOutRequestsPage() {
   }, [search, status, timeRange, page, pageSize, refreshKey])
 
   useEffect(() => { load() }, [load])
+  useOrgChange(() => setRefreshKey(k => k + 1))
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize))
   const rangeStart = total === 0 ? 0 : (page - 1) * pageSize + 1
@@ -191,15 +197,15 @@ export default function PayOutRequestsPage() {
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b border-gray-100 sticky top-0 z-10">
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 whitespace-nowrap">{tr.colDate}</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">{tr.colMerchant}</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600">{tr.colAmount}</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600">{tr.colFee}</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">{tr.colDestBank}</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">{tr.colSourceBank}</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">{tr.colStatus}</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">{tr.colRefId1}</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">{tr.colRefId2}</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">{tr.colDate}</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">{tr.colMerchant}</th>
+                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">{tr.colAmount}</th>
+                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">{tr.colFee}</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">{tr.colDestBank}</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">{tr.colSourceBank}</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">{tr.colStatus}</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">{tr.colRefId1}</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">{tr.colRefId2}</th>
                 <th className="px-4 py-3 w-10" />
               </tr>
             </thead>
@@ -228,7 +234,7 @@ export default function PayOutRequestsPage() {
                     <div className="text-sm font-medium text-gray-700 group-hover:text-primary-600 group-hover:underline">{item.createdDate ? new Date(item.createdDate).toLocaleString('th-TH') : '—'}</div>
                     <div className="text-xs text-gray-400 truncate max-w-[160px]">{item.refId || '—'}</div>
                   </td>
-                  <td className="px-4 py-3 border-b border-gray-100">
+                  <td className="px-4 py-3 border-b border-gray-100 whitespace-nowrap">
                     <div className="text-sm font-semibold text-gray-800">{item.merchantCode || '—'}</div>
                     <div className="text-xs text-gray-400">{item.merchantName || ''}</div>
                   </td>
@@ -238,14 +244,41 @@ export default function PayOutRequestsPage() {
                     </div>
                     <div className="text-[10px] text-gray-400">{item.currency || 'THB'}</div>
                   </td>
-                  <td className="px-4 py-3 border-b border-gray-100 text-right text-sm text-gray-600">
+                  <td className="px-4 py-3 border-b border-gray-100 text-right text-sm font-semibold text-gray-800">
                     {item.payoutFeeDecimal != null ? Number(item.payoutFeeDecimal).toLocaleString('th-TH', { minimumFractionDigits: 2 }) : '—'}
-                    {item.payoutFeePct != null && <div className="text-[10px] text-gray-400">{item.payoutFeePct}%</div>}
+                    {item.payoutFeePct != null && <div className="text-[10px] font-normal text-gray-400">{item.payoutFeePct}%</div>}
                   </td>
+                  {/* TO BANK ACCOUNT — payinBank fields (override if flag set) */}
+                  <td className="px-4 py-3 border-b border-gray-100">
+                    {(() => {
+                      const isOverride = item.isPayInBankAccountOverride
+                      const bankCode = isOverride ? item.payinBankCodeOverride : item.payinBankCode
+                      const bankAccountNo = isOverride ? item.payinBankAccountNoOverride : item.payinBankAccountNo
+                      const bankAccountName = isOverride ? item.payinBankAccountNameOverride : item.payinBankAccountName
+                      const promptPayId = isOverride ? item.payinPromptPayIdOverride : item.payinPromptPayId
+                      const accountType = isOverride ? item.payinAccountTypeOverride : item.payinAccountType
+                      if (!bankCode && !bankAccountNo) return <span className="text-gray-300">—</span>
+                      return (
+                        <>
+                          <div className="text-sm font-semibold text-gray-800">
+                            {bankCode || '—'}{bankAccountNo ? ` · ${bankAccountNo}` : ''}
+                          </div>
+                          {bankAccountName && <div className="text-xs text-gray-400 mt-0.5">{bankAccountName}</div>}
+                          {(accountType || promptPayId) && (
+                            <div className="flex items-center gap-1.5 mt-1">
+                              {accountType && <AccountTypeBadge type={accountType} />}
+                              {promptPayId && <span className="text-[10px] text-gray-500">{promptPayId}</span>}
+                            </div>
+                          )}
+                        </>
+                      )
+                    })()}
+                  </td>
+                  {/* FROM BANK ACCOUNT — payoutBank fields (merchant's sending bank) */}
                   <td className="px-4 py-3 border-b border-gray-100">
                     {item.payoutBankCode || item.payoutBankAccountNo ? (
                       <>
-                        <div className="text-sm font-medium text-gray-800">
+                        <div className="text-sm font-semibold text-gray-800">
                           {item.payoutBankCode || '—'}{item.payoutBankAccountNo ? ` · ${item.payoutBankAccountNo}` : ''}
                         </div>
                         {item.payoutBankAccountName && <div className="text-xs text-gray-400 mt-0.5">{item.payoutBankAccountName}</div>}
@@ -261,24 +294,11 @@ export default function PayOutRequestsPage() {
                     ) : <span className="text-gray-300">—</span>}
                   </td>
                   <td className="px-4 py-3 border-b border-gray-100">
-                    {item.payinBankCode || item.payinBankAccountNo ? (
-                      <>
-                        <div className="text-sm font-medium text-gray-800">
-                          {item.payinBankCode || '—'}{item.payinBankAccountNo ? ` · ${item.payinBankAccountNo}` : ''}
-                        </div>
-                        {item.payinBankAccountName && <div className="text-xs text-gray-400 mt-0.5">{item.payinBankAccountName}</div>}
-                        {item.payinAccountType && (
-                          <div className="flex items-center gap-1.5 mt-1">
-                            <AccountTypeBadge type={item.payinAccountType} />
-                            {item.payinAccountType?.toLowerCase() === 'promptpay' && item.payinPromptPayId && (
-                              <span className="text-[10px] text-gray-500">{item.payinPromptPayId}</span>
-                            )}
-                          </div>
-                        )}
-                      </>
-                    ) : <span className="text-gray-300">—</span>}
+                    <StatusBadge status={item.status} />
+                    {item.rejectReason && (
+                      <p className="text-[11px] text-red-500 mt-1 truncate max-w-[140px]" title={item.rejectReason}>{item.rejectReason}</p>
+                    )}
                   </td>
-                  <td className="px-4 py-3 border-b border-gray-100"><StatusBadge status={item.status} /></td>
                   <td className="px-4 py-3 border-b border-gray-100 text-xs text-gray-600 max-w-[100px] truncate">{item.refId1 || '—'}</td>
                   <td className="px-4 py-3 border-b border-gray-100 text-xs text-gray-600 max-w-[100px] truncate">{item.refId2 || '—'}</td>
                   <td className="px-4 py-3 border-b border-gray-100" onClick={e => e.stopPropagation()}>

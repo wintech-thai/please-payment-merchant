@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import { useOrgChange } from '@/hooks/useOrgChange'
 import { useLang } from '@/context/LanguageContext'
 import { paymentTxApi } from '@/lib/api/payment-tx.api'
 import type { PayInTxItem } from '@/lib/api/types'
@@ -146,6 +147,7 @@ export default function PayInTransactionsPage() {
   }, [m.noData])
 
   useEffect(() => { load(1, itemsPerPage, timeRange, search, statusFilter) }, [])
+  useOrgChange(() => load(1, itemsPerPage, timeRange, search, statusFilter))
 
   const handleSearch = () => {
     setSearch(inputSearch)

@@ -10,29 +10,35 @@ export interface GetSummaryPayload {
   ToDate?: string
 }
 
-export interface MerchantOverviewSummary {
-  payInCount?: number | null
+export interface MerchantDailySummaryItem {
+  date?: string | null
+  merchantCode?: string | null
   payInAmount?: number | null
-  payInFee?: number | null
-  payOutCount?: number | null
   payOutAmount?: number | null
+  payInFee?: number | null
   payOutFee?: number | null
-  walletBalance?: number | null
-  walletBalanceDecimal?: number | null
-  // alternative field names
+  // will be available after backend adds count to query
+  payInCount?: number | null
+  payOutCount?: number | null
+}
+
+export interface MerchantOverviewSummary {
+  // totals — from RevenueSummary (C# camelCase serialized)
   totalPayInAmount?: number | null
   totalPayOutAmount?: number | null
   totalPayInFee?: number | null
   totalPayOutFee?: number | null
+  // daily breakdown embedded in response
+  dailyMerchantRevenue?: MerchantDailySummaryItem[]
   totalPayInCount?: number | null
   totalPayOutCount?: number | null
 }
 
 export const summaryApi = {
-  getSummary: (payload: GetSummaryPayload = {}) => {
+  getMerchantSummary: (payload: GetSummaryPayload = {}) => {
     const orgId = getOrgId()
     return client.post<MerchantOverviewSummary>(
-      `/api/MerchantSummary/org/${orgId}/action/GetSummary`,
+      `/api/Summary/org/${orgId}/action/GetMerchantSummary`,
       payload
     )
   },

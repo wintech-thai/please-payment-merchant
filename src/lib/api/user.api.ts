@@ -156,6 +156,11 @@ export const userApi = {
     return client.get(`/api/Merchant/org/${orgId}/action/GetMerchantPaymentEndpoint`)
   },
 
+  getMerchantPayOutEndpoint: () => {
+    const orgId = getOrgId()
+    return client.get(`/api/Merchant/org/${orgId}/action/GetMerchantPayOutEndpoint`)
+  },
+
   getMerchantWebhooks: () => {
     const orgId = getOrgId()
     return client.get(`/api/Merchant/org/${orgId}/action/GetMerchantWebhooks`)

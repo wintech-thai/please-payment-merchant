@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, Suspense } from 'react'
 import { useSearchParams, usePathname, useRouter } from 'next/navigation'
 import { useHighlightRow } from '@/hooks/useHighlightRow'
+import { useOrgChange } from '@/hooks/useOrgChange'
 import { userApi } from '@/lib/api/user.api'
 import { toast } from 'sonner'
 import { Search, ChevronLeft, ChevronRight, ShieldCheck, Trash2, MoreHorizontal, Plus } from 'lucide-react'
@@ -55,6 +56,7 @@ function CustomRolesContent() {
   }
 
   useEffect(() => { fetchRoles(page, appliedSearch) }, [page, itemsPerPage])
+  useOrgChange(() => fetchRoles(1, ''))
 
   const handleSearchTrigger = () => {
     setAppliedSearch(searchTerm)

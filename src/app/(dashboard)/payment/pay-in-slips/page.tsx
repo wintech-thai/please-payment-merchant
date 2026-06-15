@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import { useOrgChange } from '@/hooks/useOrgChange'
 import { useLang } from '@/context/LanguageContext'
 import { paymentSlipApi } from '@/lib/api/payment-slip.api'
 import type { PayInSlipItem } from '@/lib/api/types'
@@ -85,6 +86,7 @@ export default function PayInSlipsPage() {
   }, [tr.noData])
 
   useEffect(() => { load(1, DEFAULT_PAGE_SIZE, '', '') }, [])
+  useOrgChange(() => load(1, DEFAULT_PAGE_SIZE, '', ''))
 
   const handleSearch = () => {
     setSearch(inputSearch)

@@ -74,7 +74,9 @@ export default function PayOutRequestDetailPage() {
       try {
         const res = await paymentRequestApi.getPayOutRequestById(id)
         const data = res.data as any
-        setDetail(data?.paymentRequest ?? data)
+        const raw = data?.paymentRequest ?? data
+        if (raw) raw.isPayInBankAccountOverride = raw.isPayInBankAccountOverride ?? raw.isPayinBankAccountOverride ?? false
+        setDetail(raw)
       } catch {
         toast.error('Failed to load pay-out request')
       } finally {
@@ -137,10 +139,33 @@ export default function PayOutRequestDetailPage() {
                 <span className="text-red-600 font-medium">{detail.rejectReason}</span>
               </Field>
             )}
+            {/* Destination Bank — inline in main section */}
+            {(() => {
+              const isOverride = detail?.isPayInBankAccountOverride
+              const bankCode = isOverride ? detail?.payinBankCodeOverride : detail?.payinBankCode
+              const bankAccountNo = isOverride ? detail?.payinBankAccountNoOverride : detail?.payinBankAccountNo
+              const bankAccountName = isOverride ? detail?.payinBankAccountNameOverride : detail?.payinBankAccountName
+              const promptPayId = isOverride ? detail?.payinPromptPayIdOverride : detail?.payinPromptPayId
+              const accountType = isOverride ? detail?.payinAccountTypeOverride : detail?.payinAccountType
+              if (!bankCode && !bankAccountNo) return null
+              return (
+                <div className="col-span-2 pt-2 border-t border-gray-100">
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Destination Bank</p>
+                  <p className="text-sm font-bold text-gray-800">{[bankCode, bankAccountNo].filter(Boolean).join(' · ')}</p>
+                  {bankAccountName && <p className="text-sm text-gray-500 mt-0.5">{bankAccountName}</p>}
+                  <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                    {accountType && (
+                      <span className="px-2 py-0.5 bg-blue-50 text-blue-700 text-xs font-bold rounded-full ring-1 ring-blue-200">{accountType}</span>
+                    )}
+                    {promptPayId && <span className="text-sm text-gray-600">{promptPayId}</span>}
+                  </div>
+                </div>
+              )
+            })()}
           </div>
         </Section>
 
-        {/* Range */}
+        {/* Payout Range */}
         {(detail?.merchantMinPayout != null || detail?.merchantMaxPayout != null) && (
           <Section title="Payout Range">
             <div className="flex items-center gap-4">
@@ -157,41 +182,26 @@ export default function PayOutRequestDetailPage() {
           </Section>
         )}
 
-        <Section title="Source Bank Account (Pay-In)" accent="bg-emerald-500">
-          {detail?.payinBankCode || detail?.payinBankAccountNo ? (
-            <div className="flex flex-col gap-1">
-              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Source Bank Account (Pay-In)</p>
-              <p className="text-sm font-bold text-gray-800">
-                {[detail.payinBankCode, detail.payinBankAccountNo].filter(Boolean).join(' · ')}
-              </p>
-              {detail.payinBankAccountName && (
-                <p className="text-sm text-gray-500">{detail.payinBankAccountName}</p>
-              )}
-              {detail.payinPromptPayId && (
-                <div className="flex items-center gap-2 mt-1">
-                  <span className="px-2 py-0.5 bg-blue-50 text-blue-700 text-xs font-bold rounded-full ring-1 ring-blue-200">PromptPay</span>
-                  <span className="text-sm text-gray-600">{detail.payinPromptPayId}</span>
-                </div>
-              )}
-            </div>
-          ) : (
-            <span className="text-sm text-gray-400">—</span>
-          )}
-        </Section>
-
-        <Section title="Destination Bank Account (Pay-Out)" accent="bg-rose-500">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-            <Field label="Bank Code">{detail?.payoutBankCode ?? '—'}</Field>
-            <Field label="Account No">{detail?.payoutBankAccountNo ?? '—'}</Field>
-            <Field label="Account Name">{detail?.payoutBankAccountName ?? '—'}</Field>
-            <Field label="Account Type">
-              {detail?.payoutAccountType ? (
-                <span className="px-2 py-0.5 bg-violet-50 text-violet-700 text-xs font-bold rounded-full ring-1 ring-violet-200">{detail.payoutAccountType}</span>
-              ) : '—'}
-            </Field>
-            {detail?.payoutPromptPayId && <Field label="PromptPay ID">{detail.payoutPromptPayId}</Field>}
-          </div>
-        </Section>
+        {/* Source Bank Account (FROM) — hidden when Pending */}
+        {detail?.status?.toLowerCase() !== 'pending' && (
+          <Section title="Source Bank Account" accent="bg-rose-500">
+            {detail?.payoutBankCode || detail?.payoutBankAccountNo ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <Field label="Bank Code">{detail?.payoutBankCode ?? '—'}</Field>
+                <Field label="Account No">{detail?.payoutBankAccountNo ?? '—'}</Field>
+                {detail?.payoutBankAccountName && <Field label="Account Name">{detail.payoutBankAccountName}</Field>}
+                {detail?.payoutAccountType && (
+                  <Field label="Account Type">
+                    <span className="px-2 py-0.5 bg-violet-50 text-violet-700 text-xs font-bold rounded-full ring-1 ring-violet-200">{detail.payoutAccountType}</span>
+                  </Field>
+                )}
+                {detail?.payoutPromptPayId && <Field label="PromptPay ID">{detail.payoutPromptPayId}</Field>}
+              </div>
+            ) : (
+              <span className="text-sm text-gray-400">—</span>
+            )}
+          </Section>
+        )}
 
         {detail?.processingSteps && detail.processingSteps.length > 0 && (
           <Section title="Processing Steps">

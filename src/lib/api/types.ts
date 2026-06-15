@@ -716,6 +716,12 @@ export interface PayOutRequestItem {
   payinAccountType?: string | null
   payinAccountLevel?: string | null
   payinPromptPayId?: string | null
+  isPayInBankAccountOverride?: boolean | null
+  payinBankCodeOverride?: string | null
+  payinBankAccountNoOverride?: string | null
+  payinBankAccountNameOverride?: string | null
+  payinPromptPayIdOverride?: string | null
+  payinAccountTypeOverride?: string | null
   payInFeePct?: number | null
   selectedPayInBankAccountId?: string | null
   // Destination (PayOut) bank account — API uses camelCase "payout" (lowercase)
@@ -761,7 +767,12 @@ export interface CreatePayOutRequestPayload {
   RequestedAmount: number
   QrProvider?: string
   Tags?: string
-  PayinBankAccountId: string
+  PayinBankAccountId?: string
+  // Manual override — server reads these root-level fields when PayinBankAccountId is empty
+  BankCode?: string
+  BankAccountNo?: string
+  BankAccountName?: string
+  PromptPayId?: string
 }
 
 export interface UpdatePayOutRequestPayload {
