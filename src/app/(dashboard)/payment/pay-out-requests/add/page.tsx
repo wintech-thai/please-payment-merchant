@@ -146,7 +146,17 @@ export default function AddPayOutRequestPage() {
   const validate = () => {
     const errs: Record<string, string> = {}
     if (!manualMode && !payinBankAccountId) errs.bank = tr.payoutBankAccountRequired
-    if (manualMode && !manualBankCode.trim() && !manualBankAccountNo.trim()) errs.bank = tr.payoutBankAccountRequired
+    if (manualMode && !manualBankCode.trim()) errs.bank = tr.payoutBankAccountRequired
+    if (manualMode) {
+      if (!manualBankAccountNo.trim()) errs.accountNo = tr.errAccountNoRequired
+      else if (!/^\d+$/.test(manualBankAccountNo.trim())) errs.accountNo = tr.errAccountNoDigits
+      else if (manualBankAccountNo.trim().length < 10 || manualBankAccountNo.trim().length > 12) errs.accountNo = tr.errAccountNoLength
+      if (!manualBankAccountName.trim()) errs.accountName = tr.errAccountNameRequired
+    }
+    if (manualMode && manualPromptPayId.trim()) {
+      if (!/^\d+$/.test(manualPromptPayId.trim())) errs.promptPay = tr.errPromptPayDigits
+      else if (manualPromptPayId.trim().length !== 10 && manualPromptPayId.trim().length !== 13) errs.promptPay = tr.errPromptPayLength
+    }
     if (!refId.trim()) errs.refId = tr.refIdRequired
     if (!requestedAmount.trim()) {
       errs.amount = tr.amountRequired
@@ -278,28 +288,40 @@ export default function AddPayOutRequestPage() {
                       ))}
                     </select>
                   </FormField>
-                  <FormField label="Account No">
+                  <FormField label="Account No" required error={errors.accountNo} hint={tr.hintAccountNo}>
                     <input
                       value={manualBankAccountNo}
-                      onChange={e => setManualBankAccountNo(e.target.value)}
+                      onChange={e => {
+                        const v = e.target.value.replace(/\D/g, '')
+                        setManualBankAccountNo(v)
+                        clearErr('accountNo')
+                      }}
                       placeholder="e.g. 1234567890"
-                      className={inputCls(false)}
+                      inputMode="numeric"
+                      maxLength={12}
+                      className={inputCls(!!errors.accountNo)}
                     />
                   </FormField>
-                  <FormField label="Account Name">
+                  <FormField label="Account Name" required error={errors.accountName}>
                     <input
                       value={manualBankAccountName}
-                      onChange={e => setManualBankAccountName(e.target.value)}
+                      onChange={e => { setManualBankAccountName(e.target.value); clearErr('accountName') }}
                       placeholder="e.g. John Doe"
-                      className={inputCls(false)}
+                      className={inputCls(!!errors.accountName)}
                     />
                   </FormField>
-                  <FormField label="PromptPay ID">
+                  <FormField label="PromptPay ID" error={errors.promptPay} hint={tr.hintPromptPay}>
                     <input
                       value={manualPromptPayId}
-                      onChange={e => setManualPromptPayId(e.target.value)}
+                      onChange={e => {
+                        const v = e.target.value.replace(/\D/g, '')
+                        setManualPromptPayId(v)
+                        clearErr('promptPay')
+                      }}
                       placeholder="e.g. 0812345678"
-                      className={inputCls(false)}
+                      inputMode="numeric"
+                      maxLength={13}
+                      className={inputCls(!!errors.promptPay)}
                     />
                   </FormField>
                 </div>
