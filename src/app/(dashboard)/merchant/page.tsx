@@ -24,6 +24,7 @@ interface MerchantData {
   payoutMinAmount?: number | null
   payoutMaxAmount?: number | null
   status?: string
+  discardCent?: boolean | null
   currentBalance?: number | null
   currentBalanceDecimal?: number | null
   // fallback aliases
@@ -209,10 +210,11 @@ export default function MerchantInfoPage() {
   const status    = data?.status ?? ''
   const payInFee  = data?.payinFeePct ?? data?.payInFeePercent
   const payOutFee = data?.payoutFeePct ?? data?.payOutFeePercent
-  const payInMin  = data?.payinMinAmount ?? data?.payInMinAmount
-  const payInMax  = data?.payinMaxAmount ?? data?.payInMaxAmount
-  const payOutMin = data?.payoutMinAmount ?? data?.payOutMinAmount
-  const payOutMax = data?.payoutMaxAmount ?? data?.payOutMaxAmount
+  const payInMin    = data?.payinMinAmount ?? data?.payInMinAmount
+  const payInMax    = data?.payinMaxAmount ?? data?.payInMaxAmount
+  const payOutMin   = data?.payoutMinAmount ?? data?.payOutMinAmount
+  const payOutMax   = data?.payoutMaxAmount ?? data?.payOutMaxAmount
+  const discardCent = data?.discardCent ?? false
 
   function handleCopy(text: string, type: 'payin' | 'payout' = 'payin') {
     navigator.clipboard.writeText(text).then(() => {
@@ -294,6 +296,23 @@ export default function MerchantInfoPage() {
                   </label>
                   <div className="px-3 py-2.5 rounded-lg bg-white border border-gray-100 min-h-[38px] flex items-center">
                     {status ? <StatusBadge status={status} /> : <span className="text-gray-300 text-sm">—</span>}
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">
+                    {mi.fieldDiscardCent}
+                  </label>
+                  <div className="px-3 py-2.5 rounded-lg bg-gray-50 border border-gray-100 min-h-[38px] flex items-center gap-2">
+                    <span className={clsx(
+                      'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border',
+                      discardCent
+                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                        : 'bg-gray-100 text-gray-500 border-gray-200'
+                    )}>
+                      <span className={clsx('w-1.5 h-1.5 rounded-full', discardCent ? 'bg-emerald-500' : 'bg-gray-400')} />
+                      {discardCent ? mi.discardCentEnabled : mi.discardCentDisabled}
+                    </span>
+                    <span className="text-xs text-gray-400">{mi.fieldDiscardCentHint}</span>
                   </div>
                 </div>
               </div>
