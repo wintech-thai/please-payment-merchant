@@ -191,9 +191,9 @@ export default function Navbar() {
               {t.nav.administrator}
             </Link>
 
-            <Link href="/setting" className={navItemClass(pathname.startsWith('/setting'))}>
+            {/* <Link href="/setting" className={navItemClass(pathname.startsWith('/setting'))}>
               {t.nav.setting}
-            </Link>
+            </Link> */}
           </nav>
 
           {/* Right side */}
@@ -337,11 +337,11 @@ export default function Navbar() {
               ))}
             </div>
 
-            <Link href="/setting" onClick={() => setMobileMenuOpen(false)}
+            {/* <Link href="/setting" onClick={() => setMobileMenuOpen(false)}
               className={clsx('flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
                 pathname.startsWith('/setting') ? 'bg-white/20 text-white' : 'text-white hover:bg-white/15')}>
               {t.nav.setting}
-            </Link>
+            </Link> */}
 
             <a
               href={adminDocUrl || '#'}
