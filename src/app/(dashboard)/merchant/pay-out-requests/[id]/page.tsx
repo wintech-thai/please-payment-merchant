@@ -77,8 +77,8 @@ export default function PayOutRequestDetailPage() {
         const raw = data?.paymentRequest ?? data
         if (raw) raw.isPayInBankAccountOverride = raw.isPayInBankAccountOverride ?? raw.isPayinBankAccountOverride ?? false
         setDetail(raw)
-      } catch {
-        toast.error('Failed to load pay-out request')
+      } catch (err: unknown) {
+        toast.error(err instanceof Error ? err.message : 'Failed to load pay-out request')
       } finally {
         setLoading(false)
       }

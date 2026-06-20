@@ -107,7 +107,7 @@ function UsersUpdateContent() {
         const fromList: string[] = u?.rolesList ? u.rolesList.split(',').map((s: string) => s.trim()).filter(Boolean) : []
         currentRoleNames = fromArray.length ? fromArray : fromList
       } else {
-        toast.error(tu.failedToLoadUser)
+        toast.error(userRes.reason instanceof Error ? userRes.reason.message : tu.failedToLoadUser)
       }
 
       if (rolesRes.status === 'fulfilled') {

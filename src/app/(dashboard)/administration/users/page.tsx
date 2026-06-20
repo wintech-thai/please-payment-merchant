@@ -64,12 +64,13 @@ function UsersContent() {
         userApi.getUsers({ offset: (currentPage - 1) * itemsPerPage, limit: itemsPerPage, fullTextSearch: keyword || undefined }),
         userApi.getUserCount({ fullTextSearch: keyword || undefined }),
       ])
-      const raw = usersRes.status === 'fulfilled' ? (usersRes.value.data as any) : null
+      if (usersRes.status === 'rejected') throw usersRes.reason
+      const raw = usersRes.value.data as any
       setUsers(Array.isArray(raw) ? raw : (raw?.users ?? raw?.data ?? []))
       const cnt = countRes.status === 'fulfilled' ? (countRes.value.data as any) : null
       setTotal(typeof cnt === 'number' ? cnt : (cnt?.count ?? 0))
-    } catch {
-      toast.error(t.users.failedToLoad)
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : t.users.failedToLoad)
     } finally {
       setLoading(false)
     }
@@ -112,8 +113,8 @@ function UsersContent() {
       const res = await userApi.getForgotPasswordLink(userId)
       const raw = (res.data as any)?.forgotPasswordUrl ?? (res.data as any)?.resetLink ?? ''
       setResetLinkModal({ open: true, link: raw ? processUrl(raw) : '' })
-    } catch {
-      toast.error(t.users.failedToGetResetLink)
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : t.users.failedToGetResetLink)
       setResetLinkModal({ open: false })
     }
   }

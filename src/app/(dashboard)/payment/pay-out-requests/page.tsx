@@ -95,20 +95,19 @@ export default function PayOutRequestsPage() {
         paymentRequestApi.getPayOutRequests(payload),
         paymentRequestApi.getPayOutRequestCount(payload),
       ])
-      if (listRes.status === 'fulfilled') {
-        const d = listRes.value.data as any
-        const raw: any[] = Array.isArray(d) ? d : (d?.paymentRequests ?? d?.items ?? [])
-        setItems(raw.map((item: any) => ({
-          ...item,
-          isPayInBankAccountOverride: item.isPayInBankAccountOverride ?? item.isPayinBankAccountOverride ?? false,
-        })))
-      }
+      if (listRes.status === 'rejected') throw listRes.reason
+      const d = listRes.value.data as any
+      const raw: any[] = Array.isArray(d) ? d : (d?.paymentRequests ?? d?.items ?? [])
+      setItems(raw.map((item: any) => ({
+        ...item,
+        isPayInBankAccountOverride: item.isPayInBankAccountOverride ?? item.isPayinBankAccountOverride ?? false,
+      })))
       if (countRes.status === 'fulfilled') {
         const d = countRes.value.data as any
         setTotal(typeof d === 'number' ? d : (d?.count ?? 0))
       }
-    } catch {
-      toast.error(tr.failedToLoad)
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : tr.failedToLoad)
     } finally {
       setLoading(false)
     }
@@ -145,8 +144,8 @@ export default function PayOutRequestsPage() {
       await paymentRequestApi.deletePayOutRequestById(deleteModal.item.id)
       toast.success(tr.toastDeleteSuccess)
       load()
-    } catch {
-      toast.error(tr.toastDeleteFailed)
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : tr.toastDeleteFailed)
     } finally {
       setDeletingId(null)
     }

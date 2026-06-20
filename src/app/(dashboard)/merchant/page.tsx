@@ -156,11 +156,10 @@ export default function MerchantInfoPage() {
           userApi.getMerchantWallet(),
         ])
 
-        if (detailRes.status === 'fulfilled') {
-          const d = detailRes.value.data as any
-          const detail = d?.merchant ?? d?.merchantInfo ?? d?.data ?? d
-          if (detail) setData(detail)
-        }
+        if (detailRes.status === 'rejected') throw detailRes.reason
+        const d = detailRes.value.data as any
+        const detail = d?.merchant ?? d?.merchantInfo ?? d?.data ?? d
+        if (detail) setData(detail)
 
         if (endpointRes.status === 'fulfilled') {
           const d = endpointRes.value.data as any
@@ -194,8 +193,8 @@ export default function MerchantInfoPage() {
             } catch {}
           }
         }
-      } catch {
-        toast.error(mi.failedToLoad)
+      } catch (err: unknown) {
+        toast.error(err instanceof Error ? err.message : mi.failedToLoad)
       } finally {
         setLoading(false)
       }

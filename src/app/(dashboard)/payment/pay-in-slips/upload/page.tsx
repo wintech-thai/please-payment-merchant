@@ -340,7 +340,7 @@ export default function UploadPayInSlipPage() {
         if (bankRes.status === 'fulfilled') {
           setBankAccounts(bankRes.value.data.bankAccounts)
         } else {
-          toast.error(tr.toastFailedToLoadBanks)
+          toast.error(bankRes.reason instanceof Error ? bankRes.reason.message : tr.toastFailedToLoadBanks)
         }
       }).finally(() => { setLoadingInit(false); setLoadingBanks(false) })
     } catch {

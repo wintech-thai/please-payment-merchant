@@ -65,7 +65,7 @@ function CustomRoleUpdateContent() {
           const raw = initRes.value.data as any
           basePerms = Array.isArray(raw) ? raw : (raw?.permissions ?? raw?.data ?? [])
         } else {
-          toast.error(tc.failedToLoadPerms)
+          toast.error(initRes.reason instanceof Error ? initRes.reason.message : tc.failedToLoadPerms)
         }
 
         if (roleRes.status === 'fulfilled') {
@@ -93,7 +93,7 @@ function CustomRoleUpdateContent() {
             }))
           }
         } else {
-          toast.error(tc.failedToLoad2)
+          toast.error(roleRes.reason instanceof Error ? roleRes.reason.message : tc.failedToLoad2)
         }
 
         setPermGroups(basePerms)

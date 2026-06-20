@@ -90,8 +90,8 @@ export default function PayInTransactionDetailPage() {
         const res = await paymentTxApi.getPaymentTransactionById(id)
         const data = res.data as any
         setDetail(data?.paymentTransaction ?? data)
-      } catch {
-        toast.error('Failed to load transaction detail')
+      } catch (err: unknown) {
+        toast.error(err instanceof Error ? err.message : 'Failed to load transaction detail')
       } finally {
         setLoading(false)
       }

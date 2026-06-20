@@ -56,12 +56,13 @@ function ApiKeysContent() {
         client.post(`/api/ApiKey/org/${orgId}/action/GetApiKeys`, { offset: (currentPage - 1) * itemsPerPage, limit: itemsPerPage, fullTextSearch: keyword || undefined }),
         client.post(`/api/ApiKey/org/${orgId}/action/GetApiKeyCount`, { fullTextSearch: keyword || undefined }),
       ])
-      const raw = keysRes.status === 'fulfilled' ? (keysRes.value.data as any) : null
+      if (keysRes.status === 'rejected') throw keysRes.reason
+      const raw = keysRes.value.data as any
       setKeys(Array.isArray(raw) ? raw : (raw?.apiKeys ?? raw?.data ?? []))
       const cnt = countRes.status === 'fulfilled' ? (countRes.value.data as any) : null
       setTotal(typeof cnt === 'number' ? cnt : (cnt?.count ?? 0))
-    } catch {
-      toast.error(t.apiKeys.failedToLoad)
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : t.apiKeys.failedToLoad)
     } finally {
       setLoading(false)
     }

@@ -102,7 +102,7 @@ function ApiKeyUpdateContent() {
         const fromArray: string[] = Array.isArray(key?.roles) ? key.roles.filter(Boolean) : []
         currentRoleNames = fromArray.length ? fromArray : fromList
       } else {
-        toast.error(tk.failedToLoadKey)
+        toast.error(keyRes.reason instanceof Error ? keyRes.reason.message : tk.failedToLoadKey)
       }
 
       if (rolesRes.status === 'fulfilled') {

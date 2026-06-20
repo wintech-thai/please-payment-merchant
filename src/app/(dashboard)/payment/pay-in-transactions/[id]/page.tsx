@@ -131,8 +131,8 @@ export default function PayInTxDetailPage() {
           } catch { /* job section shows no data */ }
           finally { setLoadingJob(false) }
         }
-      } catch {
-        toast.error('Failed to load transaction detail')
+      } catch (err: unknown) {
+        toast.error(err instanceof Error ? err.message : 'Failed to load transaction detail')
       } finally {
         setLoading(false)
       }

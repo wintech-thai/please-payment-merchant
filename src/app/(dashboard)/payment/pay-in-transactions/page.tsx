@@ -131,16 +131,15 @@ export default function PayInTransactionsPage() {
         paymentTxApi.getPayInTransactionCount(payload as any),
       ])
 
-      if (listRes.status === 'fulfilled') {
-        const d = listRes.value.data as any
-        setItems(Array.isArray(d) ? d : (d?.payInTransactions ?? d?.items ?? []))
-      }
+      if (listRes.status === 'rejected') throw listRes.reason
+      const d = listRes.value.data as any
+      setItems(Array.isArray(d) ? d : (d?.payInTransactions ?? d?.items ?? []))
       if (countRes.status === 'fulfilled') {
         const d = countRes.value.data as any
         setTotal(typeof d === 'number' ? d : (d?.count ?? 0))
       }
-    } catch {
-      toast.error(m.noData)
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : m.noData)
     } finally {
       setLoading(false)
     }
@@ -277,12 +276,11 @@ export default function PayInTransactionsPage() {
                       </>
                     ) : <p className="text-sm text-gray-400">—</p>}
                   </td>
-                  {/* Amount */}
+                  {/* Amount (net of commission — what's actually credited) */}
                   <td className="px-4 py-3 border-b border-gray-100 text-right whitespace-nowrap">
                     <p className="text-sm font-semibold text-gray-800 tabular-nums">
-                      {formatAmount(item.txAmountDecimal ?? item.txAmount)}
+                      {formatAmount(item.payInTotalAmountDecimal ?? item.payInTotalAmount)}
                     </p>
-                    {item.payInFeePct != null && <p className="text-xs text-gray-400 tabular-nums">{item.payInFeePct}%</p>}
                     <p className="text-xs text-gray-400">{item.currency ?? '—'}</p>
                   </td>
                   {/* Fee */}
