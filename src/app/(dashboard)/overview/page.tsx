@@ -11,6 +11,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from 'recharts'
 import { RefreshCw } from 'lucide-react'
+import { toast } from 'sonner'
 
 function getDateRange(tr: TimeRangeValue) {
   if (tr.type === 'absolute' && tr.start && tr.end) {
@@ -95,26 +96,34 @@ export default function OverviewPage() {
 
   const load = useCallback(async () => {
     setLoading(true)
-    const range = getDateRange(timeRange)
-    const [summaryRes, walletRes] = await Promise.allSettled([
-      summaryApi.getMerchantSummary(range),
-      userApi.getMerchantWallet(),
-    ])
+    try {
+      const range = getDateRange(timeRange)
+      const [summaryRes, walletRes] = await Promise.allSettled([
+        summaryApi.getMerchantSummary(range),
+        userApi.getMerchantWallet(),
+      ])
 
-    if (summaryRes.status === 'fulfilled') {
-      const d = summaryRes.value.data as any
-      setSummary(d ?? null)
+      if (summaryRes.status === 'fulfilled') {
+        const d = summaryRes.value.data as any
+        setSummary(d ?? null)
+      } else {
+        throw summaryRes.reason
+      }
+
+      if (walletRes.status === 'fulfilled') {
+        const d = walletRes.value.data as any
+        const wallet = d?.wallet ?? d?.data ?? d
+        const bal = wallet?.pointBalanceDecimal ?? wallet?.currentBalanceDecimal ?? wallet?.balance ?? null
+        setWalletBalance(typeof bal === 'number' ? bal : null)
+      } else {
+        toast.error(walletRes.reason instanceof Error ? walletRes.reason.message : ov.failedToLoad)
+      }
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : ov.failedToLoad)
+    } finally {
+      setLoading(false)
     }
-
-    if (walletRes.status === 'fulfilled') {
-      const d = walletRes.value.data as any
-      const wallet = d?.wallet ?? d?.data ?? d
-      const bal = wallet?.pointBalanceDecimal ?? wallet?.currentBalanceDecimal ?? wallet?.balance ?? null
-      setWalletBalance(typeof bal === 'number' ? bal : null)
-    }
-
-    setLoading(false)
-  }, [timeRange, refreshKey])
+  }, [timeRange, refreshKey, ov.failedToLoad])
 
   useEffect(() => { load() }, [load])
 

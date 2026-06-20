@@ -44,12 +44,13 @@ function CustomRolesContent() {
         userApi.getCustomRoles({ offset: (currentPage - 1) * itemsPerPage, limit: itemsPerPage, fullTextSearch: keyword || undefined }),
         userApi.getCustomRoleCount(),
       ])
-      const raw = rolesRes.status === 'fulfilled' ? (rolesRes.value.data as any) : null
+      if (rolesRes.status === 'rejected') throw rolesRes.reason
+      const raw = rolesRes.value.data as any
       setRoles(Array.isArray(raw) ? raw : (raw?.customRoles ?? raw?.data ?? []))
       const cnt = countRes.status === 'fulfilled' ? (countRes.value.data as any) : null
       setTotal(typeof cnt === 'number' ? cnt : (cnt?.count ?? 0))
-    } catch {
-      toast.error(t.customRoles.failedToLoad)
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : t.customRoles.failedToLoad)
     } finally {
       setLoading(false)
     }

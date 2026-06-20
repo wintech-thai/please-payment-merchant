@@ -120,10 +120,14 @@ export default function AddPayOutRequestPage() {
         setMerchantName(m?.name ?? '')
         setPayoutMinAmount(m?.payoutMinAmount ?? null)
         setPayoutMaxAmount(m?.payoutMaxAmount ?? null)
+      } else {
+        toast.error(merchantRes.reason instanceof Error ? merchantRes.reason.message : tr.toastFailedToLoadMerchant)
       }
       if (bankRes.status === 'fulfilled') {
         const d = bankRes.value.data as any
         setBankAccounts(d?.bankAccounts ?? d?.items ?? [])
+      } else {
+        toast.error(bankRes.reason instanceof Error ? bankRes.reason.message : tr.toastFailedToLoadBanks)
       }
       setLoadingInit(false)
     }
@@ -198,8 +202,8 @@ export default function AddPayOutRequestPage() {
       })
       toast.success(tr.toastCreateSuccess)
       router.push('/payment/pay-out-requests')
-    } catch {
-      toast.error(tr.toastCreateFailed)
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : tr.toastCreateFailed)
     } finally {
       setSaving(false)
     }

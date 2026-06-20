@@ -11,6 +11,7 @@ import {
   ResponsiveContainer, Legend,
 } from 'recharts'
 import { RefreshCw } from 'lucide-react'
+import { toast } from 'sonner'
 
 function getDateRange(tr: TimeRangeValue) {
   if (tr.type === 'absolute' && tr.start && tr.end) {
@@ -106,18 +107,21 @@ export default function ReportAnalyticPage() {
 
   const load = useCallback(async () => {
     setLoading(true)
-    const range = getDateRange(timeRange)
-    const [summaryRes] = await Promise.allSettled([
-      summaryApi.getMerchantSummary(range),
-    ])
+    try {
+      const range = getDateRange(timeRange)
+      const [summaryRes] = await Promise.allSettled([
+        summaryApi.getMerchantSummary(range),
+      ])
 
-    if (summaryRes.status === 'fulfilled') {
+      if (summaryRes.status === 'rejected') throw summaryRes.reason
       const d = summaryRes.value.data as any
       setSummary(d ?? null)
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : ov.failedToLoad)
+    } finally {
+      setLoading(false)
     }
-
-    setLoading(false)
-  }, [timeRange, refreshKey])
+  }, [timeRange, refreshKey, ov.failedToLoad])
 
   useEffect(() => { load() }, [load])
 

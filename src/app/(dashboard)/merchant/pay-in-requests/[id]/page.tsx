@@ -91,8 +91,8 @@ export default function PayInRequestDetailPage() {
         const res = await paymentRequestApi.getPaymentRequestById(id)
         const data = res.data as any
         setDetail(data?.paymentRequest ?? data)
-      } catch {
-        toast.error('Failed to load payment request')
+      } catch (err: unknown) {
+        toast.error(err instanceof Error ? err.message : 'Failed to load payment request')
       } finally {
         setLoading(false)
       }

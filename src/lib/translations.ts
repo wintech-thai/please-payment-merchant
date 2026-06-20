@@ -981,7 +981,7 @@ export const translations = {
       refresh: 'รีเฟรช',
       colDate: 'วันที่',
       colMerchant: 'ร้านค้า',
-      colAmount: 'ยอด',
+      colAmount: 'ยอดที่ได้รับ',
       colFee: 'ค่าธรรมเนียม',
       colBankAccount: 'บัญชีธนาคาร',
       colStatus: 'สถานะ',
@@ -1202,6 +1202,7 @@ export const translations = {
       toastRejectFailed: 'ปฏิเสธไม่สำเร็จ',
       toastFailedToLoad: 'โหลดข้อมูลไม่สำเร็จ',
       toastFailedToLoadBanks: 'โหลดบัญชีธนาคารไม่สำเร็จ',
+      toastFailedToLoadMerchant: 'โหลดข้อมูลร้านค้าไม่สำเร็จ',
       noSourceAccounts: 'ไม่พบบัญชีธนาคาร',
       // Create page
       createTitle: 'เพิ่ม Pay-Out Request',
@@ -2301,7 +2302,7 @@ export const translations = {
       refresh: 'Refresh',
       colDate: 'Date',
       colMerchant: 'Merchant',
-      colAmount: 'Amount',
+      colAmount: 'Amount Received',
       colFee: 'Fee',
       colBankAccount: 'Bank Account',
       colStatus: 'Status',
@@ -2522,6 +2523,7 @@ export const translations = {
       toastRejectFailed: 'Failed to reject',
       toastFailedToLoad: 'Failed to load data',
       toastFailedToLoadBanks: 'Failed to load bank accounts',
+      toastFailedToLoadMerchant: 'Failed to load merchant data',
       noSourceAccounts: 'No bank accounts found',
       // Create page
       createTitle: 'Add Pay-Out Request',

@@ -99,8 +99,8 @@ export default function PayOutRequestDetailPage() {
         const raw = data?.paymentRequest ?? data?.data ?? data
         if (raw) raw.isPayInBankAccountOverride = raw.isPayInBankAccountOverride ?? raw.isPayinBankAccountOverride ?? false
         setDetail(raw)
-      } catch {
-        toast.error(tr.toastFailedToLoad)
+      } catch (err: unknown) {
+        toast.error(err instanceof Error ? err.message : tr.toastFailedToLoad)
         router.push('/payment/pay-out-requests')
       } finally {
         setLoading(false)

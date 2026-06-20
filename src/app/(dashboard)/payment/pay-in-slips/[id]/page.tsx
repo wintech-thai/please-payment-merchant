@@ -117,14 +117,14 @@ export default function PayInSlipDetailPage() {
           try {
             const baRes = await bankAccountApi.getBankAccounts()
             setBankAccounts(baRes.data.bankAccounts)
-          } catch {
-            toast.error(tr.toastFailedToLoadDetail)
+          } catch (err: unknown) {
+            toast.error(err instanceof Error ? err.message : tr.toastFailedToLoadDetail)
           } finally {
             setLoadingBanks(false)
           }
         }
-      } catch {
-        toast.error(tr.toastFailedToLoadDetail)
+      } catch (err: unknown) {
+        toast.error(err instanceof Error ? err.message : tr.toastFailedToLoadDetail)
       } finally {
         setLoading(false)
       }
