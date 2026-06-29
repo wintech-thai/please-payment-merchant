@@ -1956,7 +1956,7 @@ export const translations = {
       of: 'of',
     },
     revenueSummary: {
-      title: 'Transaction Summary',
+      title: 'Tx Summary',
       subtitle: 'Overview of Pay-In, Pay-Out and fees',
       refresh: 'Refresh',
       preset1D: '1 Day',
