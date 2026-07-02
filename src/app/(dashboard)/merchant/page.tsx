@@ -392,7 +392,7 @@ export default function MerchantInfoPage() {
               {/* API Documentation link */}
               <div>
                 <a
-                  href={typeof window !== 'undefined' ? `https://${window.location.hostname.replace(/^merchant/, 'admin')}/documents` : '#'}
+                  href={typeof window !== 'undefined' ? `https://${window.location.hostname.replace(/^merchant/, 'admin')}/documents/endpoints` : '#'}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-primary-200 text-primary-600 text-sm font-semibold hover:bg-primary-50 transition-colors"

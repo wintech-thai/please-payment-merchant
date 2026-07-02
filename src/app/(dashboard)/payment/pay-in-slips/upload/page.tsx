@@ -656,7 +656,7 @@ export default function UploadPayInSlipPage() {
                         {bankAccountId
                           ? (() => {
                               const ba = bankAccounts.find(b => b.accountId === bankAccountId)
-                              return ba ? `${ba.bankCode} — ${ba.accountNumber}${ba.accountName ? ` (${ba.accountName})` : ''}` : tr.placeholderBankAccount
+                              return ba ? `${ba.bankCode} · ${ba.accountNumber}${ba.accountName ? ` — ${ba.accountName}` : ''}` : tr.placeholderBankAccount
                             })()
                           : <span className="text-gray-400">{loadingBanks ? 'Loading...' : tr.placeholderBankAccount}</span>
                         }
