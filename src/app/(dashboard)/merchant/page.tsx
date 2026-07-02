@@ -7,7 +7,7 @@ import { userApi } from '@/lib/api/user.api'
 import { useLang } from '@/context/LanguageContext'
 import { toast } from 'sonner'
 import clsx from 'clsx'
-import { Loader2, Copy, Check, Store, CreditCard, Webhook, Wallet, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Loader2, Copy, Check, Store, CreditCard, Webhook, Wallet, ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react'
 
 interface MerchantData {
   // from GetMerchants (admin MerchantItem field names)
@@ -387,6 +387,19 @@ export default function MerchantInfoPage() {
                     {copiedPayOut ? mi.copied : mi.copy}
                   </button>
                 </div>
+              </div>
+
+              {/* API Documentation link */}
+              <div>
+                <a
+                  href={typeof window !== 'undefined' ? `https://${window.location.hostname.replace(/^merchant/, 'admin')}/documents` : '#'}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-primary-200 text-primary-600 text-sm font-semibold hover:bg-primary-50 transition-colors"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  {mi.viewApiDocs}
+                </a>
               </div>
             </div>
           )}
