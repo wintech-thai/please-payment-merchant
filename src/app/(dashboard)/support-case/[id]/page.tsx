@@ -7,6 +7,8 @@ import { supportCaseApi } from '@/lib/api/support-case.api'
 import type { SupportCaseItem, SupportCaseCommentItem } from '@/lib/api/support-case.api'
 import { toast } from 'sonner'
 import clsx from 'clsx'
+import RichTextEditor from '@/components/RichTextEditor'
+import RichContent from '@/components/RichContent'
 
 const STATUS_COLORS: Record<string, string> = {
   'New': 'bg-blue-50 text-blue-700 ring-blue-200',
@@ -51,18 +53,6 @@ function normalizeComment(raw: any): SupportCaseCommentItem {
   }
 }
 
-function parseContent(raw?: string): string {
-  if (!raw) return ''
-  try {
-    const parsed = JSON.parse(raw)
-    if (parsed?.content) {
-      return parsed.content
-        .flatMap((block: any) => block?.content?.map((n: any) => n?.text ?? '') ?? ['\n'])
-        .join('')
-    }
-  } catch { /* plain text */ }
-  return raw
-}
 
 function formatDate(d?: string | null) {
   if (!d) return '—'
@@ -80,7 +70,6 @@ export default function SupportCaseDetailPage() {
   const [caseData, setCaseData] = useState<SupportCaseItem | null>(null)
   const [comments, setComments] = useState<SupportCaseCommentItem[]>([])
   const [loading, setLoading] = useState(true)
-  const [commentText, setCommentText] = useState('')
   const [sending, setSending] = useState(false)
   const commentsEndRef = useRef<HTMLDivElement>(null)
 
@@ -121,13 +110,11 @@ export default function SupportCaseDetailPage() {
     }
   }
 
-  async function handleSendComment() {
-    const text = commentText.trim()
-    if (!text || sending || isClosed) return
+  async function handleSendComment(jsonContent: string) {
+    if (!jsonContent || sending || isClosed) return
     setSending(true)
     try {
-      await supportCaseApi.addComment(caseId, text)
-      setCommentText('')
+      await supportCaseApi.addComment(caseId, jsonContent)
       const res = await supportCaseApi.getComments(caseId)
       const raw = res.data as any
       const list: any[] = raw?.comments ?? raw?.Comments ?? (Array.isArray(raw) ? raw : [])
@@ -266,7 +253,7 @@ export default function SupportCaseDetailPage() {
                 return (
                   <div key={c.id} className={clsx('flex', isMerchant ? 'justify-end' : 'justify-start')}>
                     <div className={clsx('max-w-[75%] rounded-2xl px-4 py-2.5', isMerchant ? 'bg-primary-600 text-white rounded-br-sm' : 'bg-gray-100 text-gray-800 rounded-bl-sm')}>
-                      <p className="text-sm whitespace-pre-wrap break-words">{parseContent(c.content)}</p>
+                      <RichContent content={c.content} />
                       <p className={clsx('text-[11px] mt-1', isMerchant ? 'text-primary-200 text-right' : 'text-gray-400')}>
                         {c.createdBy} · {formatDate(c.createdDate)}
                       </p>
@@ -285,32 +272,7 @@ export default function SupportCaseDetailPage() {
             </div>
           ) : (
             <div className="flex-none px-5 py-4 border-t border-gray-100">
-              <div className="flex gap-3 items-end">
-                <textarea
-                  value={commentText}
-                  onChange={e => setCommentText(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendComment() } }}
-                  placeholder={isth ? 'พิมพ์ข้อความ... (Ctrl+Enter เพื่อส่ง)' : 'Type a message... (Ctrl+Enter to send)'}
-                  rows={2}
-                  className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-300 resize-none"
-                />
-                <button
-                  onClick={handleSendComment}
-                  disabled={!commentText.trim() || sending}
-                  className="flex-shrink-0 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {sending ? (
-                    <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth={4} />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                    </svg>
-                  ) : (
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                    </svg>
-                  )}
-                </button>
-              </div>
+              <RichTextEditor onSubmit={handleSendComment} sending={sending} />
             </div>
           )}
 

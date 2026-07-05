@@ -9,6 +9,9 @@
   },
   "dependencies": {
     "@elastic/elasticsearch": "^8.19.1",
+    "@tiptap/pm": "^3.27.1",
+    "@tiptap/react": "^3.27.1",
+    "@tiptap/starter-kit": "^3.27.1",
     "@zxing/library": "^0.23.0",
     "axios": "^1.16.0",
     "clsx": "^2.1.1",
