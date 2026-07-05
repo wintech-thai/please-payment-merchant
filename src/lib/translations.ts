@@ -56,6 +56,7 @@ export const translations = {
       auditLog: 'ประวัติการใช้งาน',
       business: 'ธุรกิจ',
       merchantInfo: 'ข้อมูลร้านค้า',
+      supportCase: 'Support Case',
     },
     profile: {
       title: 'UPDATE PROFILE',
@@ -1378,6 +1379,7 @@ export const translations = {
       auditLog: 'Audit Log',
       business: 'Business',
       merchantInfo: 'Merchant Info',
+      supportCase: 'Support Case',
     },
     profile: {
       title: 'UPDATE PROFILE',
