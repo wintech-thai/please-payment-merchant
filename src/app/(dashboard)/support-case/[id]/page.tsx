@@ -281,7 +281,7 @@ export default function SupportCaseDetailPage() {
                     {/* Reply button — shows on hover, left side for merchant bubbles */}
                     {!isClosed && isMerchant && (
                       <button
-                        onClick={() => setReplyTo({ id: c.id, author: authorLabel, content: c.content })}
+                        onClick={() => setReplyTo({ id: c.id ?? '', author: authorLabel, content: c.content ?? '' })}
                         className="opacity-0 group-hover:opacity-100 p-1.5 rounded-full text-gray-300 hover:text-primary-400 hover:bg-primary-50 transition-all flex-shrink-0 mb-1"
                         title={isth ? 'ตอบกลับ' : 'Reply'}
                       >
@@ -299,7 +299,7 @@ export default function SupportCaseDetailPage() {
                     {/* Reply button for non-merchant (admin) messages */}
                     {!isClosed && !isMerchant && (
                       <button
-                        onClick={() => setReplyTo({ id: c.id, author: authorLabel, content: c.content })}
+                        onClick={() => setReplyTo({ id: c.id ?? '', author: authorLabel, content: c.content ?? '' })}
                         className="opacity-0 group-hover:opacity-100 p-1.5 rounded-full text-gray-300 hover:text-gray-500 hover:bg-gray-100 transition-all flex-shrink-0 mb-1"
                         title={isth ? 'ตอบกลับ' : 'Reply'}
                       >
