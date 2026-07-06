@@ -217,29 +217,37 @@ export default function SupportCaseDetailPage() {
             </div>
             <div className="grid grid-cols-2 gap-x-6 gap-y-4">
               <div>
-                <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">{isth ? 'ความสำคัญ' : 'Priority'}</p>
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">{isth ? 'เลขอ้างอิง' : 'REF'}</p>
+                <p className="text-sm text-gray-800 break-all">{caseData.ref || '—'}</p>
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">{isth ? 'องค์กร' : 'ORG'}</p>
+                <p className="text-sm text-gray-800">{caseData.orgId || '—'}</p>
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">{isth ? 'ความสำคัญ' : 'Priority'}</p>
                 {caseData.priority ? (
                   <span className={clsx('inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium', PRIORITY_COLORS[caseData.priority] ?? 'bg-gray-100 text-gray-600')}>
                     {caseData.priority}
                   </span>
-                ) : <p className="text-sm text-gray-700">—</p>}
+                ) : <p className="text-sm text-gray-800">—</p>}
               </div>
               <div>
-                <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">{isth ? 'ผู้สร้าง' : 'Created By'}</p>
-                <p className="text-sm text-gray-700">{caseData.createdBy || '—'}</p>
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">{isth ? 'ผู้สร้าง' : 'Created By'}</p>
+                <p className="text-sm text-gray-800">{caseData.createdBy || '—'}</p>
               </div>
               <div>
-                <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">{isth ? 'วันที่สร้าง' : 'Created'}</p>
-                <p className="text-sm text-gray-700">{formatDate(caseData.createdDate)}</p>
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">{isth ? 'วันที่สร้าง' : 'Created'}</p>
+                <p className="text-sm text-gray-800">{formatDate(caseData.createdDate)}</p>
               </div>
               <div>
-                <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">{isth ? 'อัปเดตล่าสุด' : 'Last Updated'}</p>
-                <p className="text-sm text-gray-700">{formatDate(caseData.updatedDate)}</p>
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">{isth ? 'อัปเดตล่าสุด' : 'Last Updated'}</p>
+                <p className="text-sm text-gray-800">{formatDate(caseData.updatedDate)}</p>
               </div>
               {isClosed && caseData.closedDate && (
                 <div>
-                  <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">{isth ? 'วันที่ปิด' : 'Closed'}</p>
-                  <p className="text-sm text-gray-700">{formatDate(caseData.closedDate)}</p>
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">{isth ? 'วันที่ปิด' : 'Closed'}</p>
+                  <p className="text-sm text-gray-800">{formatDate(caseData.closedDate)}</p>
                 </div>
               )}
             </div>
