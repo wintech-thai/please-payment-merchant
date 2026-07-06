@@ -1,11 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useLang } from '@/context/LanguageContext'
 import { supportCaseApi } from '@/lib/api/support-case.api'
 import { useUnsavedChanges } from '@/hooks/useUnsavedChanges'
 import LeaveConfirmModal from '@/components/LeaveConfirmModal'
+import RichTextEditor, { type RichTextEditorRef } from '@/components/RichTextEditor'
 import { toast } from 'sonner'
 import clsx from 'clsx'
 
@@ -25,10 +26,10 @@ export default function CreateSupportCasePage() {
 
   const [subject, setSubject] = useState('')
   const [priority, setPriority] = useState<Priority>('Medium')
-  const [description, setDescription] = useState('')
   const [saving, setSaving] = useState(false)
   const [errors, setErrors] = useState<{ subject?: string; description?: string }>({})
   const [isDirty, setIsDirty] = useState(false)
+  const descRef = useRef<RichTextEditorRef>(null)
   const { showConfirm, guardNavigation, confirmLeave, cancelLeave } = useUnsavedChanges(isDirty)
 
   const goBack = () => guardNavigation(() => router.push('/support-case'))
@@ -36,7 +37,7 @@ export default function CreateSupportCasePage() {
   function validate() {
     const e: typeof errors = {}
     if (!subject.trim()) e.subject = isth ? 'กรุณากรอกหัวข้อ' : 'Subject is required'
-    if (!description.trim()) e.description = isth ? 'กรุณากรอกรายละเอียด' : 'Description is required'
+    if (descRef.current?.isEmpty()) e.description = isth ? 'กรุณากรอกรายละเอียด' : 'Description is required'
     setErrors(e)
     return Object.keys(e).length === 0
   }
@@ -46,7 +47,8 @@ export default function CreateSupportCasePage() {
     if (!validate()) return
     setSaving(true)
     try {
-      await supportCaseApi.addCase({ Subject: subject.trim(), Priority: priority, Description: description.trim() })
+      const description = descRef.current?.getContent() ?? ''
+      await supportCaseApi.addCase({ Subject: subject.trim(), Priority: priority, Description: description })
       toast.success(isth ? 'สร้าง Case สำเร็จ' : 'Case created successfully')
       router.push('/support-case')
     } catch (err: unknown) {
@@ -166,18 +168,16 @@ export default function CreateSupportCasePage() {
               {isth ? 'รายละเอียดปัญหา' : 'Description'}
               <span className="text-red-500">*</span>
             </h2>
-            <textarea
-              value={description}
-              onChange={e => { setDescription(e.target.value); setIsDirty(true); setErrors(p => ({ ...p, description: undefined })) }}
-              placeholder={isth ? 'อธิบายปัญหาที่พบ เช่น ขั้นตอนที่ทำ ข้อความ error ที่พบ ผลที่คาดหวัง...' : 'Describe the issue in detail — steps to reproduce, error messages, expected behavior...'}
-              className={clsx(
-                'flex-1 w-full px-3 py-2.5 text-sm border rounded-xl focus:outline-none focus:ring-2 focus:border-transparent bg-white transition-colors resize-none min-h-[120px]',
-                errors.description ? 'border-red-400 focus:ring-red-400' : 'border-gray-200 focus:ring-primary-500'
-              )}
-            />
+            <div className="flex-1 flex flex-col min-h-0">
+              <RichTextEditor
+                ref={descRef}
+                expandable
+                disabled={saving}
+              />
+            </div>
             {errors.description && <p className="text-red-500 text-xs">{errors.description}</p>}
             <p className="text-[11px] text-gray-400">
-              {isth ? 'ยิ่งละเอียดยิ่งช่วยให้ทีมงานแก้ปัญหาได้เร็วขึ้น' : 'The more detail you provide, the faster we can resolve your issue.'}
+              {isth ? 'ยิ่งละเอียดยิ่งช่วยให้ทีมงานแก้ปัญหาได้เร็วขึ้น สามารถแนบรูปภาพได้' : 'The more detail you provide, the faster we can resolve your issue. You can paste or attach images.'}
             </p>
           </div>
 

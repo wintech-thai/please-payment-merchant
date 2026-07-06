@@ -7,7 +7,7 @@ import { supportCaseApi } from '@/lib/api/support-case.api'
 import type { SupportCaseItem, SupportCaseCommentItem } from '@/lib/api/support-case.api'
 import { toast } from 'sonner'
 import clsx from 'clsx'
-import RichTextEditor from '@/components/RichTextEditor'
+import RichTextEditor, { type ReplyTarget } from '@/components/RichTextEditor'
 import RichContent from '@/components/RichContent'
 
 const STATUS_COLORS: Record<string, string> = {
@@ -71,6 +71,8 @@ export default function SupportCaseDetailPage() {
   const [comments, setComments] = useState<SupportCaseCommentItem[]>([])
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
+  const [leftCollapsed, setLeftCollapsed] = useState(false)
+  const [replyTo, setReplyTo] = useState<ReplyTarget | null>(null)
   const commentsEndRef = useRef<HTMLDivElement>(null)
 
   const isClosed = caseData?.status === 'Closed' || caseData?.status === 'Resolved'
@@ -170,22 +172,33 @@ export default function SupportCaseDetailPage() {
               </span>
             )}
           </div>
-          <p className="text-sm text-gray-400 mt-0.5 font-mono font-semibold">{caseData.ref}</p>
+          <p className="text-sm text-gray-400 mt-0.5">{caseData.ref}</p>
         </div>
       </div>
 
       {/* Body — 2-column grid */}
-      <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-2 gap-4 overflow-hidden">
+      <div className={clsx('flex-1 min-h-0 grid grid-cols-1 gap-4 overflow-hidden', leftCollapsed ? 'lg:grid-cols-1' : 'lg:grid-cols-2')}>
 
         {/* Left — Case Info + Description */}
-        <div className="min-h-0 overflow-y-auto flex flex-col gap-4 pb-1">
+        <div className={clsx('min-h-0 overflow-y-auto flex flex-col gap-4 pb-1', leftCollapsed && 'lg:hidden')}>
 
           {/* Details card */}
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex flex-col gap-4">
-            <h2 className="flex items-center gap-2 text-sm font-bold text-gray-800">
-              <span className="w-1 h-4 bg-primary-500 rounded-full" />
-              {isth ? 'ข้อมูล Case' : 'Case Info'}
-            </h2>
+            <div className="flex items-center justify-between">
+              <h2 className="flex items-center gap-2 text-sm font-bold text-gray-800">
+                <span className="w-1 h-4 bg-primary-500 rounded-full" />
+                {isth ? 'ข้อมูล Case' : 'Case Info'}
+              </h2>
+              <button
+                onClick={() => setLeftCollapsed(true)}
+                className="hidden lg:flex p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                title={isth ? 'ซ่อนแผงซ้าย' : 'Collapse panel'}
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+            </div>
             <div className="grid grid-cols-2 gap-x-6 gap-y-4">
               <div>
                 <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">{isth ? 'ความสำคัญ' : 'Priority'}</p>
@@ -207,7 +220,7 @@ export default function SupportCaseDetailPage() {
                 <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">{isth ? 'อัปเดตล่าสุด' : 'Last Updated'}</p>
                 <p className="text-sm text-gray-700">{formatDate(caseData.updatedDate)}</p>
               </div>
-              {caseData.closedDate && (
+              {isClosed && caseData.closedDate && (
                 <div>
                   <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">{isth ? 'วันที่ปิด' : 'Closed'}</p>
                   <p className="text-sm text-gray-700">{formatDate(caseData.closedDate)}</p>
@@ -223,7 +236,7 @@ export default function SupportCaseDetailPage() {
                 <span className="w-1 h-4 bg-primary-500 rounded-full" />
                 {isth ? 'รายละเอียดปัญหา' : 'Description'}
               </h2>
-              <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">{caseData.description}</p>
+              <RichContent content={caseData.description} />
             </div>
           )}
 
@@ -233,7 +246,7 @@ export default function SupportCaseDetailPage() {
         <div className="min-h-[300px] lg:min-h-0 bg-white rounded-2xl border border-gray-100 shadow-sm flex flex-col overflow-hidden">
 
           {/* Thread header */}
-          <div className="flex-none px-5 pt-5 pb-4 border-b border-gray-100">
+          <div className="flex-none flex items-center justify-between px-5 pt-5 pb-4 border-b border-gray-100">
             <h2 className="flex items-center gap-2 text-sm font-bold text-gray-800">
               <span className="w-1 h-4 bg-primary-500 rounded-full" />
               {isth ? 'การสนทนา' : 'Thread'}
@@ -241,6 +254,18 @@ export default function SupportCaseDetailPage() {
                 <span className="text-gray-400 font-normal text-xs ml-1">({comments.length})</span>
               )}
             </h2>
+            {leftCollapsed && (
+              <button
+                onClick={() => setLeftCollapsed(false)}
+                className="hidden lg:flex items-center gap-1 px-2 py-1 rounded-lg text-xs text-gray-500 hover:text-gray-700 border border-gray-200 hover:bg-gray-50 transition-colors"
+                title={isth ? 'แสดง Case Info' : 'Show case info'}
+              >
+                <svg className="w-3.5 h-3.5 rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                </svg>
+                <span>Case Info</span>
+              </button>
+            )}
           </div>
 
           {/* Messages */}
@@ -250,14 +275,39 @@ export default function SupportCaseDetailPage() {
             ) : (
               comments.map(c => {
                 const isMerchant = (c.authorType ?? '').toLowerCase() === 'merchant'
+                const authorLabel = c.createdBy ?? (isMerchant ? 'Merchant' : 'Admin')
                 return (
-                  <div key={c.id} className={clsx('flex', isMerchant ? 'justify-end' : 'justify-start')}>
+                  <div key={c.id} className={clsx('group flex items-end gap-1.5', isMerchant ? 'justify-end' : 'justify-start')}>
+                    {/* Reply button — shows on hover, left side for merchant bubbles */}
+                    {!isClosed && isMerchant && (
+                      <button
+                        onClick={() => setReplyTo({ id: c.id, author: authorLabel, content: c.content })}
+                        className="opacity-0 group-hover:opacity-100 p-1.5 rounded-full text-gray-300 hover:text-primary-400 hover:bg-primary-50 transition-all flex-shrink-0 mb-1"
+                        title={isth ? 'ตอบกลับ' : 'Reply'}
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                        </svg>
+                      </button>
+                    )}
                     <div className={clsx('max-w-[75%] rounded-2xl px-4 py-2.5', isMerchant ? 'bg-primary-600 text-white rounded-br-sm' : 'bg-gray-100 text-gray-800 rounded-bl-sm')}>
                       <RichContent content={c.content} />
                       <p className={clsx('text-[11px] mt-1', isMerchant ? 'text-primary-200 text-right' : 'text-gray-400')}>
-                        {c.createdBy} · {formatDate(c.createdDate)}
+                        {authorLabel} · {formatDate(c.createdDate)}
                       </p>
                     </div>
+                    {/* Reply button for non-merchant (admin) messages */}
+                    {!isClosed && !isMerchant && (
+                      <button
+                        onClick={() => setReplyTo({ id: c.id, author: authorLabel, content: c.content })}
+                        className="opacity-0 group-hover:opacity-100 p-1.5 rounded-full text-gray-300 hover:text-gray-500 hover:bg-gray-100 transition-all flex-shrink-0 mb-1"
+                        title={isth ? 'ตอบกลับ' : 'Reply'}
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                        </svg>
+                      </button>
+                    )}
                   </div>
                 )
               })
@@ -272,7 +322,12 @@ export default function SupportCaseDetailPage() {
             </div>
           ) : (
             <div className="flex-none px-5 py-4 border-t border-gray-100">
-              <RichTextEditor onSubmit={handleSendComment} sending={sending} />
+              <RichTextEditor
+                onSubmit={handleSendComment}
+                sending={sending}
+                replyTo={replyTo}
+                onClearReply={() => setReplyTo(null)}
+              />
             </div>
           )}
 

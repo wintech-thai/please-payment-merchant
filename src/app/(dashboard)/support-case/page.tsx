@@ -9,8 +9,9 @@ import { useOrgChange } from '@/hooks/useOrgChange'
 import { supportCaseApi } from '@/lib/api/support-case.api'
 import type { SupportCaseItem } from '@/lib/api/support-case.api'
 import { toast } from 'sonner'
-import { Search, ChevronLeft, ChevronRight, Plus, MoreHorizontal, MessageSquare } from 'lucide-react'
+import { Search, ChevronLeft, ChevronRight, Plus, MoreHorizontal, MessageSquare, RefreshCw } from 'lucide-react'
 import clsx from 'clsx'
+import { AdvancedTimeRangeSelector, type TimeRangeValue } from '@/components/AdvancedTimeRangeSelector'
 
 type CaseStatus = 'New' | 'Open' | 'In Progress' | 'Waiting for Customer' | 'Resolved' | 'Closed' | 'Cancelled'
 
@@ -51,6 +52,36 @@ function formatDate(d?: string | null) {
   if (!d) return '—'
   try { return new Date(d).toLocaleDateString('th-TH', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) }
   catch { return d }
+}
+
+function getTimeFilter(tr: TimeRangeValue): { fromDate: string; toDate: string } {
+  if (tr.type === 'absolute' && tr.start && tr.end) {
+    return { fromDate: new Date(tr.start * 1000).toISOString(), toDate: new Date(tr.end * 1000).toISOString() }
+  }
+  const num = parseInt(tr.value)
+  const unit = tr.value.replace(/\d/g, '')
+  const now = Date.now()
+  let startMs = now
+  if (unit === 'm') startMs = now - num * 60_000
+  else if (unit === 'h') startMs = now - num * 3_600_000
+  else startMs = now - num * 86_400_000
+  return { fromDate: new Date(startMs).toISOString(), toDate: new Date(now).toISOString() }
+}
+
+function formatAge(d?: string | null): string {
+  if (!d) return ''
+  const ms = Date.now() - new Date(d).getTime()
+  if (ms < 0) return ''
+  const mins = Math.floor(ms / 60000)
+  if (mins < 1) return 'just now'
+  const hrs = Math.floor(mins / 60)
+  const days = Math.floor(hrs / 24)
+  if (days >= 7) return ''
+  const remMins = mins % 60
+  const remHrs = hrs % 24
+  if (days > 0) return remHrs > 0 ? `${days}d ${remHrs}hr` : `${days}d`
+  if (hrs > 0) return remMins > 0 ? `${hrs}hr ${remMins}min` : `${hrs}hr`
+  return `${mins}min`
 }
 
 function ThreeDotMenu({ onView }: { onView: () => void }) {
@@ -95,14 +126,23 @@ function SupportCaseContent() {
   const [searchTerm, setSearchTerm] = useState('')
   const [appliedSearch, setAppliedSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<CaseStatus | 'All'>('All')
+  const [timeRange, setTimeRange] = useState<TimeRangeValue>({ type: 'relative', value: '30d' })
   const [loading, setLoading] = useState(true)
 
-  const fetchCases = useCallback(async (currentPage: number, keyword = '', status: CaseStatus | 'All' = statusFilter) => {
+  const fetchCases = useCallback(async (
+    currentPage: number,
+    keyword = '',
+    status: CaseStatus | 'All' = statusFilter,
+    tr: TimeRangeValue = timeRange,
+  ) => {
     setLoading(true)
     try {
+      const { fromDate, toDate } = getTimeFilter(tr)
       const payload = {
         FullTextSearch: keyword || undefined,
         Status: status === 'All' ? undefined : status,
+        FromDate: fromDate,
+        ToDate: toDate,
         Limit: itemsPerPage,
         Offset: currentPage,
       }
@@ -122,26 +162,39 @@ function SupportCaseContent() {
     } finally {
       setLoading(false)
     }
-  }, [itemsPerPage, statusFilter])
+  }, [itemsPerPage, statusFilter, timeRange])
 
-  useEffect(() => { fetchCases(page, appliedSearch, statusFilter) }, [page, itemsPerPage])
-  useOrgChange(() => fetchCases(1, ''))
+  useEffect(() => { fetchCases(page, appliedSearch, statusFilter, timeRange) }, [page, itemsPerPage])
+  useOrgChange(() => { setAppliedSearch(''); fetchCases(1, '', 'All', timeRange) })
 
   const handleSearchTrigger = () => {
     setAppliedSearch(searchTerm)
     setPage(1)
-    fetchCases(1, searchTerm, statusFilter)
+    fetchCases(1, searchTerm, statusFilter, timeRange)
+  }
+
+  const handleRefresh = () => {
+    setPage(1)
+    fetchCases(1, appliedSearch, statusFilter, timeRange)
   }
 
   const handleStatusChange = (s: CaseStatus | 'All') => {
     setStatusFilter(s)
     setPage(1)
-    fetchCases(1, appliedSearch, s)
+    fetchCases(1, appliedSearch, s, timeRange)
+  }
+
+  const handleTimeRangeChange = (tr: TimeRangeValue) => {
+    setTimeRange(tr)
+    setPage(1)
+    fetchCases(1, appliedSearch, statusFilter, tr)
   }
 
   const startRow = total === 0 ? 0 : (page - 1) * itemsPerPage + 1
   const endRow = Math.min(page * itemsPerPage, total)
   const totalPages = Math.ceil(total / itemsPerPage)
+
+  const inputCls = 'text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent'
 
   return (
     <div className="flex flex-col overflow-hidden h-[calc(100dvh-5rem)] sm:h-[calc(100dvh-6.5rem)] px-4 sm:px-6 pt-4 sm:pt-6">
@@ -157,31 +210,45 @@ function SupportCaseContent() {
       </div>
 
       {/* Toolbar */}
-      <div className="flex flex-col sm:flex-row gap-3 justify-between items-start sm:items-center mb-3 flex-none">
-        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+      <div className="flex flex-col gap-3 mb-3 flex-none">
+        <div className="flex flex-wrap gap-2 items-center">
+          {/* Status */}
           <select
             value={statusFilter}
             onChange={e => handleStatusChange(e.target.value as CaseStatus | 'All')}
-            className="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 sm:min-w-[160px]"
+            className={clsx(inputCls, 'sm:min-w-[160px]')}
           >
             {ALL_STATUSES.map(s => (
               <option key={s} value={s}>{s === 'All' ? (isth ? 'ทุกสถานะ' : 'All Status') : s}</option>
             ))}
           </select>
+          {/* Search text */}
           <input
             type="text"
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleSearchTrigger()}
             placeholder={isth ? 'ค้นหา Ref, หัวข้อ...' : 'Search ref, subject...'}
-            className="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent placeholder-gray-400 sm:min-w-[220px]"
+            className={clsx(inputCls, 'placeholder-gray-400 sm:min-w-[220px]')}
           />
+          {/* Time range */}
+          <AdvancedTimeRangeSelector value={timeRange} onChange={handleTimeRangeChange} disabled={loading} />
+          {/* Search btn */}
           <button onClick={handleSearchTrigger}
             className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm rounded-lg transition-colors flex items-center justify-center gap-1.5">
             <Search className="w-4 h-4" />
           </button>
+          {/* Refresh btn */}
+          <button
+            onClick={handleRefresh}
+            disabled={loading}
+            className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg border border-gray-200 bg-white transition-colors disabled:opacity-40"
+            title={isth ? 'รีเฟรช' : 'Refresh'}
+          >
+            <RefreshCw className={clsx('w-4 h-4', loading && 'animate-spin')} />
+          </button>
         </div>
-        <div className="flex gap-2 w-full sm:w-auto justify-end">
+        <div className="flex gap-2 justify-end">
           <Link href="/support-case/create"
             className="flex items-center gap-1.5 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold rounded-full shadow-sm transition-all hover:shadow-md">
             <Plus className="w-4 h-4" />{isth ? 'สร้าง Case ใหม่' : 'Create Case'}
@@ -201,14 +268,15 @@ function SupportCaseContent() {
                 <th className="px-4 pb-1 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">{isth ? 'ความสำคัญ' : 'Priority'}</th>
                 <th className="px-4 pb-1 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">{isth ? 'ผู้สร้าง' : 'Created By'}</th>
                 <th className="px-4 pb-1 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap">{isth ? 'วันที่สร้าง' : 'Created'}</th>
+                <th className="px-4 pb-1 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap">{isth ? 'อัปเดตล่าสุด' : 'Updated'}</th>
                 <th className="w-14 px-4 pb-1 text-center text-xs font-semibold text-gray-400 uppercase tracking-wider">{isth ? 'จัดการ' : 'Action'}</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={7} className="py-20 text-center"><LoadingSpinner /></td></tr>
+                <tr><td colSpan={8} className="py-20 text-center"><LoadingSpinner /></td></tr>
               ) : cases.length === 0 ? (
-                <tr><td colSpan={7} className="py-20 text-center">
+                <tr><td colSpan={8} className="py-20 text-center">
                   <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
                     <MessageSquare className="w-7 h-7 text-gray-400" />
                   </div>
@@ -217,6 +285,8 @@ function SupportCaseContent() {
                 </td></tr>
               ) : cases.map(c => {
                 const isSelected = selectedRowId === c.id
+                const createdAge = formatAge(c.createdDate)
+                const updatedAge = formatAge(c.updatedDate)
                 return (
                   <tr key={c.id}
                     onClick={() => handleRowSelect(c.id ?? '')}
@@ -228,7 +298,7 @@ function SupportCaseContent() {
                     <td className={clsx('pl-4 pr-2 py-3.5 rounded-l-xl border-l-[3px] whitespace-nowrap', isSelected ? 'border-primary-500' : 'border-transparent')}>
                       <button
                         onClick={e => { e.stopPropagation(); handleRowSelect(c.id ?? ''); router.push(`/support-case/${c.id}`) }}
-                        className={clsx('font-mono text-sm font-bold hover:underline', isSelected ? 'text-primary-700' : 'text-primary-600 hover:text-primary-800')}
+                        className={clsx('text-sm font-bold hover:underline', isSelected ? 'text-primary-700' : 'text-primary-600 hover:text-primary-800')}
                       >
                         {c.ref || '—'}
                       </button>
@@ -257,9 +327,19 @@ function SupportCaseContent() {
                     <td className="px-4 py-3.5">
                       <span className="text-sm text-gray-500">{c.createdBy || '—'}</span>
                     </td>
-                    {/* Created Date */}
+                    {/* Created */}
                     <td className="px-4 py-3.5 whitespace-nowrap">
-                      <span className="text-sm text-gray-500">{formatDate(c.createdDate)}</span>
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-sm text-gray-500">{formatDate(c.createdDate)}</span>
+                        {createdAge && <span className="text-[11px] text-gray-400">{createdAge}</span>}
+                      </div>
+                    </td>
+                    {/* Updated */}
+                    <td className="px-4 py-3.5 whitespace-nowrap">
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-sm text-gray-500">{formatDate(c.updatedDate)}</span>
+                        {updatedAge && <span className="text-[11px] text-gray-400">{updatedAge}</span>}
+                      </div>
                     </td>
                     {/* Action */}
                     <td className="px-2 pr-4 py-3.5 text-center rounded-r-xl" onClick={e => e.stopPropagation()}>
