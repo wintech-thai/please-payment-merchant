@@ -71,6 +71,7 @@ export default function SupportCaseDetailPage() {
   const [comments, setComments] = useState<SupportCaseCommentItem[]>([])
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
+  const [refreshing, setRefreshing] = useState(false)
   const [leftCollapsed, setLeftCollapsed] = useState(false)
   const [replyTo, setReplyTo] = useState<ReplyTarget | null>(null)
   const commentsEndRef = useRef<HTMLDivElement>(null)
@@ -125,6 +126,21 @@ export default function SupportCaseDetailPage() {
       toast.error(err instanceof Error ? err.message : (isth ? 'ส่ง comment ไม่สำเร็จ' : 'Failed to send comment'))
     } finally {
       setSending(false)
+    }
+  }
+
+  async function refreshComments() {
+    if (refreshing) return
+    setRefreshing(true)
+    try {
+      const res = await supportCaseApi.getComments(caseId)
+      const raw = res.data as any
+      const list: any[] = raw?.comments ?? raw?.Comments ?? (Array.isArray(raw) ? raw : [])
+      setComments(list.map(normalizeComment))
+    } catch {
+      toast.error(isth ? 'โหลด comment ไม่สำเร็จ' : 'Failed to refresh comments')
+    } finally {
+      setRefreshing(false)
     }
   }
 
@@ -254,22 +270,46 @@ export default function SupportCaseDetailPage() {
                 <span className="text-gray-400 font-normal text-xs ml-1">({comments.length})</span>
               )}
             </h2>
-            {leftCollapsed && (
+            <div className="flex items-center gap-2">
               <button
-                onClick={() => setLeftCollapsed(false)}
-                className="hidden lg:flex items-center gap-1 px-2 py-1 rounded-lg text-xs text-gray-500 hover:text-gray-700 border border-gray-200 hover:bg-gray-50 transition-colors"
-                title={isth ? 'แสดง Case Info' : 'Show case info'}
+                onClick={refreshComments}
+                disabled={refreshing}
+                title={isth ? 'รีเฟรช' : 'Refresh'}
+                className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors disabled:opacity-40"
               >
-                <svg className="w-3.5 h-3.5 rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                <svg className={clsx('w-4 h-4', refreshing && 'animate-spin')} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
-                <span>Case Info</span>
               </button>
-            )}
+              {leftCollapsed && (
+                <button
+                  onClick={() => setLeftCollapsed(false)}
+                  className="hidden lg:flex items-center gap-1 px-2 py-1 rounded-lg text-xs text-gray-500 hover:text-gray-700 border border-gray-200 hover:bg-gray-50 transition-colors"
+                  title={isth ? 'แสดง Case Info' : 'Show case info'}
+                >
+                  <svg className="w-3.5 h-3.5 rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                  </svg>
+                  <span>Case Info</span>
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-3">
+          <div className="flex-1 relative overflow-hidden">
+            {refreshing && (
+              <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/70 backdrop-blur-[1px]">
+                <div className="flex items-center gap-2 text-sm text-gray-500">
+                  <svg className="w-4 h-4 animate-spin text-primary-500" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth={3} />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                  {isth ? 'กำลังโหลด...' : 'Loading...'}
+                </div>
+              </div>
+            )}
+          <div className="h-full overflow-y-auto px-5 py-4 flex flex-col gap-3">
             {comments.length === 0 ? (
               <p className="text-sm text-gray-400 text-center py-8">{isth ? 'ยังไม่มีข้อความ' : 'No messages yet'}</p>
             ) : (
@@ -277,42 +317,39 @@ export default function SupportCaseDetailPage() {
                 const isMerchant = (c.authorType ?? '').toLowerCase() === 'merchant'
                 const authorLabel = c.createdBy ?? (isMerchant ? 'Merchant' : 'Admin')
                 return (
-                  <div key={c.id} className={clsx('group flex items-end gap-1.5', isMerchant ? 'justify-end' : 'justify-start')}>
-                    {/* Reply button — shows on hover, left side for merchant bubbles */}
-                    {!isClosed && isMerchant && (
-                      <button
-                        onClick={() => setReplyTo({ id: c.id ?? '', author: authorLabel, content: c.content ?? '' })}
-                        className="opacity-0 group-hover:opacity-100 p-1.5 rounded-full text-gray-300 hover:text-primary-400 hover:bg-primary-50 transition-all flex-shrink-0 mb-1"
-                        title={isth ? 'ตอบกลับ' : 'Reply'}
-                      >
-                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
-                        </svg>
-                      </button>
-                    )}
-                    <div className={clsx('max-w-[75%] rounded-2xl px-4 py-2.5', isMerchant ? 'bg-primary-600 text-white rounded-br-sm' : 'bg-gray-100 text-gray-800 rounded-bl-sm')}>
-                      <RichContent content={c.content} />
-                      <p className={clsx('text-[11px] mt-1', isMerchant ? 'text-primary-200 text-right' : 'text-gray-400')}>
-                        {authorLabel} · {formatDate(c.createdDate)}
-                      </p>
+                  <div key={c.id} className={clsx('group flex gap-3', isMerchant ? 'flex-row-reverse' : 'flex-row')}>
+                    <div className={clsx('w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-1', isMerchant ? 'bg-primary-100 text-primary-700' : 'bg-gray-100 text-gray-600')}>
+                      {isMerchant ? 'M' : 'A'}
                     </div>
-                    {/* Reply button for non-merchant (admin) messages */}
-                    {!isClosed && !isMerchant && (
-                      <button
-                        onClick={() => setReplyTo({ id: c.id ?? '', author: authorLabel, content: c.content ?? '' })}
-                        className="opacity-0 group-hover:opacity-100 p-1.5 rounded-full text-gray-300 hover:text-gray-500 hover:bg-gray-100 transition-all flex-shrink-0 mb-1"
-                        title={isth ? 'ตอบกลับ' : 'Reply'}
-                      >
-                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
-                        </svg>
-                      </button>
-                    )}
+                    <div className={clsx('max-w-[75%] flex flex-col gap-1', isMerchant ? 'items-end' : 'items-start')}>
+                      <div className={clsx('flex items-center gap-2 text-xs text-gray-400', isMerchant && 'flex-row-reverse')}>
+                        <span className="font-semibold text-gray-600">{authorLabel}</span>
+                        <span className={clsx('px-1.5 py-0.5 rounded text-[10px] font-bold uppercase', isMerchant ? 'bg-primary-50 text-primary-600' : 'bg-gray-100 text-gray-500')}>
+                          {c.authorType}
+                        </span>
+                        <span>{formatDate(c.createdDate)}</span>
+                        {!isClosed && (
+                          <button
+                            onClick={() => setReplyTo({ id: c.id ?? '', author: authorLabel, content: c.content ?? '' })}
+                            className="opacity-0 group-hover:opacity-100 p-1 rounded text-gray-300 hover:text-primary-500 transition-all"
+                            title={isth ? 'ตอบกลับ' : 'Reply'}
+                          >
+                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                            </svg>
+                          </button>
+                        )}
+                      </div>
+                      <div className={clsx('px-4 py-2.5 rounded-2xl', isMerchant ? 'bg-primary-50 text-gray-800 rounded-tr-sm' : 'bg-gray-100 text-gray-800 rounded-tl-sm')}>
+                        <RichContent content={c.content} />
+                      </div>
+                    </div>
                   </div>
                 )
               })
             )}
             <div ref={commentsEndRef} />
+          </div>
           </div>
 
           {/* Input */}
