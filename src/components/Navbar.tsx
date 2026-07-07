@@ -191,6 +191,10 @@ export default function Navbar() {
               {t.nav.administrator}
             </Link>
 
+            <Link href="/support-case" className={navItemClass(pathname.startsWith('/support-case'))}>
+              {t.nav.supportCase}
+            </Link>
+
             {/* <Link href="/setting" className={navItemClass(pathname.startsWith('/setting'))}>
               {t.nav.setting}
             </Link> */}
@@ -336,6 +340,12 @@ export default function Navbar() {
                 </Link>
               ))}
             </div>
+
+            <Link href="/support-case" onClick={() => setMobileMenuOpen(false)}
+              className={clsx('flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
+                pathname.startsWith('/support-case') ? 'bg-white/20 text-white' : 'text-white hover:bg-white/15')}>
+              {t.nav.supportCase}
+            </Link>
 
             {/* <Link href="/setting" onClick={() => setMobileMenuOpen(false)}
               className={clsx('flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
