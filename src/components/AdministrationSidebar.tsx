@@ -58,7 +58,6 @@ export default function AdministrationSidebar() {
         collapsed ? 'w-[60px]' : 'w-52'
       )}
     >
-      {/* Collapse toggle */}
       <button
         onClick={() => setCollapsed(v => !v)}
         className="absolute -right-3 top-6 z-10 w-6 h-6 rounded-full bg-primary-700 hover:bg-primary-600 flex items-center justify-center text-white shadow-lg transition-all"
