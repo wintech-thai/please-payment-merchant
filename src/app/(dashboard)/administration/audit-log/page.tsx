@@ -9,6 +9,7 @@ import { useLang } from '@/context/LanguageContext'
 import AuditLogFlyout from '@/components/AuditLogFlyout'
 import { AuditLogHistogram } from '@/components/AuditLogHistogram'
 import { AdvancedTimeRangeSelector, type TimeRangeValue } from '@/components/AdvancedTimeRangeSelector'
+import { fetchWithAuth } from '@/lib/fetchWithAuth'
 
 const PALETTE = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#f26ed5', '#a4de6c', '#d0ed57', '#ffc658']
 
@@ -143,7 +144,7 @@ export default function AuditLogPage() {
         },
       }
 
-      const res = await fetch('/api/audit-log', {
+      const res = await fetchWithAuth('/api/audit-log', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-org-id': orgId },
         body: JSON.stringify({ esPayload }),
