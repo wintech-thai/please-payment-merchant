@@ -42,6 +42,22 @@ async function handleElasticsearch(req: NextRequest): Promise<Response> {
 
 // ── PostgreSQL backend (via C# API) ──────────────────────────────────────────
 
+function fillTimelineBuckets(buckets: any[], intervalStr: string, fromMs: number, toMs: number): any[] {
+  const match = intervalStr.match(/^(\d+)([smhd])$/)
+  if (!match) return buckets
+  const val = parseInt(match[1])
+  const unit = match[2]
+  const stepMs = val * (unit === 's' ? 1000 : unit === 'm' ? 60_000 : unit === 'h' ? 3_600_000 : 86_400_000)
+  const bucketMap = new Map<number, any>()
+  for (const b of buckets) bucketMap.set(Number(b.key), b)
+  const filled: any[] = []
+  const startAligned = Math.floor(fromMs / stepMs) * stepMs
+  for (let ts = startAligned; ts <= toMs; ts += stepMs) {
+    filled.push(bucketMap.get(ts) ?? { key: ts, key_as_string: new Date(ts).toISOString(), doc_count: 0, group_by_api: { buckets: [] } })
+  }
+  return filled
+}
+
 function extractInterval(esPayload: any): string | undefined {
   return esPayload?.aggs?.timeline?.date_histogram?.fixed_interval
 }
@@ -111,6 +127,19 @@ async function handlePostgres(req: NextRequest): Promise<Response> {
   }
 
   const result = await apiRes.json()
+
+  if (interval && result.aggregations?.timeline?.buckets) {
+    const now = Date.now()
+    const fromMs = fromDate ? new Date(fromDate).getTime() : now - 86_400_000
+    const toMs = toDate ? new Date(toDate).getTime() : now
+    result.aggregations.timeline.buckets = fillTimelineBuckets(
+      result.aggregations.timeline.buckets,
+      interval,
+      fromMs,
+      toMs
+    )
+  }
+
   return NextResponse.json(result)
 }
 
