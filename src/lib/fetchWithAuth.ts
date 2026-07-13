@@ -26,7 +26,30 @@ async function refreshToken(): Promise<boolean> {
   }
 }
 
+function getTokenExpiry(token: string): number | null {
+  try {
+    const parts = token.split('.')
+    if (parts.length !== 3) return null
+    const b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/')
+    const payload = JSON.parse(atob(b64))
+    return typeof payload.exp === 'number' ? payload.exp : null
+  } catch {
+    return null
+  }
+}
+
 export async function fetchWithAuth(url: string, options: RequestInit = {}): Promise<Response> {
+  // Proactive refresh: if token expires within 10 seconds, refresh before sending
+  if (typeof window !== 'undefined') {
+    const token = localStorage.getItem('accessToken')
+    if (token) {
+      const exp = getTokenExpiry(token)
+      if (exp !== null && exp - Math.floor(Date.now() / 1000) < 10) {
+        await refreshToken()
+      }
+    }
+  }
+
   const res = await fetch(url, options)
   if (res.status !== 401) return res
 

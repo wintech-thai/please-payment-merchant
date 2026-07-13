@@ -213,12 +213,13 @@ export default function PayInRequestsPage() {
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">{tr.colStatus}</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">{tr.colRef1}</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">{tr.colRef2}</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">{tr.colRef3}</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-16 text-center">
+                  <td colSpan={8} className="px-4 py-16 text-center">
                     <div className="flex items-center justify-center gap-2 text-gray-400">
                       <Loader2 className="w-5 h-5 animate-spin" />
                       <span className="text-sm">{tr.loading}</span>
@@ -227,7 +228,7 @@ export default function PayInRequestsPage() {
                 </tr>
               ) : items.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-16 text-center text-sm text-gray-400">{tr.noData}</td>
+                  <td colSpan={8} className="px-4 py-16 text-center text-sm text-gray-400">{tr.noData}</td>
                 </tr>
               ) : items.map((item, idx) => (
                 <tr
@@ -276,6 +277,7 @@ export default function PayInRequestsPage() {
                   </td>
                   <td className="px-4 py-3 border-b border-gray-100"><span className="text-sm text-gray-600">{item.refId1 || '—'}</span></td>
                   <td className="px-4 py-3 border-b border-gray-100"><span className="text-sm text-gray-600">{item.refId2 || '—'}</span></td>
+                  <td className="px-4 py-3 border-b border-gray-100"><span className="text-sm text-gray-600">{item.refId3 || '—'}</span></td>
                 </tr>
               ))}
             </tbody>

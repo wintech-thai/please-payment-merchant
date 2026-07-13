@@ -9,6 +9,7 @@ export const client = axios.create({
 })
 
 let isRefreshing = false
+let activeRefreshPromise: Promise<string | null> | null = null
 let failedQueue: Array<{
   resolve: (token: string) => void
   reject: (error: unknown) => void
@@ -20,6 +21,47 @@ const processQueue = (error: unknown, token: string | null = null) => {
     else prom.resolve(token!)
   })
   failedQueue = []
+}
+
+// Shared refresh — concurrent callers reuse the same promise
+async function refreshTokenOnce(): Promise<string | null> {
+  if (activeRefreshPromise) return activeRefreshPromise
+  isRefreshing = true
+  activeRefreshPromise = (async () => {
+    try {
+      const res = await fetch('/api/auth/refresh', { method: 'POST' })
+      if (!res.ok) throw new Error('Refresh failed')
+      const data = await res.json()
+      const newAccessToken: string = data.accessToken
+      const newRefreshToken: string | undefined = data.refreshToken
+      if (!newAccessToken) throw new Error('No access token in refresh response')
+      localStorage.setItem('accessToken', newAccessToken)
+      if (newRefreshToken) localStorage.setItem('refreshToken', newRefreshToken)
+      setAuthCookies(newAccessToken, newRefreshToken)
+      processQueue(null, newAccessToken)
+      return newAccessToken
+    } catch (err) {
+      processQueue(err, null)
+      return null
+    } finally {
+      isRefreshing = false
+      activeRefreshPromise = null
+    }
+  })()
+  return activeRefreshPromise
+}
+
+// Decode the JWT exp claim (token is stored as a raw JWT in localStorage)
+function getTokenExpiry(token: string): number | null {
+  try {
+    const parts = token.split('.')
+    if (parts.length !== 3) return null
+    const b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/')
+    const payload = JSON.parse(atob(b64))
+    return typeof payload.exp === 'number' ? payload.exp : null
+  } catch {
+    return null
+  }
 }
 
 const encodeBase64 = (str: string): string => {
@@ -52,17 +94,38 @@ export const clearAuthData = () => {
   document.cookie = 'orgId=; path=/; max-age=0; SameSite=Lax'
 }
 
-// Request interceptor — base64 encode token from localStorage
+// Request interceptor — proactively refresh if token expires within 10s, then attach header
 client.interceptors.request.use(
-  (config: InternalAxiosRequestConfig) => {
-    if (typeof window !== 'undefined') {
-      const token = localStorage.getItem('accessToken')
-      const url = config.url?.toLowerCase() || ''
-      const isPublicPath = url.includes('login')
+  async (config: InternalAxiosRequestConfig) => {
+    if (typeof window === 'undefined') return config
+    const url = config.url?.toLowerCase() || ''
+    if (url.includes('login')) return config
 
-      if (token && config.headers && !isPublicPath && !config.headers.Authorization) {
-        config.headers.Authorization = `Bearer ${encodeBase64(token)}`
+    // If a refresh is already running, wait for it before attaching header
+    if (isRefreshing && activeRefreshPromise) {
+      const freshToken = await activeRefreshPromise.catch(() => null)
+      const tokenToUse = freshToken ?? localStorage.getItem('accessToken')
+      if (tokenToUse && config.headers && !config.headers.Authorization) {
+        config.headers.Authorization = `Bearer ${encodeBase64(tokenToUse)}`
       }
+      return config
+    }
+
+    const token = localStorage.getItem('accessToken')
+    if (!token) return config
+
+    // Proactive refresh: token expires within 10 seconds → refresh first
+    const exp = getTokenExpiry(token)
+    if (exp !== null && exp - Math.floor(Date.now() / 1000) < 10) {
+      const freshToken = await refreshTokenOnce().catch(() => null)
+      if (config.headers) {
+        config.headers.Authorization = `Bearer ${encodeBase64(freshToken ?? token)}`
+      }
+      return config
+    }
+
+    if (config.headers && !config.headers.Authorization) {
+      config.headers.Authorization = `Bearer ${encodeBase64(token)}`
     }
     return config
   },
@@ -169,7 +232,7 @@ client.interceptors.response.use(
     }
 
     // Queue concurrent requests while refreshing
-    if (isRefreshing) {
+    if (isRefreshing && activeRefreshPromise) {
       return new Promise<string>((resolve, reject) => {
         failedQueue.push({ resolve, reject })
       }).then((token) => {
@@ -181,37 +244,17 @@ client.interceptors.response.use(
     }
 
     originalRequest._retry = true
-    isRefreshing = true
 
-    try {
-      const res = await fetch('/api/auth/refresh', { method: 'POST' })
-
-      if (!res.ok) throw new Error('Refresh failed')
-
-      const data = await res.json()
-      const newAccessToken: string = data.accessToken
-      const newRefreshToken: string | undefined = data.refreshToken
-
-      if (!newAccessToken) throw new Error('No access token in refresh response')
-
-      localStorage.setItem('accessToken', newAccessToken)
-      if (newRefreshToken) localStorage.setItem('refreshToken', newRefreshToken)
-      setAuthCookies(newAccessToken, newRefreshToken)
-
-      processQueue(null, newAccessToken)
-
-      if (originalRequest.headers) {
-        originalRequest.headers.Authorization = `Bearer ${encodeBase64(newAccessToken)}`
-      }
-
-      return client(originalRequest)
-    } catch (refreshError) {
-      processQueue(refreshError, null)
+    const newAccessToken = await refreshTokenOnce()
+    if (!newAccessToken) {
       clearAuthData()
       if (typeof window !== 'undefined') window.location.href = '/login'
-      return Promise.reject(refreshError)
-    } finally {
-      isRefreshing = false
+      return Promise.reject(new Error('Session expired'))
     }
+
+    if (originalRequest.headers) {
+      originalRequest.headers.Authorization = `Bearer ${encodeBase64(newAccessToken)}`
+    }
+    return client(originalRequest)
   }
 )

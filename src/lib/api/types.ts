@@ -378,6 +378,7 @@ export interface PayInRequestItem {
   refId?: string | null
   refId1?: string | null
   refId2?: string | null
+  refId3?: string | null
   paymentTxId?: string | null
   // bank account fields (API uses lowercase 'payin')
   payinBankCode?: string | null
@@ -706,6 +707,7 @@ export interface PayOutRequestItem {
   refId?: string | null
   refId1?: string | null
   refId2?: string | null
+  refId3?: string | null
   rejectReason?: string | null
   paymentTxId?: string | null
   // Source (PayIn) bank account — API uses camelCase "payin" (lowercase)
