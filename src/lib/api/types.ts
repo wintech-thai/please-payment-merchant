@@ -169,6 +169,10 @@ export interface MerchantItem {
   payinMaxAmount?: number | null
   payoutMinAmount?: number | null
   payoutMaxAmount?: number | null
+  payinDailyTxAmountLimit?: number | null
+  payinDailyTxCountLimit?: number | null
+  currentPayinDailyTxAmount?: number | null
+  currentPayinDailyTxCount?: number | null
   status?: string | null
   createdDate?: string | null
   payInBankAccountCount?: number | null
@@ -463,6 +467,7 @@ export interface PayInTxItem {
   fromBankAccountNo?: string | null
   fromBankAccountName?: string | null
   processingMessages?: string | null
+  statusReason?: string | null
   createdDate?: string | null
   processingSteps?: string[] | null
   rawInputObj?: unknown | null

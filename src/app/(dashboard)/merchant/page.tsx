@@ -23,6 +23,10 @@ interface MerchantData {
   payinMaxAmount?: number | null
   payoutMinAmount?: number | null
   payoutMaxAmount?: number | null
+  payinDailyTxAmountLimit?: number | null
+  payinDailyTxCountLimit?: number | null
+  currentPayinDailyTxAmount?: number | null
+  currentPayinDailyTxCount?: number | null
   status?: string
   discardCent?: boolean | null
   currentBalance?: number | null
@@ -35,6 +39,16 @@ interface MerchantData {
   payInFeePercent?: number; payOutFeePercent?: number
   payInMinAmount?: number; payInMaxAmount?: number
   payOutMinAmount?: number; payOutMaxAmount?: number
+}
+
+function DailyBar({ current, limit }: { current: number; limit: number }) {
+  const pct = limit > 0 ? Math.min((current / limit) * 100, 100) : 0
+  const color = pct >= 90 ? 'bg-red-500' : pct >= 70 ? 'bg-amber-500' : 'bg-emerald-500'
+  return (
+    <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+      <div className={clsx('h-full rounded-full transition-all', color)} style={{ width: `${pct}%` }} />
+    </div>
+  )
 }
 
 function SectionHeader({ children }: { children: React.ReactNode }) {
@@ -213,6 +227,10 @@ export default function MerchantInfoPage() {
   const payInMax    = data?.payinMaxAmount ?? data?.payInMaxAmount
   const payOutMin   = data?.payoutMinAmount ?? data?.payOutMinAmount
   const payOutMax   = data?.payoutMaxAmount ?? data?.payOutMaxAmount
+  const payinDailyAmountLimit = data?.payinDailyTxAmountLimit ?? null
+  const payinDailyCountLimit  = data?.payinDailyTxCountLimit ?? null
+  const currentDailyAmount    = data?.currentPayinDailyTxAmount ?? null
+  const currentDailyCount     = data?.currentPayinDailyTxCount ?? null
   const discardCent = data?.discardCent ?? false
 
   function handleCopy(text: string, type: 'payin' | 'payout' = 'payin') {
@@ -329,6 +347,22 @@ export default function MerchantInfoPage() {
                   <SectionHeader>{mi.sectionLimits}</SectionHeader>
                   <div className="space-y-4">
                     <LimitRow label={mi.fieldPayIn}  min={payInMin}  max={payInMax}  minLabel={mi.fieldMin} maxLabel={mi.fieldMax} />
+                    <div className="rounded-xl border border-gray-100 overflow-hidden">
+                      <div className="grid grid-cols-2 divide-x divide-gray-100">
+                        <div className="px-4 py-3">
+                          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">{mi.fieldDailyTxAmountLimit}</p>
+                          <p className="text-sm font-semibold text-gray-800">
+                            {payinDailyAmountLimit != null ? (payinDailyAmountLimit === 0 ? '∞' : payinDailyAmountLimit.toLocaleString()) : <span className="text-gray-300 font-normal">—</span>}
+                          </p>
+                        </div>
+                        <div className="px-4 py-3">
+                          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">{mi.fieldDailyTxCountLimit}</p>
+                          <p className="text-sm font-semibold text-gray-800">
+                            {payinDailyCountLimit != null ? (payinDailyCountLimit === 0 ? '∞' : payinDailyCountLimit.toLocaleString()) : <span className="text-gray-300 font-normal">—</span>}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
                     <LimitRow label={mi.fieldPayOut} min={payOutMin} max={payOutMax} minLabel={mi.fieldMin} maxLabel={mi.fieldMax} />
                   </div>
                 </div>
@@ -347,7 +381,7 @@ export default function MerchantInfoPage() {
                 </label>
                 <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-xl border border-gray-200">
                   {endpointUrl
-                    ? <p className="flex-1 text-xs font-mono text-gray-700 break-all">{endpointUrl}</p>
+                    ? <p className="flex-1 text-xs text-gray-700 break-all">{endpointUrl}</p>
                     : <p className="flex-1 text-xs text-gray-300 italic">—</p>}
                   <button
                     onClick={() => endpointUrl && handleCopy(endpointUrl, 'payin')}
@@ -371,7 +405,7 @@ export default function MerchantInfoPage() {
                 </label>
                 <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-xl border border-gray-200">
                   {payOutEndpointUrl
-                    ? <p className="flex-1 text-xs font-mono text-gray-700 break-all">{payOutEndpointUrl}</p>
+                    ? <p className="flex-1 text-xs text-gray-700 break-all">{payOutEndpointUrl}</p>
                     : <p className="flex-1 text-xs text-gray-300 italic">—</p>}
                   <button
                     onClick={() => payOutEndpointUrl && handleCopy(payOutEndpointUrl, 'payout')}
@@ -498,18 +532,50 @@ export default function MerchantInfoPage() {
 
                   <div className="bg-white rounded-xl border border-gray-100 p-5">
                     <SectionHeader>{mi.sectionWallet}</SectionHeader>
-                    <div className="mt-3 space-y-3">
-                      <div>
-                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">{mi.walletId}</p>
-                        <p className="text-xs font-mono text-gray-600 break-all">{walletData?.walletId ?? walletData?.id ?? '—'}</p>
+                    <div className="mt-3 grid grid-cols-2 gap-6">
+                      <div className="space-y-3">
+                        <div>
+                          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">{mi.walletId}</p>
+                          <p className="text-xs text-gray-600 break-all">{walletData?.walletId ?? walletData?.id ?? '—'}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">{mi.walletBalance}</p>
+                          <p className="text-3xl font-bold text-gray-900">
+                            {walletBalance != null
+                              ? Number(walletBalance).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                              : '—'}
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">{mi.walletBalance}</p>
-                        <p className="text-3xl font-bold text-gray-900">
-                          {walletBalance != null
-                            ? Number(walletBalance).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-                            : '—'}
-                        </p>
+                      <div className="space-y-3">
+                        {payinDailyAmountLimit != null && (
+                          <div>
+                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Pay-In Daily Amount</p>
+                            {payinDailyAmountLimit > 0 ? (
+                              <>
+                                <p className="text-xs text-gray-500 mb-1">
+                                  {currentDailyAmount?.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) ?? '0.00'} / {payinDailyAmountLimit.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </p>
+                                <DailyBar current={currentDailyAmount ?? 0} limit={payinDailyAmountLimit} />
+                              </>
+                            ) : (
+                              <p className="text-sm text-gray-600">{currentDailyAmount?.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) ?? '0.00'} / ไม่จำกัด</p>
+                            )}
+                          </div>
+                        )}
+                        {payinDailyCountLimit != null && (
+                          <div>
+                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Pay-In Daily Count</p>
+                            {payinDailyCountLimit > 0 ? (
+                              <>
+                                <p className="text-xs text-gray-500 mb-1">{currentDailyCount ?? 0} / {payinDailyCountLimit}</p>
+                                <DailyBar current={currentDailyCount ?? 0} limit={payinDailyCountLimit} />
+                              </>
+                            ) : (
+                              <p className="text-sm text-gray-600">{currentDailyCount ?? 0} / ไม่จำกัด</p>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
