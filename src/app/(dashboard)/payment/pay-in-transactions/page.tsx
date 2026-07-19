@@ -50,13 +50,14 @@ function formatDateTime(d?: string | null) {
   } catch { return d }
 }
 
-function StatusBadge({ status, createdDate, paymentRequestId }: {
+function StatusBadge({ status, createdDate, paymentRequestId, statusReason }: {
   status?: string | null
   createdDate?: string | null
   paymentRequestId?: string | null
+  statusReason?: string | null
 }) {
   const s = status?.toLowerCase()
-  if (s === 'identified') return (
+  if (s === 'identified' || s === 'approved') return (
     <div className="flex flex-col gap-0.5 items-start">
       <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200">
         <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0" />
@@ -74,15 +75,24 @@ function StatusBadge({ status, createdDate, paymentRequestId }: {
       )}
     </div>
   )
-  if (s === 'unidentified') {
-    const age = formatAge(createdDate)
+  if (s === 'unidentified' || s === 'rejected') {
+    const isRejected = s === 'rejected'
+    const age = !isRejected ? formatAge(createdDate) : null
     return (
       <div className="flex flex-col gap-0.5 items-start">
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 ring-1 ring-amber-200">
-          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0" />
+        <span className={clsx(
+          'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ring-1',
+          isRejected
+            ? 'bg-red-50 text-red-700 ring-red-200'
+            : 'bg-amber-50 text-amber-700 ring-amber-200'
+        )}>
+          <span className={clsx('w-1.5 h-1.5 rounded-full flex-shrink-0', isRejected ? 'bg-red-500' : 'bg-amber-400')} />
           {status}
         </span>
         {age && <span className="text-[10px] text-gray-400 ml-1">{age}</span>}
+        {isRejected && statusReason && (
+          <span className="text-[10px] text-red-500 ml-1 max-w-[160px] truncate" title={statusReason}>{statusReason}</span>
+        )}
       </div>
     )
   }
@@ -300,7 +310,7 @@ export default function PayInTransactionsPage() {
                   </td>
                   {/* Status */}
                   <td className="px-4 py-3 border-b border-gray-100">
-                    <StatusBadge status={item.status} createdDate={item.createdDate} paymentRequestId={item.paymentRequestId} />
+                    <StatusBadge status={item.status} createdDate={item.createdDate} paymentRequestId={item.paymentRequestId} statusReason={item.statusReason} />
                   </td>
                   {/* Sender */}
                   <td className="px-4 py-3 border-b border-gray-100">
