@@ -379,6 +379,7 @@ export interface PayInRequestItem {
   requestedAmount?: number | null
   currency?: string | null
   status?: string | null
+  statusReason?: string | null
   refId?: string | null
   refId1?: string | null
   refId2?: string | null

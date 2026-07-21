@@ -39,13 +39,13 @@ function formatAge(createdDate?: string | null): string {
 
 function StatusBadge({ status, createdDate }: { status?: string | null; createdDate?: string | null }) {
   const s = (status || '').toLowerCase()
-  if (s === 'paid') return (
+  if (s === 'paid' || s === 'approved') return (
     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200">
       <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0" />
       {status}
     </span>
   )
-  if (s === 'error') return (
+  if (s === 'rejected' || s === 'error') return (
     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-red-50 text-red-700 ring-1 ring-red-200">
       <span className="w-1.5 h-1.5 rounded-full bg-red-500 flex-shrink-0" />
       {status}
@@ -264,7 +264,7 @@ export default function PayInRequestsPage() {
                   <td className="px-4 py-3 border-b border-gray-100"><BankAccountCell item={item} /></td>
                   <td className="px-4 py-3 border-b border-gray-100">
                     <StatusBadge status={item.status} createdDate={item.createdDate} />
-                    {item.status?.toLowerCase() === 'paid' && item.paymentTxId && (
+                    {(item.status?.toLowerCase() === 'paid' || item.status?.toLowerCase() === 'approved') && item.paymentTxId && (
                       <a
                         href={`/payment/pay-in-transactions/${item.paymentTxId}`}
                         onClick={e => e.stopPropagation()}
@@ -273,6 +273,11 @@ export default function PayInRequestsPage() {
                         <span className="truncate max-w-[130px]">{item.paymentTxId}</span>
                         <ExternalLink className="w-3 h-3 flex-shrink-0" />
                       </a>
+                    )}
+                    {item.status?.toLowerCase() === 'rejected' && item.statusReason && (
+                      <span className="text-[10px] text-red-500 mt-0.5 max-w-[160px] truncate block" title={item.statusReason}>
+                        {item.statusReason}
+                      </span>
                     )}
                   </td>
                   <td className="px-4 py-3 border-b border-gray-100"><span className="text-sm text-gray-600">{item.refId1 || '—'}</span></td>

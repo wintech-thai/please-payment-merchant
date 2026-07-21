@@ -36,18 +36,17 @@ function formatDateTime(d?: string | null) {
 
 function StatusBadge({ status, createdDate }: { status?: string | null; createdDate?: string | null }) {
   const s = status?.toLowerCase()
-  const isPending = s !== 'match' && s !== 'paid' && s !== 'error'
-  const age = isPending ? formatAge(createdDate) : ''
-  if (s === 'match' || s === 'paid') return (
+  if (s === 'match' || s === 'paid' || s === 'approved') return (
     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200">
       <CheckCircle className="w-3.5 h-3.5" />{status}
     </span>
   )
-  if (s === 'error') return (
+  if (s === 'rejected' || s === 'error') return (
     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-red-50 text-red-700 ring-1 ring-red-200">
       <AlertCircle className="w-3.5 h-3.5" />{status}
     </span>
   )
+  const age = formatAge(createdDate)
   return (
     <div className="flex flex-col gap-0.5 w-fit items-start">
       <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 ring-1 ring-amber-200">
@@ -165,7 +164,7 @@ export default function PayInRequestDetailPage() {
           <InfoRow label={tr.fieldCreated}>{formatDateTime(data?.createdDate)}</InfoRow>
           <InfoRow label={tr.fieldStatus}>
             <StatusBadge status={data?.status} createdDate={data?.createdDate} />
-            {data?.status?.toLowerCase() === 'paid' && data?.paymentTxId && (
+            {(data?.status?.toLowerCase() === 'paid' || data?.status?.toLowerCase() === 'approved') && data?.paymentTxId && (
               <a
                 href={`/payment/pay-in-transactions/${data.paymentTxId}`}
                 className="flex items-center gap-1 text-xs text-primary-600 hover:text-primary-800 hover:underline mt-1"
@@ -206,6 +205,11 @@ export default function PayInRequestDetailPage() {
           <InfoRow label={tr.fieldRefId}>{data?.refId ?? '—'}</InfoRow>
           <InfoRow label={tr.fieldRefId1}>{data?.refId1 ?? '—'}</InfoRow>
           <InfoRow label={tr.fieldRefId2}>{data?.refId2 ?? '—'}</InfoRow>
+          {data?.status?.toLowerCase() === 'rejected' && data?.statusReason && (
+            <InfoRow label={tr.fieldStatusReason ?? 'Reason'}>
+              <span className="text-red-600">{data.statusReason}</span>
+            </InfoRow>
+          )}
         </div>
       </div>
 
