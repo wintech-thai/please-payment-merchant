@@ -267,6 +267,8 @@ export default function PayInRequestsPage() {
                     {(item.status?.toLowerCase() === 'paid' || item.status?.toLowerCase() === 'approved') && item.paymentTxId && (
                       <a
                         href={`/payment/pay-in-transactions/${item.paymentTxId}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
                         onClick={e => e.stopPropagation()}
                         className="flex items-center gap-1 text-xs text-primary-600 hover:text-primary-800 hover:underline mt-1"
                       >
