@@ -977,6 +977,7 @@ export const translations = {
       fieldAge: 'อายุ (Pending)',
       noResponseData: 'ไม่มีข้อมูล Response',
       noProcessingSteps: 'ไม่มีข้อมูลขั้นตอน',
+      fieldStatusReason: 'เหตุผล',
     },
     payInTx: {
       title: 'Pay-In Transactions',
@@ -2308,6 +2309,7 @@ export const translations = {
       fieldAge: 'Age (Pending)',
       noResponseData: 'No response data',
       noProcessingSteps: 'No processing steps',
+      fieldStatusReason: 'Reason',
     },
     payInTx: {
       title: 'Pay-In Transactions',
