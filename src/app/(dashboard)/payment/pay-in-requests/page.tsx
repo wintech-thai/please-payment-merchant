@@ -37,18 +37,19 @@ function formatAge(createdDate?: string | null): string {
   return `${hours}h ${mins}min`
 }
 
-function StatusBadge({ status, createdDate }: { status?: string | null; createdDate?: string | null }) {
+function StatusBadge({ status, createdDate, payinIsPeerToPeer }: { status?: string | null; createdDate?: string | null; payinIsPeerToPeer?: boolean | null }) {
   const s = (status || '').toLowerCase()
+  const p2p = payinIsPeerToPeer ? <span className="text-[10px] font-bold text-current ml-0.5">(P2P)</span> : null
   if (s === 'paid' || s === 'approved') return (
     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200">
       <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0" />
-      {status}
+      {status}{p2p}
     </span>
   )
   if (s === 'rejected' || s === 'error') return (
     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-red-50 text-red-700 ring-1 ring-red-200">
       <span className="w-1.5 h-1.5 rounded-full bg-red-500 flex-shrink-0" />
-      {status}
+      {status}{p2p}
     </span>
   )
   const age = formatAge(createdDate)
@@ -56,7 +57,7 @@ function StatusBadge({ status, createdDate }: { status?: string | null; createdD
     <div className="flex flex-col gap-0.5 items-start">
       <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 ring-1 ring-amber-200">
         <span className="w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0" />
-        {status ?? 'Pending'}
+        {status ?? 'Pending'}{p2p}
       </span>
       {age && <span className="text-[10px] text-gray-400 ml-1">{age}</span>}
     </div>
@@ -79,6 +80,9 @@ function BankAccountCell({ item }: { item: PayInRequestItem }) {
         )}
         {isPromptPay && item.payinPromptPayId && (
           <span className="text-[10px] text-gray-500">{item.payinPromptPayId}</span>
+        )}
+        {item.payinIsPeerToPeer && (
+          <span className="px-1.5 py-0.5 bg-violet-50 text-violet-700 text-[10px] font-bold rounded-full ring-1 ring-violet-200">P2P</span>
         )}
       </div>
     </div>
@@ -209,6 +213,7 @@ export default function PayInRequestsPage() {
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 whitespace-nowrap">{tr.colDate}</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">{tr.colMerchant}</th>
                 <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600">{tr.colAmount}</th>
+                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600">{tr.colFee}</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">{tr.colBankAccount}</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">{tr.colStatus}</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">{tr.colRef1}</th>
@@ -219,7 +224,7 @@ export default function PayInRequestsPage() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-16 text-center">
+                  <td colSpan={9} className="px-4 py-16 text-center">
                     <div className="flex items-center justify-center gap-2 text-gray-400">
                       <Loader2 className="w-5 h-5 animate-spin" />
                       <span className="text-sm">{tr.loading}</span>
@@ -228,7 +233,7 @@ export default function PayInRequestsPage() {
                 </tr>
               ) : items.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-16 text-center text-sm text-gray-400">{tr.noData}</td>
+                  <td colSpan={9} className="px-4 py-16 text-center text-sm text-gray-400">{tr.noData}</td>
                 </tr>
               ) : items.map((item, idx) => (
                 <tr
@@ -261,9 +266,19 @@ export default function PayInRequestsPage() {
                     )}
                     <div className="text-[10px] text-gray-400">{item.currency || 'THB'}</div>
                   </td>
+                  <td className="px-4 py-3 border-b border-gray-100 text-right whitespace-nowrap">
+                    {item.payInFeePct != null && item.payInFeePct > 0 ? (
+                      <>
+                        {item.generatedAmount != null && (
+                          <p className="text-sm font-semibold tabular-nums text-gray-800">{Number(item.generatedAmount * item.payInFeePct / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                        )}
+                        <p className="text-xs text-gray-400">{item.payInFeePct}%</p>
+                      </>
+                    ) : <span className="text-sm text-gray-400">—</span>}
+                  </td>
                   <td className="px-4 py-3 border-b border-gray-100"><BankAccountCell item={item} /></td>
                   <td className="px-4 py-3 border-b border-gray-100">
-                    <StatusBadge status={item.status} createdDate={item.createdDate} />
+                    <StatusBadge status={item.status} createdDate={item.createdDate} payinIsPeerToPeer={item.payinIsPeerToPeer} />
                     {(item.status?.toLowerCase() === 'paid' || item.status?.toLowerCase() === 'approved') && item.paymentTxId && (
                       <a
                         href={`/payment/pay-in-transactions/${item.paymentTxId}`}

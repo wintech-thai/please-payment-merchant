@@ -4,10 +4,11 @@ import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { useLang } from '@/context/LanguageContext'
 import { paymentRequestApi } from '@/lib/api/payment-request.api'
-import type { PayOutRequestDetail } from '@/lib/api/types'
+import type { PayOutRequestDetail, PartialPayoutItem } from '@/lib/api/types'
 import { toast } from 'sonner'
 import { ChevronLeft, CheckCircle, AlertCircle, Clock } from 'lucide-react'
 import QRCode from 'react-qr-code'
+import clsx from 'clsx'
 
 function formatAmount(n?: number | null): string {
   if (n == null) return '—'
@@ -24,21 +25,22 @@ function formatDateTime(d?: string | null) {
   } catch { return d }
 }
 
-function StatusBadge({ status }: { status?: string | null }) {
+function StatusBadge({ status, isPartialyPayout }: { status?: string | null; isPartialyPayout?: boolean | null }) {
   const s = status?.toLowerCase()
+  const p2p = isPartialyPayout ? <span className="text-[10px] font-bold text-current ml-0.5">(P2P)</span> : null
   if (s === 'paid' || s === 'approved') return (
     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200">
-      <CheckCircle className="w-3.5 h-3.5" />{status}
+      <CheckCircle className="w-3.5 h-3.5" />{status}{p2p}
     </span>
   )
   if (s === 'rejected') return (
     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-red-50 text-red-700 ring-1 ring-red-200">
-      <AlertCircle className="w-3.5 h-3.5" />{status}
+      <AlertCircle className="w-3.5 h-3.5" />{status}{p2p}
     </span>
   )
   return (
     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 ring-1 ring-amber-200">
-      <Clock className="w-3.5 h-3.5" />{status ?? 'Pending'}
+      <Clock className="w-3.5 h-3.5" />{status ?? 'Pending'}{p2p}
     </span>
   )
 }
@@ -149,7 +151,7 @@ export default function PayOutRequestDetailPage() {
               <InfoRow label={tr.fieldCreated}>{formatDateTime(detail?.createdDate)}</InfoRow>
 
               <InfoRow label={tr.fieldStatus}>
-                <StatusBadge status={detail?.status} />
+                <StatusBadge status={detail?.status} isPartialyPayout={detail?.isPartialyPayout} />
               </InfoRow>
 
               <InfoRow label={tr.fieldMerchant}>
@@ -175,6 +177,14 @@ export default function PayOutRequestDetailPage() {
                   </span>
                 ) : (
                   <span className="font-semibold text-gray-400">0.00</span>
+                )}
+                {detail?.payoutFeePayer && (
+                  <span className={clsx(
+                    'ml-2 text-[10px] font-semibold px-1.5 py-0.5 rounded-full ring-1',
+                    detail.payoutFeePayer?.toLowerCase() === 'merchant'
+                      ? 'bg-blue-50 text-blue-700 ring-blue-200'
+                      : 'bg-orange-50 text-orange-700 ring-orange-200'
+                  )}>{detail.payoutFeePayer}</span>
                 )}
               </InfoRow>
 
@@ -234,22 +244,46 @@ export default function PayOutRequestDetailPage() {
             </div>
 
             {/* QR Code */}
-            {(detail?.qrCodeImage || detail?.qrCode) && (
-              <div className="flex-shrink-0 flex flex-col items-center gap-2 pt-1">
-                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide self-start">QR Code</p>
-                {detail.qrCodeImage ? (
-                  <img
-                    src={detail.qrCodeImage.startsWith('data:') ? detail.qrCodeImage : `data:image/png;base64,${detail.qrCodeImage}`}
-                    alt="QR Code"
-                    className="w-56 h-56 rounded-lg border border-gray-200 p-1 bg-white"
-                  />
-                ) : (
-                  <div className="p-3 bg-white rounded-lg border border-gray-200 inline-block">
-                    <QRCode value={detail.qrCode!} size={200} />
-                  </div>
-                )}
-              </div>
-            )}
+            {(() => {
+              const paidAmt = detail?.totalPayOutPaidAmountDecimal ?? 0
+              const useP2P = detail?.isPartialyPayout && detail?.qrCodeP2P
+              const rawQr = useP2P ? detail!.qrCodeP2P! : (detail?.qrCodeImage ?? detail?.qrCode ?? null)
+              const remaining = useP2P && detail?.payOutTotalAmountDecimalP2P != null
+                ? detail.payOutTotalAmountDecimalP2P - paidAmt
+                : null
+              if (!rawQr) return null
+              const isImage = rawQr.startsWith('data:') || rawQr.startsWith('iVBOR') || rawQr.startsWith('/9j/')
+              return (
+                <div className="flex-shrink-0 flex flex-col items-center gap-2 pt-1">
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide self-start">
+                    {useP2P ? 'QR P2P' : 'QR Code'}
+                  </p>
+                  {isImage ? (
+                    <img
+                      src={rawQr.startsWith('data:') ? rawQr : `data:image/png;base64,${rawQr}`}
+                      alt="QR Code"
+                      className="w-56 h-56 rounded-lg border border-gray-200 p-1 bg-white"
+                    />
+                  ) : (
+                    <div className="p-3 bg-white rounded-lg border border-gray-200 inline-block">
+                      <QRCode value={rawQr} size={200} />
+                    </div>
+                  )}
+                  {paidAmt > 0 && (
+                    <div className="text-center">
+                      <p className="text-xs text-gray-400">{tr.fieldTotalPaid}</p>
+                      <p className="text-sm font-semibold text-emerald-600 tabular-nums">{formatAmount(paidAmt)}</p>
+                    </div>
+                  )}
+                  {remaining != null && remaining > 0 && (
+                    <div className="text-center">
+                      <p className="text-xs text-gray-400">{tr.fieldP2PRemaining}</p>
+                      <p className="text-sm font-bold text-primary-600 tabular-nums">{formatAmount(remaining)}</p>
+                    </div>
+                  )}
+                </div>
+              )
+            })()}
           </div>
         </div>
 
@@ -274,6 +308,66 @@ export default function PayOutRequestDetailPage() {
               </div>
             ) : (
               <span className="text-sm text-gray-400">—</span>
+            )}
+          </div>
+        )}
+
+        {/* Partial Payouts */}
+        {detail?.isPartialyPayout && (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 px-7 py-6">
+            <SectionHeader>{tr.sectionPartialPayouts}</SectionHeader>
+
+            {detail.totalPayOutPaidAmountDecimal != null && detail.totalPayOutPaidAmountDecimal > 0 && (
+              <div className="flex gap-6 mb-4">
+                <div>
+                  <p className="text-xs text-gray-400">{tr.fieldTotalPaid}</p>
+                  <p className="text-sm font-bold text-emerald-600 tabular-nums">{formatAmount(detail.totalPayOutPaidAmountDecimal)}</p>
+                </div>
+                {detail.totalPayOutPendingPaidAmountDecimal != null && detail.totalPayOutPendingPaidAmountDecimal > 0 && (
+                  <div>
+                    <p className="text-xs text-gray-400">{tr.fieldTotalPending}</p>
+                    <p className="text-sm font-bold text-amber-600 tabular-nums">{formatAmount(detail.totalPayOutPendingPaidAmountDecimal)}</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {detail.partialPayouts && detail.partialPayouts.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-gray-100">
+                      <th className="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">{tr.colPartialDate}</th>
+                      <th className="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">{tr.colPartialId}</th>
+                      <th className="px-3 py-2 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">{tr.colPartialAmount}</th>
+                      <th className="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">{tr.colPartialStatus}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {detail.partialPayouts.map((p: PartialPayoutItem, i: number) => (
+                      <tr key={i} className="border-b border-gray-50 hover:bg-gray-50/50">
+                        <td className="px-3 py-2.5 text-gray-600 whitespace-nowrap">{formatDateTime(p.txDate)}</td>
+                        <td className="px-3 py-2.5 font-mono text-xs text-gray-500">{p.payinRequestId ?? '—'}</td>
+                        <td className="px-3 py-2.5 text-right font-semibold tabular-nums text-gray-800">{formatAmount(p.partialAmount)}</td>
+                        <td className="px-3 py-2.5">
+                          {p.status ? (
+                            <span className={clsx(
+                              'px-2 py-0.5 text-xs font-semibold rounded-full ring-1',
+                              p.status.toLowerCase() === 'paid' || p.status.toLowerCase() === 'approved'
+                                ? 'bg-emerald-50 text-emerald-700 ring-emerald-200'
+                                : p.status.toLowerCase() === 'rejected'
+                                  ? 'bg-red-50 text-red-700 ring-red-200'
+                                  : 'bg-amber-50 text-amber-700 ring-amber-200'
+                            )}>{p.status}</span>
+                          ) : '—'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p className="text-sm text-gray-400">—</p>
             )}
           </div>
         )}

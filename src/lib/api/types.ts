@@ -392,6 +392,9 @@ export interface PayInRequestItem {
   payinPromptPayId?: string | null
   payinAccountType?: string | null
   payinAccountLevel?: string | null
+  payinIsPeerToPeer?: boolean | null
+  payInFeePct?: number | null
+  payInFeeDecimal?: number | null
 }
 
 export interface PayInRequestDetail extends PayInRequestItem {
@@ -743,6 +746,18 @@ export interface PayOutRequestItem {
   payoutFeePct?: number | null
   payoutFeeDecimal?: number | null
   payOutTotalAmountDecimal?: number | null
+  isPartialyPayout?: boolean | null
+  payoutFeePayer?: string | null
+  totalPayOutPaidAmountDecimal?: number | null
+  totalPayOutPendingPaidAmountDecimal?: number | null
+  payOutTotalAmountDecimalP2P?: number | null
+}
+
+export interface PartialPayoutItem {
+  payinRequestId?: string | null
+  txDate?: string | null
+  partialAmount?: number | null
+  status?: string | null
 }
 
 export interface PayOutRequestDetail extends PayOutRequestItem {
@@ -754,6 +769,8 @@ export interface PayOutRequestDetail extends PayOutRequestItem {
   merchantMaxPayout?: number | null
   qrCode?: string | null
   qrCodeImage?: string | null
+  qrCodeP2P?: string | null
+  partialPayouts?: PartialPayoutItem[] | null
 }
 
 export interface GetPayOutRequestsPayload {
@@ -775,6 +792,7 @@ export interface CreatePayOutRequestPayload {
   RequestedAmount: number
   QrProvider?: string
   Tags?: string
+  PayoutFeePayer?: string
   PayinBankAccountId?: string
   // Manual override — server reads these root-level fields when PayinBankAccountId is empty
   BankCode?: string

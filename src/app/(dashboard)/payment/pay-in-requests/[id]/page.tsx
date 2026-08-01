@@ -34,23 +34,24 @@ function formatDateTime(d?: string | null) {
   } catch { return d }
 }
 
-function StatusBadge({ status, createdDate }: { status?: string | null; createdDate?: string | null }) {
+function StatusBadge({ status, createdDate, payinIsPeerToPeer }: { status?: string | null; createdDate?: string | null; payinIsPeerToPeer?: boolean | null }) {
   const s = status?.toLowerCase()
+  const p2p = payinIsPeerToPeer ? <span className="text-[10px] font-bold text-current ml-0.5">(P2P)</span> : null
   if (s === 'match' || s === 'paid' || s === 'approved') return (
     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200">
-      <CheckCircle className="w-3.5 h-3.5" />{status}
+      <CheckCircle className="w-3.5 h-3.5" />{status}{p2p}
     </span>
   )
   if (s === 'rejected' || s === 'error') return (
     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-red-50 text-red-700 ring-1 ring-red-200">
-      <AlertCircle className="w-3.5 h-3.5" />{status}
+      <AlertCircle className="w-3.5 h-3.5" />{status}{p2p}
     </span>
   )
   const age = formatAge(createdDate)
   return (
     <div className="flex flex-col gap-0.5 w-fit items-start">
       <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 ring-1 ring-amber-200">
-        <Clock className="w-3.5 h-3.5" />{status ?? 'Pending'}
+        <Clock className="w-3.5 h-3.5" />{status ?? 'Pending'}{p2p}
       </span>
       {age && <span className="text-xs text-gray-400">{age}</span>}
     </div>
@@ -163,7 +164,7 @@ export default function PayInRequestDetailPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
           <InfoRow label={tr.fieldCreated}>{formatDateTime(data?.createdDate)}</InfoRow>
           <InfoRow label={tr.fieldStatus}>
-            <StatusBadge status={data?.status} createdDate={data?.createdDate} />
+            <StatusBadge status={data?.status} createdDate={data?.createdDate} payinIsPeerToPeer={data?.payinIsPeerToPeer} />
             {(data?.status?.toLowerCase() === 'paid' || data?.status?.toLowerCase() === 'approved') && data?.paymentTxId && (
               <a
                 href={`/payment/pay-in-transactions/${data.paymentTxId}`}

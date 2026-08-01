@@ -103,6 +103,7 @@ export default function AddPayOutRequestPage() {
   const [refId1, setRefId1] = useState('')
   const [refId2, setRefId2] = useState('')
   const [description, setDescription] = useState('')
+  const [payoutFeePayer, setPayoutFeePayer] = useState<'Merchant' | 'Beneficiary'>('Merchant')
   const [saving, setSaving] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
 
@@ -191,6 +192,7 @@ export default function AddPayOutRequestPage() {
         Currency: 'THB',
         RequestedAmount: parseFloat(requestedAmount),
         QrProvider: 'PP',
+        PayoutFeePayer: payoutFeePayer,
         ...(manualMode ? {
           BankCode: manualBankCode.trim() || undefined,
           BankAccountNo: manualBankAccountNo.trim() || undefined,
@@ -474,6 +476,30 @@ export default function AddPayOutRequestPage() {
                       rows={2}
                       className={clsx(inputCls(false), 'resize-none')}
                     />
+                  </FormField>
+                </div>
+
+                <div>
+                  <FormField label={tr.fieldFeePayer}>
+                    <div className="flex gap-2 mt-0.5">
+                      {(['Merchant', 'Beneficiary'] as const).map(opt => (
+                        <button
+                          key={opt}
+                          type="button"
+                          onClick={() => setPayoutFeePayer(opt)}
+                          className={clsx(
+                            'px-4 py-2 text-sm font-semibold rounded-lg border transition-colors',
+                            payoutFeePayer === opt
+                              ? opt === 'Merchant'
+                                ? 'bg-blue-600 text-white border-blue-600'
+                                : 'bg-orange-500 text-white border-orange-500'
+                              : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+                          )}
+                        >
+                          {opt === 'Merchant' ? tr.feePayerMerchant : tr.feePayerBeneficiary}
+                        </button>
+                      ))}
+                    </div>
                   </FormField>
                 </div>
 
