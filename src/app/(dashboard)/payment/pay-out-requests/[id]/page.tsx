@@ -194,6 +194,18 @@ export default function PayOutRequestDetailPage() {
                     {formatAmount(detail.payOutTotalAmountDecimal)}
                   </span>
                 ) : '—'}
+                {detail?.isPartialyPayout && detail?.totalPayOutPaidAmountDecimal != null && detail.totalPayOutPaidAmountDecimal > 0 && (
+                  <div className="mt-1.5 flex flex-col gap-0.5">
+                    <span className="text-xs text-gray-400">
+                      {tr.fieldTotalPaid}: <span className="font-semibold text-emerald-600 tabular-nums">{formatAmount(detail.totalPayOutPaidAmountDecimal)}</span>
+                    </span>
+                    {detail.payOutTotalAmountDecimalP2P != null && (
+                      <span className="text-xs text-gray-400">
+                        {tr.fieldP2PRemaining}: <span className="font-semibold text-primary-600 tabular-nums">{formatAmount(detail.payOutTotalAmountDecimalP2P)}</span>
+                      </span>
+                    )}
+                  </div>
+                )}
               </InfoRow>
 
               <InfoRow label={tr.fieldRefId ?? 'Ref ID'}>{detail?.refId ?? '—'}</InfoRow>
@@ -248,9 +260,6 @@ export default function PayOutRequestDetailPage() {
               const paidAmt = detail?.totalPayOutPaidAmountDecimal ?? 0
               const useP2P = detail?.isPartialyPayout && detail?.qrCodeP2P
               const rawQr = useP2P ? detail!.qrCodeP2P! : (detail?.qrCodeImage ?? detail?.qrCode ?? null)
-              const remaining = useP2P && detail?.payOutTotalAmountDecimalP2P != null
-                ? detail.payOutTotalAmountDecimalP2P - paidAmt
-                : null
               if (!rawQr) return null
               const isImage = rawQr.startsWith('data:') || rawQr.startsWith('iVBOR') || rawQr.startsWith('/9j/')
               return (
@@ -269,16 +278,10 @@ export default function PayOutRequestDetailPage() {
                       <QRCode value={rawQr} size={200} />
                     </div>
                   )}
-                  {paidAmt > 0 && (
-                    <div className="text-center">
-                      <p className="text-xs text-gray-400">{tr.fieldTotalPaid}</p>
-                      <p className="text-sm font-semibold text-emerald-600 tabular-nums">{formatAmount(paidAmt)}</p>
-                    </div>
-                  )}
-                  {remaining != null && remaining > 0 && (
-                    <div className="text-center">
-                      <p className="text-xs text-gray-400">{tr.fieldP2PRemaining}</p>
-                      <p className="text-sm font-bold text-primary-600 tabular-nums">{formatAmount(remaining)}</p>
+                  {useP2P && paidAmt > 0 && detail?.payOutTotalAmountDecimalP2P != null && (
+                    <div className="text-center max-w-[220px]">
+                      <p className="text-xs font-semibold text-primary-600 tabular-nums">{formatAmount(detail.payOutTotalAmountDecimalP2P)}</p>
+                      <p className="text-[10px] text-gray-400 mt-0.5">{tr.qrP2PDescription ?? 'ยอดคงเหลือหลัง partial payment'}</p>
                     </div>
                   )}
                 </div>

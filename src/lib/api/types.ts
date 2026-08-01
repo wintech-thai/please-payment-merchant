@@ -470,6 +470,12 @@ export interface PayInTxItem {
   fromBankCode?: string | null
   fromBankAccountNo?: string | null
   fromBankAccountName?: string | null
+  payInAccountType?: string | null
+  payInPromptPayId?: string | null
+  txIsPeerToPeer?: boolean | null
+  refId1?: string | null
+  refId2?: string | null
+  refId3?: string | null
   processingMessages?: string | null
   statusReason?: string | null
   createdDate?: string | null
