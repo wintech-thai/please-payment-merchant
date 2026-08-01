@@ -313,10 +313,12 @@ export default function PayInTransactionsPage() {
                       </p>
                     ) : <p className="text-sm text-gray-400">—</p>}
                     {item.payInBankAccountName && <p className="text-xs text-gray-500 mt-0.5">{item.payInBankAccountName}</p>}
-                    <div className="flex gap-1 mt-1 flex-wrap">
-                      {item.payInAccountType && (
+                    <div className="flex gap-1 mt-1 flex-wrap items-center">
+                      {item.payInPromptPayId ? (
+                        <span className="px-1.5 py-0.5 bg-blue-50 text-blue-700 text-[10px] font-bold rounded-full ring-1 ring-blue-200">PromptPay</span>
+                      ) : item.payInAccountType ? (
                         <span className="px-1.5 py-0.5 bg-blue-50 text-blue-700 text-[10px] font-bold rounded-full ring-1 ring-blue-200">{item.payInAccountType}</span>
-                      )}
+                      ) : null}
                       {item.payInPromptPayId && (
                         <span className="text-[10px] text-gray-500">{item.payInPromptPayId}</span>
                       )}

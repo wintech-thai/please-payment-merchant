@@ -215,13 +215,13 @@ export default function PayInRequestsPage() {
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b border-gray-100 sticky top-0 z-10">
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 whitespace-nowrap">{tr.colDate}</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">{tr.colMerchant}</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600">{tr.colAmount}</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600">{tr.colFee}</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">{tr.colBankAccount}</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">{tr.colStatus}</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">REF</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">{tr.colDate}</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">{tr.colMerchant}</th>
+                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">{tr.colAmount}</th>
+                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">{tr.colFee}</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">TO BANK ACCOUNT</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">{tr.colStatus}</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">REF</th>
               </tr>
             </thead>
             <tbody>
