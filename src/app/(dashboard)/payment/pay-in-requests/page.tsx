@@ -39,26 +39,31 @@ function formatAge(createdDate?: string | null): string {
 
 function StatusBadge({ status, createdDate, payinIsPeerToPeer }: { status?: string | null; createdDate?: string | null; payinIsPeerToPeer?: boolean | null }) {
   const s = (status || '').toLowerCase()
-  const p2p = payinIsPeerToPeer ? <span className="text-[10px] font-bold text-current ml-0.5">(P2P)</span> : null
   if (s === 'paid' || s === 'approved') return (
-    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200">
-      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0" />
-      {status}{p2p}
-    </span>
+    <div className="inline-flex items-center gap-1">
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200">
+        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0" />{status}
+      </span>
+      {payinIsPeerToPeer && <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold ring-1 bg-emerald-50 text-emerald-700 ring-emerald-200">P2P</span>}
+    </div>
   )
   if (s === 'rejected' || s === 'error') return (
-    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-red-50 text-red-700 ring-1 ring-red-200">
-      <span className="w-1.5 h-1.5 rounded-full bg-red-500 flex-shrink-0" />
-      {status}{p2p}
-    </span>
+    <div className="inline-flex items-center gap-1">
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-red-50 text-red-700 ring-1 ring-red-200">
+        <span className="w-1.5 h-1.5 rounded-full bg-red-500 flex-shrink-0" />{status}
+      </span>
+      {payinIsPeerToPeer && <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold ring-1 bg-red-50 text-red-700 ring-red-200">P2P</span>}
+    </div>
   )
   const age = formatAge(createdDate)
   return (
     <div className="flex flex-col gap-0.5 items-start">
-      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 ring-1 ring-amber-200">
-        <span className="w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0" />
-        {status ?? 'Pending'}{p2p}
-      </span>
+      <div className="inline-flex items-center gap-1">
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 ring-1 ring-amber-200">
+          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0" />{status ?? 'Pending'}
+        </span>
+        {payinIsPeerToPeer && <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold ring-1 bg-amber-50 text-amber-700 ring-amber-200">P2P</span>}
+      </div>
       {age && <span className="text-[10px] text-gray-400 ml-1">{age}</span>}
     </div>
   )
@@ -216,15 +221,13 @@ export default function PayInRequestsPage() {
                 <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600">{tr.colFee}</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">{tr.colBankAccount}</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">{tr.colStatus}</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">{tr.colRef1}</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">{tr.colRef2}</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">{tr.colRef3}</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">REF</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={9} className="px-4 py-16 text-center">
+                  <td colSpan={7} className="px-4 py-16 text-center">
                     <div className="flex items-center justify-center gap-2 text-gray-400">
                       <Loader2 className="w-5 h-5 animate-spin" />
                       <span className="text-sm">{tr.loading}</span>
@@ -233,7 +236,7 @@ export default function PayInRequestsPage() {
                 </tr>
               ) : items.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="px-4 py-16 text-center text-sm text-gray-400">{tr.noData}</td>
+                  <td colSpan={7} className="px-4 py-16 text-center text-sm text-gray-400">{tr.noData}</td>
                 </tr>
               ) : items.map((item, idx) => (
                 <tr
@@ -297,9 +300,14 @@ export default function PayInRequestsPage() {
                       </span>
                     )}
                   </td>
-                  <td className="px-4 py-3 border-b border-gray-100"><span className="text-sm text-gray-600">{item.refId1 || '—'}</span></td>
-                  <td className="px-4 py-3 border-b border-gray-100"><span className="text-sm text-gray-600">{item.refId2 || '—'}</span></td>
-                  <td className="px-4 py-3 border-b border-gray-100"><span className="text-sm text-gray-600">{item.refId3 || '—'}</span></td>
+                  <td className="px-4 py-3 border-b border-gray-100">
+                    <div className="flex flex-col gap-0.5">
+                      {item.refId1 ? <span className="text-sm text-gray-600 whitespace-nowrap">{item.refId1}</span> : null}
+                      {item.refId2 ? <span className="text-sm text-gray-600 whitespace-nowrap">{item.refId2}</span> : null}
+                      {item.refId3 ? <span className="text-sm text-gray-600 whitespace-nowrap">{item.refId3}</span> : null}
+                      {!item.refId1 && !item.refId2 && !item.refId3 && <span className="text-sm text-gray-400">—</span>}
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>

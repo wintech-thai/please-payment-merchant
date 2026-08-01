@@ -36,23 +36,31 @@ function formatDateTime(d?: string | null) {
 
 function StatusBadge({ status, createdDate, payinIsPeerToPeer }: { status?: string | null; createdDate?: string | null; payinIsPeerToPeer?: boolean | null }) {
   const s = status?.toLowerCase()
-  const p2p = payinIsPeerToPeer ? <span className="text-[10px] font-bold text-current ml-0.5">(P2P)</span> : null
   if (s === 'match' || s === 'paid' || s === 'approved') return (
-    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200">
-      <CheckCircle className="w-3.5 h-3.5" />{status}{p2p}
-    </span>
+    <div className="inline-flex items-center gap-1">
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200">
+        <CheckCircle className="w-3.5 h-3.5" />{status}
+      </span>
+      {payinIsPeerToPeer && <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold ring-1 bg-emerald-50 text-emerald-700 ring-emerald-200">P2P</span>}
+    </div>
   )
   if (s === 'rejected' || s === 'error') return (
-    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-red-50 text-red-700 ring-1 ring-red-200">
-      <AlertCircle className="w-3.5 h-3.5" />{status}{p2p}
-    </span>
+    <div className="inline-flex items-center gap-1">
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-red-50 text-red-700 ring-1 ring-red-200">
+        <AlertCircle className="w-3.5 h-3.5" />{status}
+      </span>
+      {payinIsPeerToPeer && <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold ring-1 bg-red-50 text-red-700 ring-red-200">P2P</span>}
+    </div>
   )
   const age = formatAge(createdDate)
   return (
     <div className="flex flex-col gap-0.5 w-fit items-start">
-      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 ring-1 ring-amber-200">
-        <Clock className="w-3.5 h-3.5" />{status ?? 'Pending'}{p2p}
-      </span>
+      <div className="inline-flex items-center gap-1">
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 ring-1 ring-amber-200">
+          <Clock className="w-3.5 h-3.5" />{status ?? 'Pending'}
+        </span>
+        {payinIsPeerToPeer && <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold ring-1 bg-amber-50 text-amber-700 ring-amber-200">P2P</span>}
+      </div>
       {age && <span className="text-xs text-gray-400">{age}</span>}
     </div>
   )

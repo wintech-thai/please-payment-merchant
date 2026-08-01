@@ -27,21 +27,29 @@ function formatDateTime(d?: string | null) {
 
 function StatusBadge({ status, isPartialyPayout }: { status?: string | null; isPartialyPayout?: boolean | null }) {
   const s = status?.toLowerCase()
-  const p2p = isPartialyPayout ? <span className="text-[10px] font-bold text-current ml-0.5">(P2P)</span> : null
   if (s === 'paid' || s === 'approved') return (
-    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200">
-      <CheckCircle className="w-3.5 h-3.5" />{status}{p2p}
-    </span>
+    <div className="inline-flex items-center gap-1">
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200">
+        <CheckCircle className="w-3.5 h-3.5" />{status}
+      </span>
+      {isPartialyPayout && <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold ring-1 bg-emerald-50 text-emerald-700 ring-emerald-200">P2P</span>}
+    </div>
   )
   if (s === 'rejected') return (
-    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-red-50 text-red-700 ring-1 ring-red-200">
-      <AlertCircle className="w-3.5 h-3.5" />{status}{p2p}
-    </span>
+    <div className="inline-flex items-center gap-1">
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-red-50 text-red-700 ring-1 ring-red-200">
+        <AlertCircle className="w-3.5 h-3.5" />{status}
+      </span>
+      {isPartialyPayout && <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold ring-1 bg-red-50 text-red-700 ring-red-200">P2P</span>}
+    </div>
   )
   return (
-    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 ring-1 ring-amber-200">
-      <Clock className="w-3.5 h-3.5" />{status ?? 'Pending'}{p2p}
-    </span>
+    <div className="inline-flex items-center gap-1">
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 ring-1 ring-amber-200">
+        <Clock className="w-3.5 h-3.5" />{status ?? 'Pending'}
+      </span>
+      {isPartialyPayout && <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold ring-1 bg-amber-50 text-amber-700 ring-amber-200">P2P</span>}
+    </div>
   )
 }
 

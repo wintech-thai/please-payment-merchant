@@ -37,7 +37,6 @@ function AccountTypeBadge({ type }: { type?: string | null }) {
 
 function StatusBadge({ status, isPartialyPayout, createdDate }: { status?: string | null; isPartialyPayout?: boolean | null; createdDate?: string | null }) {
   const s = (status || '').toLowerCase()
-  const p2p = isPartialyPayout ? <span className="text-[10px] font-bold text-current ml-0.5">(P2P)</span> : null
   const map: Record<string, string> = {
     paid: 'bg-green-50 text-green-700 border-green-200',
     approved: 'bg-green-50 text-green-700 border-green-200',
@@ -45,6 +44,14 @@ function StatusBadge({ status, isPartialyPayout, createdDate }: { status?: strin
     rejected: 'bg-red-50 text-red-600 border-red-200',
     failed: 'bg-red-50 text-red-600 border-red-200',
     cancelled: 'bg-gray-100 text-gray-500 border-gray-200',
+  }
+  const chipMap: Record<string, string> = {
+    paid: 'bg-green-50 text-green-700 ring-green-200',
+    approved: 'bg-green-50 text-green-700 ring-green-200',
+    pending: 'bg-amber-50 text-amber-700 ring-amber-200',
+    rejected: 'bg-red-50 text-red-600 ring-red-200',
+    failed: 'bg-red-50 text-red-600 ring-red-200',
+    cancelled: 'bg-gray-100 text-gray-500 ring-gray-200',
   }
   const dot: Record<string, string> = {
     paid: 'bg-green-500', approved: 'bg-green-500',
@@ -55,10 +62,13 @@ function StatusBadge({ status, isPartialyPayout, createdDate }: { status?: strin
   const age = s === 'pending' && createdDate ? formatAge(createdDate) : null
   return (
     <div className="flex flex-col gap-0.5 items-start">
-      <span className={clsx('inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border', map[s] ?? 'bg-gray-100 text-gray-500 border-gray-200')}>
-        <span className={clsx('w-1.5 h-1.5 rounded-full', dot[s] ?? 'bg-gray-400')} />
-        {status || '—'}{p2p}
-      </span>
+      <div className="inline-flex items-center gap-1">
+        <span className={clsx('inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border', map[s] ?? 'bg-gray-100 text-gray-500 border-gray-200')}>
+          <span className={clsx('w-1.5 h-1.5 rounded-full', dot[s] ?? 'bg-gray-400')} />
+          {status || '—'}
+        </span>
+        {isPartialyPayout && <span className={clsx('px-1.5 py-0.5 rounded-full text-[10px] font-bold ring-1', chipMap[s] ?? 'bg-gray-100 text-gray-500 ring-gray-200')}>P2P</span>}
+      </div>
       {age && <span className="text-[10px] text-gray-400 ml-1">{age}</span>}
     </div>
   )
@@ -219,21 +229,19 @@ export default function PayOutRequestsPage() {
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">{tr.colDestBank}</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">{tr.colSourceBank}</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">{tr.colStatus}</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">{tr.colRefId}</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">{tr.colRefId1}</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">{tr.colRefId2}</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">REF</th>
                 <th className="px-4 py-3 w-10" />
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={11} className="px-4 py-16 text-center">
+                <tr><td colSpan={9} className="px-4 py-16 text-center">
                   <div className="flex items-center justify-center gap-2 text-gray-400">
                     <Loader2 className="w-5 h-5 animate-spin" /><span className="text-sm">{t.common.loading}</span>
                   </div>
                 </td></tr>
               ) : items.length === 0 ? (
-                <tr><td colSpan={11} className="px-4 py-16 text-center text-sm text-gray-400">{tr.noData}</td></tr>
+                <tr><td colSpan={9} className="px-4 py-16 text-center text-sm text-gray-400">{tr.noData}</td></tr>
               ) : items.map((item, idx) => {
                 const canDelete = item.status?.toLowerCase() === 'pending' && !item.isPartialyPayout
                 return (
@@ -268,8 +276,8 @@ export default function PayOutRequestsPage() {
                   <td className="px-4 py-3 border-b border-gray-100 text-right">
                     <div className="text-sm font-semibold text-gray-800">
                       {item.payoutFeeDecimal != null ? Number(item.payoutFeeDecimal).toLocaleString('th-TH', { minimumFractionDigits: 2 }) : '—'}
-                      {item.payoutFeePct != null && <span className="text-[10px] font-normal text-gray-400 ml-1">{item.payoutFeePct}%</span>}
                     </div>
+                    {item.payoutFeePct != null && <div className="text-[10px] text-gray-400">{item.payoutFeePct}%</div>}
                     {item.payoutFeePayer && (
                       <span className={clsx(
                         'text-[10px] font-semibold px-1.5 py-0.5 rounded-full ring-1',
@@ -330,9 +338,14 @@ export default function PayOutRequestsPage() {
                       <p className="text-[11px] text-red-500 mt-1 truncate max-w-[140px]" title={item.rejectReason}>{item.rejectReason}</p>
                     )}
                   </td>
-                  <td className="px-4 py-3 border-b border-gray-100 text-xs text-gray-600 whitespace-nowrap">{item.refId || '—'}</td>
-                  <td className="px-4 py-3 border-b border-gray-100 text-xs text-gray-600 whitespace-nowrap">{item.refId1 || '—'}</td>
-                  <td className="px-4 py-3 border-b border-gray-100 text-xs text-gray-600 whitespace-nowrap">{item.refId2 || '—'}</td>
+                  <td className="px-4 py-3 border-b border-gray-100">
+                    <div className="flex flex-col gap-0.5">
+                      {item.refId ? <span className="text-xs text-gray-600 whitespace-nowrap">{item.refId}</span> : null}
+                      {item.refId1 ? <span className="text-xs text-gray-600 whitespace-nowrap">{item.refId1}</span> : null}
+                      {item.refId2 ? <span className="text-xs text-gray-600 whitespace-nowrap">{item.refId2}</span> : null}
+                      {!item.refId && !item.refId1 && !item.refId2 && <span className="text-xs text-gray-400">—</span>}
+                    </div>
+                  </td>
                   <td className="px-4 py-3 border-b border-gray-100" onClick={e => e.stopPropagation()}>
                     {canDelete && (
                       <button
