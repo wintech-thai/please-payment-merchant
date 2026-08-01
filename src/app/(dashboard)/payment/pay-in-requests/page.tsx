@@ -302,10 +302,10 @@ export default function PayInRequestsPage() {
                   </td>
                   <td className="px-4 py-3 border-b border-gray-100">
                     <div className="flex flex-col gap-0.5">
-                      {item.refId1 ? <span className="text-sm text-gray-600 whitespace-nowrap">{item.refId1}</span> : null}
-                      {item.refId2 ? <span className="text-sm text-gray-600 whitespace-nowrap">{item.refId2}</span> : null}
-                      {item.refId3 ? <span className="text-sm text-gray-600 whitespace-nowrap">{item.refId3}</span> : null}
-                      {!item.refId1 && !item.refId2 && !item.refId3 && <span className="text-sm text-gray-400">—</span>}
+                      {item.refId1 ? <span className="text-xs text-gray-600 whitespace-nowrap">{item.refId1}</span> : null}
+                      {item.refId2 ? <span className="text-xs text-gray-600 whitespace-nowrap">{item.refId2}</span> : null}
+                      {item.refId3 ? <span className="text-xs text-gray-600 whitespace-nowrap">{item.refId3}</span> : null}
+                      {!item.refId1 && !item.refId2 && !item.refId3 && <span className="text-xs text-gray-400">—</span>}
                     </div>
                   </td>
                 </tr>
