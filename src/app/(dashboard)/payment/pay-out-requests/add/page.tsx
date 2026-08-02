@@ -103,6 +103,7 @@ export default function AddPayOutRequestPage() {
   const [refId1, setRefId1] = useState('')
   const [refId2, setRefId2] = useState('')
   const [description, setDescription] = useState('')
+  const [payoutFeePayer, setPayoutFeePayer] = useState<'Merchant' | 'Beneficiary'>('Merchant')
   const [saving, setSaving] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
 
@@ -191,6 +192,7 @@ export default function AddPayOutRequestPage() {
         Currency: 'THB',
         RequestedAmount: parseFloat(requestedAmount),
         QrProvider: 'PP',
+        PayoutFeePayer: payoutFeePayer,
         ...(manualMode ? {
           BankCode: manualBankCode.trim() || undefined,
           BankAccountNo: manualBankAccountNo.trim() || undefined,
@@ -278,134 +280,164 @@ export default function AddPayOutRequestPage() {
                 </button>
               </div>
 
-              {manualMode ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-xl">
-                  <FormField label="Bank Code" error={errors.bank}>
-                    <select
-                      value={manualBankCode}
-                      onChange={e => { setManualBankCode(e.target.value); clearErr('bank') }}
-                      className={clsx(inputCls(!!errors.bank), 'cursor-pointer')}
-                    >
-                      <option value="">— Select bank —</option>
-                      {THAI_BANKS.map(b => (
-                        <option key={b.code} value={b.code}>{b.code} – {b.name}</option>
-                      ))}
-                    </select>
-                  </FormField>
-                  <FormField label="Account No" required error={errors.accountNo} hint={tr.hintAccountNo}>
-                    <input
-                      value={manualBankAccountNo}
-                      onChange={e => {
-                        const v = e.target.value.replace(/\D/g, '')
-                        setManualBankAccountNo(v)
-                        clearErr('accountNo')
-                      }}
-                      placeholder="e.g. 1234567890"
-                      inputMode="numeric"
-                      maxLength={12}
-                      className={inputCls(!!errors.accountNo)}
-                    />
-                  </FormField>
-                  <FormField label="Account Name" required error={errors.accountName}>
-                    <input
-                      value={manualBankAccountName}
-                      onChange={e => { setManualBankAccountName(e.target.value); clearErr('accountName') }}
-                      placeholder="e.g. John Doe"
-                      className={inputCls(!!errors.accountName)}
-                    />
-                  </FormField>
-                  <FormField label="PromptPay ID" error={errors.promptPay} hint={tr.hintPromptPay}>
-                    <input
-                      value={manualPromptPayId}
-                      onChange={e => {
-                        const v = e.target.value.replace(/\D/g, '')
-                        setManualPromptPayId(v)
-                        clearErr('promptPay')
-                      }}
-                      placeholder="e.g. 0812345678"
-                      inputMode="numeric"
-                      maxLength={13}
-                      className={inputCls(!!errors.promptPay)}
-                    />
-                  </FormField>
-                </div>
-              ) : (
-                <div className="max-w-md">
-                  <FormField label={tr.fieldPayoutBankAccount} required error={errors.bank}>
-                    <div ref={bankRef} className="relative">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+              {/* Fee Payer Switch — always visible */}
+              <div className="flex flex-wrap items-start gap-4">
+
+                {/* Bank account picker */}
+                {manualMode ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-xl">
+                    <FormField label="Bank Code" error={errors.bank}>
+                      <select
+                        value={manualBankCode}
+                        onChange={e => { setManualBankCode(e.target.value); clearErr('bank') }}
+                        className={clsx(inputCls(!!errors.bank), 'cursor-pointer')}
+                      >
+                        <option value="">— Select bank —</option>
+                        {THAI_BANKS.map(b => (
+                          <option key={b.code} value={b.code}>{b.code} – {b.name}</option>
+                        ))}
+                      </select>
+                    </FormField>
+                    <FormField label="Account No" required error={errors.accountNo} hint={tr.hintAccountNo}>
                       <input
-                        value={bankSearch || (selectedBank && !bankOpen
-                          ? [selectedBank.bankCode, selectedBank.accountNumber].filter(Boolean).join(' · ') + (selectedBank.accountName ? ` — ${selectedBank.accountName}` : '')
-                          : bankSearch)}
-                        onChange={e => { setBankSearch(e.target.value); setBankOpen(true); if (!e.target.value) setPayinBankAccountId('') }}
-                        onFocus={() => { setBankOpen(true); setBankSearch('') }}
-                        placeholder={tr.placeholderPayoutBankAccount}
-                        className={clsx(
-                          'w-full pl-9 pr-3 py-2.5 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:border-transparent bg-white transition-colors',
-                          errors.bank ? 'border-red-400 focus:ring-red-400' : 'border-gray-200 focus:ring-primary-500',
-                          'text-gray-800'
-                        )}
+                        value={manualBankAccountNo}
+                        onChange={e => {
+                          const v = e.target.value.replace(/\D/g, '')
+                          setManualBankAccountNo(v)
+                          clearErr('accountNo')
+                        }}
+                        placeholder="e.g. 1234567890"
+                        inputMode="numeric"
+                        maxLength={12}
+                        className={inputCls(!!errors.accountNo)}
                       />
+                    </FormField>
+                    <FormField label="Account Name" required error={errors.accountName}>
+                      <input
+                        value={manualBankAccountName}
+                        onChange={e => { setManualBankAccountName(e.target.value); clearErr('accountName') }}
+                        placeholder="e.g. John Doe"
+                        className={inputCls(!!errors.accountName)}
+                      />
+                    </FormField>
+                    <FormField label="PromptPay ID" error={errors.promptPay} hint={tr.hintPromptPay}>
+                      <input
+                        value={manualPromptPayId}
+                        onChange={e => {
+                          const v = e.target.value.replace(/\D/g, '')
+                          setManualPromptPayId(v)
+                          clearErr('promptPay')
+                        }}
+                        placeholder="e.g. 0812345678"
+                        inputMode="numeric"
+                        maxLength={13}
+                        className={inputCls(!!errors.promptPay)}
+                      />
+                    </FormField>
+                  </div>
+                ) : (
+                  <div className="flex-1 min-w-0 max-w-md">
+                    <FormField label={tr.fieldPayoutBankAccount} required error={errors.bank}>
+                      <div ref={bankRef} className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                        <input
+                          value={bankSearch || (selectedBank && !bankOpen
+                            ? [selectedBank.bankCode, selectedBank.accountNumber].filter(Boolean).join(' · ') + (selectedBank.accountName ? ` — ${selectedBank.accountName}` : '')
+                            : bankSearch)}
+                          onChange={e => { setBankSearch(e.target.value); setBankOpen(true); if (!e.target.value) setPayinBankAccountId('') }}
+                          onFocus={() => { setBankOpen(true); setBankSearch('') }}
+                          placeholder={tr.placeholderPayoutBankAccount}
+                          className={clsx(
+                            'w-full pl-9 pr-3 py-2.5 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:border-transparent bg-white transition-colors',
+                            errors.bank ? 'border-red-400 focus:ring-red-400' : 'border-gray-200 focus:ring-primary-500',
+                            'text-gray-800'
+                          )}
+                        />
 
-                      {bankOpen && (
-                        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg flex flex-col max-h-64">
-                          <div className="overflow-y-auto custom-scrollbar flex-1">
-                            {(() => {
-                              const filtered = bankAccounts.filter(ba => {
-                                const q = bankSearch.toLowerCase()
-                                return !q || [ba.bankCode, ba.accountNumber, ba.accountName].some(v => v?.toLowerCase().includes(q))
-                              })
-                              if (filtered.length === 0) return <div className="px-3 py-2.5 text-sm text-gray-400">{tr.noPayoutBankAccounts}</div>
-                              return filtered.map(ba => {
-                                const id = ba.accountId ?? ba.bankAccountId ?? ''
-                                return (
-                                  <button
-                                    key={id}
-                                    type="button"
-                                    onClick={() => { setPayinBankAccountId(id); setBankOpen(false); setBankSearch(''); clearErr('bank') }}
-                                    className={clsx(
-                                      'w-full text-left px-4 py-3 flex items-center gap-3 transition-colors border-b border-gray-50 last:border-b-0',
-                                      payinBankAccountId === id ? 'bg-primary-50' : 'hover:bg-gray-50'
-                                    )}
-                                  >
-                                    <span className="flex-1 min-w-0 flex items-center flex-wrap gap-1.5">
-                                      <span className={clsx('text-sm font-semibold', payinBankAccountId === id ? 'text-primary-700' : 'text-gray-900')}>
-                                        {[ba.bankCode, ba.accountNumber].filter(Boolean).join(' · ')}
-                                      </span>
-                                      {ba.accountName && (
-                                        <span className="text-sm text-gray-700 font-normal">— {ba.accountName}</span>
+                        {bankOpen && (
+                          <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg flex flex-col max-h-64">
+                            <div className="overflow-y-auto custom-scrollbar flex-1">
+                              {(() => {
+                                const filtered = bankAccounts.filter(ba => {
+                                  const q = bankSearch.toLowerCase()
+                                  return !q || [ba.bankCode, ba.accountNumber, ba.accountName].some(v => v?.toLowerCase().includes(q))
+                                })
+                                if (filtered.length === 0) return <div className="px-3 py-2.5 text-sm text-gray-400">{tr.noPayoutBankAccounts}</div>
+                                return filtered.map(ba => {
+                                  const id = ba.accountId ?? ba.bankAccountId ?? ''
+                                  return (
+                                    <button
+                                      key={id}
+                                      type="button"
+                                      onClick={() => { setPayinBankAccountId(id); setBankOpen(false); setBankSearch(''); clearErr('bank') }}
+                                      className={clsx(
+                                        'w-full text-left px-4 py-3 flex items-center gap-3 transition-colors border-b border-gray-50 last:border-b-0',
+                                        payinBankAccountId === id ? 'bg-primary-50' : 'hover:bg-gray-50'
                                       )}
-                                      <AccountTypeBadge type={ba.accountType} />
-                                    </span>
-                                  </button>
-                                )
-                              })
-                            })()}
+                                    >
+                                      <span className="flex-1 min-w-0 flex items-center flex-wrap gap-1.5">
+                                        <span className={clsx('text-sm font-semibold', payinBankAccountId === id ? 'text-primary-700' : 'text-gray-900')}>
+                                          {[ba.bankCode, ba.accountNumber].filter(Boolean).join(' · ')}
+                                        </span>
+                                        {ba.accountName && (
+                                          <span className="text-sm text-gray-700 font-normal">— {ba.accountName}</span>
+                                        )}
+                                        <AccountTypeBadge type={ba.accountType} />
+                                      </span>
+                                    </button>
+                                  )
+                                })
+                              })()}
+                            </div>
                           </div>
-                        </div>
-                      )}
-                    </div>
-                  </FormField>
+                        )}
+                      </div>
+                    </FormField>
 
-                  {selectedBank && (selectedBank.payoutMinAmount != null || selectedBank.payoutMaxAmount != null) && (
-                    <div className="mt-3 flex gap-3">
-                      <div className="flex items-center gap-1.5 px-2 py-1 bg-gray-50 border border-gray-200 rounded-lg">
-                        <span className="text-[10px] text-gray-400 uppercase tracking-wide">{tr.minAmount}</span>
-                        <span className="text-sm font-semibold text-gray-700 tabular-nums">
-                          {selectedBank.payoutMinAmount?.toLocaleString('th-TH', { minimumFractionDigits: 2 }) ?? '—'}
-                        </span>
+                    {selectedBank && (selectedBank.payoutMinAmount != null || selectedBank.payoutMaxAmount != null) && (
+                      <div className="mt-3 flex gap-3">
+                        <div className="flex items-center gap-1.5 px-2 py-1 bg-gray-50 border border-gray-200 rounded-lg">
+                          <span className="text-[10px] text-gray-400 uppercase tracking-wide">{tr.minAmount}</span>
+                          <span className="text-sm font-semibold text-gray-700 tabular-nums">
+                            {selectedBank.payoutMinAmount?.toLocaleString('th-TH', { minimumFractionDigits: 2 }) ?? '—'}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1.5 px-2 py-1 bg-gray-50 border border-gray-200 rounded-lg">
+                          <span className="text-[10px] text-gray-400 uppercase tracking-wide">{tr.maxAmount}</span>
+                          <span className="text-sm font-semibold text-gray-700 tabular-nums">
+                            {selectedBank.payoutMaxAmount?.toLocaleString('th-TH', { minimumFractionDigits: 2 }) ?? '—'}
+                          </span>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-1.5 px-2 py-1 bg-gray-50 border border-gray-200 rounded-lg">
-                        <span className="text-[10px] text-gray-400 uppercase tracking-wide">{tr.maxAmount}</span>
-                        <span className="text-sm font-semibold text-gray-700 tabular-nums">
-                          {selectedBank.payoutMaxAmount?.toLocaleString('th-TH', { minimumFractionDigits: 2 }) ?? '—'}
-                        </span>
-                      </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
+                )}
+
+                {/* Fee Payer Switch */}
+                <div className="flex-shrink-0">
+                  <p className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">{tr.fieldFeePayer}</p>
+                  <div className="flex rounded-lg border border-gray-200 overflow-hidden">
+                    {(['Merchant', 'Beneficiary'] as const).map(opt => (
+                      <button
+                        key={opt}
+                        type="button"
+                        onClick={() => setPayoutFeePayer(opt)}
+                        className={clsx(
+                          'px-4 py-2.5 text-sm font-semibold transition-colors',
+                          payoutFeePayer === opt
+                            ? opt === 'Merchant'
+                              ? 'bg-blue-600 text-white'
+                              : 'bg-orange-500 text-white'
+                            : 'bg-white text-gray-500 hover:bg-gray-50'
+                        )}
+                      >
+                        {opt === 'Merchant' ? tr.feePayerMerchant : tr.feePayerBeneficiary}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              )}
+
+              </div>
             </div>
 
             {/* Section 3: Request Details */}
