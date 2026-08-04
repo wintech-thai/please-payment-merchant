@@ -46,6 +46,15 @@ const menuItems: MenuItem[] = [
       </svg>
     ),
   },
+  {
+    href: '/payment/pay-out-transactions',
+    label: 'Pay-Out Transactions',
+    icon: (
+      <svg style={{ width: '18px', height: '18px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+      </svg>
+    ),
+  },
 ]
 
 export default function PaymentSidebar() {
@@ -57,7 +66,7 @@ export default function PaymentSidebar() {
       className={clsx(
         'relative flex flex-col flex-shrink-0 transition-all duration-300 ease-in-out',
         'bg-gradient-to-b from-primary-800 to-primary-900 border-r border-primary-900',
-        collapsed ? 'w-[60px]' : 'w-52'
+        collapsed ? 'w-[60px]' : 'w-60'
       )}
     >
       {/* Collapse toggle */}

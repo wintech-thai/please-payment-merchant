@@ -9,10 +9,26 @@ import type { PayInSlipItem } from '@/lib/api/types'
 import { toast } from 'sonner'
 import { Loader2, Upload, ChevronLeft, ChevronRight, Search, RefreshCw, ExternalLink } from 'lucide-react'
 import clsx from 'clsx'
+import { AdvancedTimeRangeSelector, type TimeRangeValue } from '@/components/AdvancedTimeRangeSelector'
+
+function getTimeFilter(tr: TimeRangeValue): { fromDate: string; toDate: string } {
+  if (tr.type === 'absolute' && tr.start && tr.end) {
+    return { fromDate: new Date(tr.start * 1000).toISOString(), toDate: new Date(tr.end * 1000).toISOString() }
+  }
+  const now = Date.now()
+  const val = tr.type === 'relative' ? tr.value ?? '24h' : '24h'
+  const num = parseInt(val)
+  const unit = val.replace(/[0-9]/g, '')
+  let startMs = now - 24 * 3_600_000
+  if (unit === 'h') startMs = now - num * 3_600_000
+  else startMs = now - num * 86_400_000
+  return { fromDate: new Date(startMs).toISOString(), toDate: new Date(now).toISOString() }
+}
 
 const PAGE_SIZE_OPTIONS = [25, 50, 100]
 const DEFAULT_PAGE_SIZE = 25
 const HIGHLIGHTED_KEY = 'payInSlip_highlightedId'
+const FILTER_KEY = 'merchantPayInSlip_filter'
 
 function StatusBadge({ status }: { status?: string | null }) {
   const s = (status || '').toLowerCase()
@@ -44,9 +60,18 @@ export default function PayInSlipsPage() {
   const [items, setItems] = useState<PayInSlipItem[]>([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(false)
-  const [inputSearch, setInputSearch] = useState('')
-  const [search, setSearch] = useState('')
-  const [status, setStatus] = useState('')
+  const [inputSearch, setInputSearch] = useState<string>(() =>
+    typeof window !== 'undefined' ? (JSON.parse(sessionStorage.getItem(FILTER_KEY) ?? 'null')?.search ?? '') : ''
+  )
+  const [search, setSearch] = useState<string>(() =>
+    typeof window !== 'undefined' ? (JSON.parse(sessionStorage.getItem(FILTER_KEY) ?? 'null')?.search ?? '') : ''
+  )
+  const [status, setStatus] = useState<string>(() =>
+    typeof window !== 'undefined' ? (JSON.parse(sessionStorage.getItem(FILTER_KEY) ?? 'null')?.status ?? '') : ''
+  )
+  const [timeRange, setTimeRange] = useState<TimeRangeValue>(() =>
+    typeof window !== 'undefined' ? (JSON.parse(sessionStorage.getItem(FILTER_KEY) ?? 'null')?.timeRange ?? { type: 'relative', value: '24h' }) : { type: 'relative', value: '24h' }
+  )
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
   const [highlightedId, setHighlightedId] = useState<string>(() => {
@@ -56,15 +81,19 @@ export default function PayInSlipsPage() {
     return ''
   })
 
-  const load = useCallback(async (currentPage: number, limit: number, q: string, st: string) => {
+  const load = useCallback(async (currentPage: number, limit: number, tr: TimeRangeValue, q: string, st: string) => {
+    if (typeof window !== 'undefined') sessionStorage.setItem(FILTER_KEY, JSON.stringify({ search: q, status: st, timeRange: tr }))
     setLoading(true)
     try {
+      const { fromDate, toDate } = getTimeFilter(tr)
       const payload = {
         fullTextSearch: q.trim() || undefined,
         status: st || undefined,
         direction: 'PayIn',
         offset: (currentPage - 1) * limit,
         limit,
+        fromDate,
+        toDate,
       }
       const [listRes, countRes] = await Promise.allSettled([
         paymentSlipApi.getPayInDocuments(payload),
@@ -84,13 +113,19 @@ export default function PayInSlipsPage() {
     }
   }, [tr.noData])
 
-  useEffect(() => { load(1, DEFAULT_PAGE_SIZE, '', '') }, [])
-  useOrgChange(() => load(1, DEFAULT_PAGE_SIZE, '', ''))
+  useEffect(() => { load(1, DEFAULT_PAGE_SIZE, timeRange, search, status) }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  useOrgChange(() => load(1, DEFAULT_PAGE_SIZE, timeRange, search, status))
 
   const handleSearch = () => {
     setSearch(inputSearch)
     setPage(1)
-    load(1, pageSize, inputSearch, status)
+    load(1, pageSize, timeRange, inputSearch, status)
+  }
+
+  const handleTimeRangeChange = (tr: TimeRangeValue) => {
+    setTimeRange(tr)
+    setPage(1)
+    load(1, pageSize, tr, search, status)
   }
 
   const handleRowHighlight = (id: string) => {
@@ -139,14 +174,15 @@ export default function PayInSlipsPage() {
             <Search className="w-4 h-4" />
           </button>
         </div>
-        <select value={status} onChange={e => { setStatus(e.target.value); setPage(1); load(1, pageSize, search, e.target.value) }}
+        <select value={status} onChange={e => { setStatus(e.target.value); setPage(1); load(1, pageSize, timeRange, search, e.target.value) }}
           className="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500">
           <option value="">{tr.filterAll}</option>
           <option value="Pending">{tr.filterPending}</option>
           <option value="Approved">{tr.filterApproved}</option>
           <option value="Rejected">{tr.filterRejected}</option>
         </select>
-        <button onClick={() => { setPage(1); load(1, pageSize, search, status) }} disabled={loading} title={tr.refresh}
+        <AdvancedTimeRangeSelector value={timeRange} onChange={handleTimeRangeChange} disabled={loading} />
+        <button onClick={() => { setPage(1); load(1, pageSize, timeRange, search, status) }} disabled={loading} title={tr.refresh}
           className="p-2 text-gray-500 hover:text-gray-700 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-60">
           <RefreshCw className={clsx('w-4 h-4', loading && 'animate-spin')} />
         </button>
@@ -284,7 +320,7 @@ export default function PayInSlipsPage() {
             <div className="flex items-center gap-2 text-sm text-gray-500">
               <span>{t.admin.rowsPerPage}</span>
               <select value={pageSize} onChange={e => {
-                const n = Number(e.target.value); setPageSize(n); setPage(1); load(1, n, search, status)
+                const n = Number(e.target.value); setPageSize(n); setPage(1); load(1, n, timeRange, search, status)
               }} className="bg-transparent border-none text-gray-700 focus:ring-0 cursor-pointer font-medium outline-none text-sm">
                 {PAGE_SIZE_OPTIONS.map(n => <option key={n} value={n}>{n}</option>)}
               </select>
@@ -292,12 +328,12 @@ export default function PayInSlipsPage() {
             <div className="flex items-center gap-4">
               <span className="text-xs text-gray-400">{total === 0 ? '0-0' : `${startRow}-${endRow}`} of {total}</span>
               <div className="flex items-center gap-1">
-                <button onClick={() => { setPage(p => p - 1); load(page - 1, pageSize, search, status) }}
+                <button onClick={() => { setPage(p => p - 1); load(page - 1, pageSize, timeRange, search, status) }}
                   disabled={page <= 1 || loading}
                   className="p-1.5 rounded hover:bg-gray-100 text-gray-400 disabled:opacity-30 transition-colors">
                   <ChevronLeft className="w-5 h-5" />
                 </button>
-                <button onClick={() => { setPage(p => p + 1); load(page + 1, pageSize, search, status) }}
+                <button onClick={() => { setPage(p => p + 1); load(page + 1, pageSize, timeRange, search, status) }}
                   disabled={page >= totalPages || total === 0 || loading}
                   className="p-1.5 rounded hover:bg-gray-100 text-gray-400 disabled:opacity-30 transition-colors">
                   <ChevronRight className="w-5 h-5" />

@@ -550,7 +550,7 @@ export default function MerchantInfoPage() {
                       <div className="space-y-3">
                         {payinDailyAmountLimit != null && (
                           <div>
-                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Pay-In Daily Amount</p>
+                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">{mi.fieldPayInDailyAmount}</p>
                             {payinDailyAmountLimit > 0 ? (
                               <>
                                 <p className="text-xs text-gray-500 mb-1">
@@ -559,20 +559,20 @@ export default function MerchantInfoPage() {
                                 <DailyBar current={currentDailyAmount ?? 0} limit={payinDailyAmountLimit} />
                               </>
                             ) : (
-                              <p className="text-sm text-gray-600">{currentDailyAmount?.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) ?? '0.00'} / ไม่จำกัด</p>
+                              <p className="text-sm text-gray-600">{currentDailyAmount?.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) ?? '0.00'} / {mi.unlimitedText}</p>
                             )}
                           </div>
                         )}
                         {payinDailyCountLimit != null && (
                           <div>
-                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Pay-In Daily Count</p>
+                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">{mi.fieldPayInDailyCount}</p>
                             {payinDailyCountLimit > 0 ? (
                               <>
                                 <p className="text-xs text-gray-500 mb-1">{currentDailyCount ?? 0} / {payinDailyCountLimit}</p>
                                 <DailyBar current={currentDailyCount ?? 0} limit={payinDailyCountLimit} />
                               </>
                             ) : (
-                              <p className="text-sm text-gray-600">{currentDailyCount ?? 0} / ไม่จำกัด</p>
+                              <p className="text-sm text-gray-600">{currentDailyCount ?? 0} / {mi.unlimitedText}</p>
                             )}
                           </div>
                         )}

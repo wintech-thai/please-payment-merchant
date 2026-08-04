@@ -25,6 +25,7 @@ function getTimeFilter(tr: TimeRangeValue) {
 const PAGE_SIZE_OPTIONS = [25, 50, 100]
 const DEFAULT_PAGE_SIZE = 25
 const HIGHLIGHTED_KEY = 'payInRequests_highlightedId'
+const FILTER_KEY = 'merchantPayInRequests_filter'
 
 function formatAge(createdDate?: string | null): string {
   if (!createdDate) return ''
@@ -102,10 +103,18 @@ export default function PayInRequestsPage() {
   const [items, setItems] = useState<PayInRequestItem[]>([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
-  const [inputSearch, setInputSearch] = useState('')
-  const [search, setSearch] = useState('')
-  const [status, setStatus] = useState('')
-  const [timeRange, setTimeRange] = useState<TimeRangeValue>({ type: 'relative', value: '30d' })
+  const [inputSearch, setInputSearch] = useState<string>(() =>
+    typeof window !== 'undefined' ? (JSON.parse(sessionStorage.getItem(FILTER_KEY) ?? 'null')?.search ?? '') : ''
+  )
+  const [search, setSearch] = useState<string>(() =>
+    typeof window !== 'undefined' ? (JSON.parse(sessionStorage.getItem(FILTER_KEY) ?? 'null')?.search ?? '') : ''
+  )
+  const [status, setStatus] = useState<string>(() =>
+    typeof window !== 'undefined' ? (JSON.parse(sessionStorage.getItem(FILTER_KEY) ?? 'null')?.status ?? '') : ''
+  )
+  const [timeRange, setTimeRange] = useState<TimeRangeValue>(() =>
+    typeof window !== 'undefined' ? (JSON.parse(sessionStorage.getItem(FILTER_KEY) ?? 'null')?.timeRange ?? { type: 'relative', value: '30d' }) : { type: 'relative', value: '30d' }
+  )
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
   const [highlightedId, setHighlightedId] = useState<string>(() =>
@@ -113,6 +122,7 @@ export default function PayInRequestsPage() {
   )
 
   const load = useCallback(async () => {
+    if (typeof window !== 'undefined') sessionStorage.setItem(FILTER_KEY, JSON.stringify({ search, status, timeRange }))
     setLoading(true)
     try {
       const payload = {
@@ -254,7 +264,7 @@ export default function PayInRequestsPage() {
                     onClick={e => { e.stopPropagation(); handleRowHighlight(item.id); router.push(`/payment/pay-in-requests/${item.id}`) }}
                   >
                     <div className="text-sm font-medium text-gray-700 group-hover:text-primary-600 group-hover:underline">{item.createdDate ? new Date(item.createdDate).toLocaleString('th-TH') : '—'}</div>
-                    <div className="text-xs text-gray-400 truncate max-w-[160px]">{item.refId || '—'}</div>
+                    <div className="text-xs text-gray-400 truncate max-w-[160px]">{item.refId1 || '—'}</div>
                   </td>
                   <td className="px-4 py-3 border-b border-gray-100">
                     <div className="text-sm font-semibold text-gray-800">{item.merchantCode || '—'}</div>

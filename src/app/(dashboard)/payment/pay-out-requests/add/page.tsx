@@ -186,8 +186,9 @@ export default function AddPayOutRequestPage() {
       await paymentRequestApi.createPayOutRequest({
         MerchantId: merchantId,
         RefId: refId.trim(),
-        RefId1: refId1.trim() || undefined,
-        RefId2: refId2.trim() || undefined,
+        RefId1: refId.trim(),
+        RefId2: refId1.trim() || undefined,
+        RefId3: refId2.trim() || undefined,
         Description: description.trim() || undefined,
         Currency: 'THB',
         RequestedAmount: parseFloat(requestedAmount),
@@ -445,7 +446,7 @@ export default function AddPayOutRequestPage() {
               <SectionHeader>{tr.sectionRequestInfo}</SectionHeader>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
-                <FormField label="Ref ID" required error={errors.refId} hint="Auto-generated · YYMMDDHHMMSS">
+                <FormField label="REF 1" required error={errors.refId} hint="Auto-generated · YYMMDDHHMMSS">
                   <div className="flex gap-2">
                     <input
                       value={refId}

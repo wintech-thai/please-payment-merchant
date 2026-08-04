@@ -431,6 +431,7 @@ export interface PaymentTxJob {
   orgId?: string | null
   status?: string | null
   jobMessage?: string | null
+  jobMessage2?: string | null
   name?: string | null
   tags?: string | null
   description?: string | null
@@ -490,6 +491,65 @@ export interface PayInTxDetail extends PayInTxItem {
 }
 
 export interface GetPayInTxPayload {
+  fullTextSearch?: string
+  status?: string
+  direction?: string
+  fromDate?: string
+  toDate?: string
+  offset?: number
+  limit?: number
+}
+
+// ─── Pay-Out Transactions ─────────────────────────────────────────────────────
+
+export interface PayOutTxItem {
+  id: string
+  orgId?: string | null
+  merchantId?: string | null
+  merchantCode?: string | null
+  merchantName?: string | null
+  paymentRequestId?: string | null
+  description?: string | null
+  currency?: string | null
+  tags?: string | null
+  status?: string | null
+  statusReason?: string | null
+  direction?: string | null
+  txAmount?: number | null
+  txAmountDecimal?: number | null
+  payoutFeePct?: number | null
+  payOutFeePct?: number | null
+  payoutFeeDecimal?: number | null
+  payOutTotalAmountDecimal?: number | null
+  payoutFeePayer?: string | null
+  payInBankCode?: string | null
+  payInBankAccountNo?: string | null
+  payInBankAccountName?: string | null
+  payInPromptPayId?: string | null
+  payOutBankCode?: string | null
+  payOutBankAccountNo?: string | null
+  payOutBankAccountName?: string | null
+  payOutPromptPayId?: string | null
+  payOutAccountType?: string | null
+  fromBankCode?: string | null
+  fromBankAccountNo?: string | null
+  fromBankAccountName?: string | null
+  refId1?: string | null
+  refId2?: string | null
+  refId3?: string | null
+  txIsPeerToPeer?: boolean | null
+  processingMessages?: string | null
+  createdDate?: string | null
+  processingSteps?: string[] | null
+  rawInputObj?: unknown | null
+  jobId?: string | null
+}
+
+export interface PayOutTxDetail extends PayOutTxItem {
+  rawInput?: string | null
+}
+
+export interface GetPayOutTxPayload {
   fullTextSearch?: string
   status?: string
   direction?: string
@@ -662,6 +722,8 @@ export interface GetPayInDocumentsPayload {
   direction?: string
   offset?: number
   limit?: number
+  fromDate?: string
+  toDate?: string
 }
 
 export interface GetPresignedUrlPayload {

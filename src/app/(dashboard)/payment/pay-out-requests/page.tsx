@@ -25,6 +25,7 @@ function getTimeFilter(tr: TimeRangeValue) {
 const PAGE_SIZE_OPTIONS = [25, 50, 100]
 const DEFAULT_PAGE_SIZE = 25
 const HIGHLIGHTED_KEY = 'payOutRequests_highlightedId'
+const FILTER_KEY = 'merchantPayOutRequests_filter'
 
 function AccountTypeBadge({ type }: { type?: string | null }) {
   if (!type) return null
@@ -93,10 +94,18 @@ export default function PayOutRequestsPage() {
   const [items, setItems] = useState<PayOutRequestItem[]>([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
-  const [inputSearch, setInputSearch] = useState('')
-  const [search, setSearch] = useState('')
-  const [status, setStatus] = useState('')
-  const [timeRange, setTimeRange] = useState<TimeRangeValue>({ type: 'relative', value: '30d' })
+  const [inputSearch, setInputSearch] = useState<string>(() =>
+    typeof window !== 'undefined' ? (JSON.parse(sessionStorage.getItem(FILTER_KEY) ?? 'null')?.search ?? '') : ''
+  )
+  const [search, setSearch] = useState<string>(() =>
+    typeof window !== 'undefined' ? (JSON.parse(sessionStorage.getItem(FILTER_KEY) ?? 'null')?.search ?? '') : ''
+  )
+  const [status, setStatus] = useState<string>(() =>
+    typeof window !== 'undefined' ? (JSON.parse(sessionStorage.getItem(FILTER_KEY) ?? 'null')?.status ?? '') : ''
+  )
+  const [timeRange, setTimeRange] = useState<TimeRangeValue>(() =>
+    typeof window !== 'undefined' ? (JSON.parse(sessionStorage.getItem(FILTER_KEY) ?? 'null')?.timeRange ?? { type: 'relative', value: '30d' }) : { type: 'relative', value: '30d' }
+  )
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
   const [deletingId, setDeletingId] = useState<string | null>(null)
@@ -107,6 +116,7 @@ export default function PayOutRequestsPage() {
   const [refreshKey, setRefreshKey] = useState(0)
 
   const load = useCallback(async () => {
+    if (typeof window !== 'undefined') sessionStorage.setItem(FILTER_KEY, JSON.stringify({ search, status, timeRange }))
     setLoading(true)
     try {
       const payload = {
@@ -340,10 +350,10 @@ export default function PayOutRequestsPage() {
                   </td>
                   <td className="px-4 py-3 border-b border-gray-100">
                     <div className="flex flex-col gap-0.5">
-                      {item.refId ? <span className="text-xs text-gray-600 whitespace-nowrap">{item.refId}</span> : null}
                       {item.refId1 ? <span className="text-xs text-gray-600 whitespace-nowrap">{item.refId1}</span> : null}
                       {item.refId2 ? <span className="text-xs text-gray-600 whitespace-nowrap">{item.refId2}</span> : null}
-                      {!item.refId && !item.refId1 && !item.refId2 && <span className="text-xs text-gray-400">—</span>}
+                      {item.refId3 ? <span className="text-xs text-gray-600 whitespace-nowrap">{item.refId3}</span> : null}
+                      {!item.refId1 && !item.refId2 && !item.refId3 && <span className="text-xs text-gray-400">—</span>}
                     </div>
                   </td>
                   <td className="px-4 py-3 border-b border-gray-100" onClick={e => e.stopPropagation()}>
