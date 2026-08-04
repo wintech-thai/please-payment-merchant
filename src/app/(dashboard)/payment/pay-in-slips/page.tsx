@@ -107,11 +107,11 @@ export default function PayInSlipsPage() {
         setTotal(typeof d === 'number' ? d : (d?.count ?? 0))
       }
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : tr.noData)
+      toast.error(err instanceof Error ? err.message : t.payInSlip.noData)
     } finally {
       setLoading(false)
     }
-  }, [tr.noData])
+  }, [t.payInSlip.noData])
 
   useEffect(() => { load(1, DEFAULT_PAGE_SIZE, timeRange, search, status) }, []) // eslint-disable-line react-hooks/exhaustive-deps
   useOrgChange(() => load(1, DEFAULT_PAGE_SIZE, timeRange, search, status))
