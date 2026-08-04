@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { useLang } from '@/context/LanguageContext'
 import { paymentTxApi } from '@/lib/api/payment-tx.api'
-import type { PayInTxDetail, PaymentTxJob, PaymentTxJobParameter } from '@/lib/api/types'
+import type { PayOutTxDetail, PaymentTxJob, PaymentTxJobParameter } from '@/lib/api/types'
 import { toast } from 'sonner'
 import { ChevronLeft, CheckCircle, AlertCircle, Clock, X, Copy, Check } from 'lucide-react'
 
@@ -23,56 +23,32 @@ function formatDateTime(d?: string | null) {
   } catch { return d }
 }
 
-function StatusBadge({ status, txIsPeerToPeer }: { status?: string | null; txIsPeerToPeer?: boolean | null }) {
+function StatusBadge({ status, isPeerToPeer }: { status?: string | null; isPeerToPeer?: boolean | null }) {
   const s = status?.toLowerCase()
-  if (s === 'identified') return (
-    <div className="inline-flex items-center gap-1">
-      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200">
-        <CheckCircle className="w-3.5 h-3.5" />{status}
-      </span>
-      {txIsPeerToPeer && <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold ring-1 bg-emerald-50 text-emerald-700 ring-emerald-200">P2P</span>}
-    </div>
-  )
-  if (s === 'error' || s === 'failed') return (
-    <div className="inline-flex items-center gap-1">
-      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-red-50 text-red-700 ring-1 ring-red-200">
-        <AlertCircle className="w-3.5 h-3.5" />{status}
-      </span>
-      {txIsPeerToPeer && <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold ring-1 bg-red-50 text-red-700 ring-red-200">P2P</span>}
-    </div>
-  )
-  return (
-    <div className="inline-flex items-center gap-1">
-      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 ring-1 ring-amber-200">
-        <Clock className="w-3.5 h-3.5" />{status ?? '—'}
-      </span>
-      {txIsPeerToPeer && <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold ring-1 bg-amber-50 text-amber-700 ring-amber-200">P2P</span>}
-    </div>
-  )
-}
-
-function JobStatusBadge({ status }: { status?: string | null }) {
-  const s = status?.toLowerCase()
-  if (s === 'success' || s === 'completed' || s === 'done') return (
+  const badge = s === 'completed' || s === 'success' || s === 'paid' || s === 'approved' ? (
     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200">
       <CheckCircle className="w-3.5 h-3.5" />{status}
     </span>
-  )
-  if (s === 'failed' || s === 'error') return (
+  ) : s === 'failed' || s === 'error' || s === 'rejected' ? (
     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-red-50 text-red-700 ring-1 ring-red-200">
       <AlertCircle className="w-3.5 h-3.5" />{status}
     </span>
-  )
-  return (
+  ) : (
     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 ring-1 ring-amber-200">
       <Clock className="w-3.5 h-3.5" />{status ?? '—'}
     </span>
+  )
+  return (
+    <div className="inline-flex items-center gap-1">
+      {badge}
+      {isPeerToPeer && <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold ring-1 bg-emerald-50 text-emerald-700 ring-emerald-200">P2P</span>}
+    </div>
   )
 }
 
 function SectionHeader({ children }: { children: React.ReactNode }) {
   return (
-    <h2 className="flex items-center gap-2.5 text-sm font-bold text-gray-900 mb-5">
+    <h2 className="flex items-center gap-2.5 text-sm font-bold text-gray-900 mb-4">
       <span className="w-1 h-5 bg-primary-500 rounded-full flex-shrink-0" />
       {children}
     </h2>
@@ -144,18 +120,18 @@ function RawJsonModal({ data, onClose }: { data: unknown; onClose: () => void })
   )
 }
 
-export default function PayInTxDetailPage() {
+export default function PayOutTxDetailPage() {
   const { t } = useLang()
-  const m = t.payInTx
+  const m = t.payOutTx
   const router = useRouter()
   const params = useParams()
   const id = params.id as string
 
-  const [detail, setDetail] = useState<PayInTxDetail | null>(null)
+  const [detail, setDetail] = useState<PayOutTxDetail | null>(null)
   const [loading, setLoading] = useState(true)
-  const [showRawJson, setShowRawJson] = useState(false)
   const [job, setJob] = useState<PaymentTxJob | null>(null)
   const [loadingJob, setLoadingJob] = useState(false)
+  const [showRawJson, setShowRawJson] = useState(false)
 
   useEffect(() => {
     const load = async () => {
@@ -163,7 +139,7 @@ export default function PayInTxDetailPage() {
       try {
         const res = await paymentTxApi.getPaymentTransactionById(id)
         const data = res.data as any
-        const raw = data?.paymentTransaction ?? data?.transaction ?? data
+        const raw = data?.paymentTransaction ?? data?.PaymentTransaction ?? data?.transaction ?? data?.Transaction ?? data
         setDetail(raw)
 
         const jobId = raw?.jobId ?? raw?.JobId
@@ -173,7 +149,7 @@ export default function PayInTxDetailPage() {
             const jobRes = await paymentTxApi.getPaymentTransactionJobById(id, jobId)
             const jobData = jobRes.data as any
             setJob(jobData?.job ?? jobData?.Job ?? jobData)
-          } catch { /* job section shows no data */ }
+          } catch { /* job section will show no data */ }
           finally { setLoadingJob(false) }
         }
       } catch (err: unknown) {
@@ -189,7 +165,7 @@ export default function PayInTxDetailPage() {
     if (!detail?.rawInputObj) return null
     try {
       const parsed = typeof detail.rawInputObj === 'string'
-        ? JSON.parse(detail.rawInputObj)
+        ? JSON.parse(detail.rawInputObj as string)
         : detail.rawInputObj
       return JSON.stringify(parsed, null, 2)
     } catch {
@@ -197,10 +173,9 @@ export default function PayInTxDetailPage() {
     }
   })()
 
-  const hasFeeInfo = detail?.payInFeePct != null
-    || (detail?.payInFeeDecimal ?? detail?.payInFee) != null
-    || (detail?.payInTotalAmountDecimal ?? detail?.payInTotalAmount) != null
-  const hasSenderInfo = detail?.fromBankCode || detail?.fromBankAccountNo || detail?.fromBankAccountName
+  const hasFeeInfo = detail?.payoutFeePct != null || detail?.payoutFeeDecimal != null || detail?.payOutTotalAmountDecimal != null
+  const hasDestInfo = detail?.payInBankCode || detail?.payInBankAccountNo || detail?.payInBankAccountName
+  const hasSourceInfo = detail?.payOutBankCode || detail?.payOutBankAccountNo || detail?.payOutBankAccountName
   const msg1Lines = (job?.jobMessage ?? '').split('\n').filter(l => l.trim())
   const msg2Lines = (job?.jobMessage2 ?? '').split('\n').filter(l => l.trim())
 
@@ -218,13 +193,14 @@ export default function PayInTxDetailPage() {
 
   return (
     <div className="flex flex-col gap-4">
+
       {/* Header */}
       <div className="flex items-center gap-3">
         <button onClick={() => router.back()} className="p-2 rounded-lg text-gray-500 hover:bg-gray-200 transition-colors">
           <ChevronLeft className="w-5 h-5" />
         </button>
         <div className="flex-1">
-          <h1 className="text-xl font-bold text-gray-900">{m.detailTitle}</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{m.detailTitle}</h1>
           <p className="text-sm text-gray-500 mt-0.5">{id}</p>
         </div>
         {detail && (
@@ -233,20 +209,16 @@ export default function PayInTxDetailPage() {
           </button>
         )}
       </div>
+
       {showRawJson && <RawJsonModal data={detail} onClose={() => setShowRawJson(false)} />}
 
       {/* General Info */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 px-7 py-6">
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-6 py-5">
         <SectionHeader>{m.sectionGeneral}</SectionHeader>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <InfoRow label={m.fieldCreated}>{formatDateTime(detail?.createdDate)}</InfoRow>
           <InfoRow label={m.fieldStatus}>
-            <StatusBadge status={detail?.status} txIsPeerToPeer={detail?.txIsPeerToPeer} />
-          </InfoRow>
-          <InfoRow label={m.fieldMerchant}>
-            {detail?.merchantCode || detail?.merchantName
-              ? <><span className="font-semibold">{detail?.merchantCode ?? '—'}</span>{detail?.merchantName && <span className="text-gray-500 ml-2 text-xs">{detail.merchantName}</span>}</>
-              : '—'}
+            <StatusBadge status={detail?.status} isPeerToPeer={detail?.txIsPeerToPeer} />
           </InfoRow>
           <InfoRow label={m.fieldTxAmount}>
             {(detail?.txAmountDecimal ?? detail?.txAmount) != null
@@ -254,63 +226,98 @@ export default function PayInTxDetailPage() {
               : '—'}
           </InfoRow>
           <InfoRow label={m.fieldCurrency}>{detail?.currency ?? '—'}</InfoRow>
-          <InfoRow label={m.fieldBank}>{detail?.payInBankCode ?? '—'}</InfoRow>
-          <InfoRow label={m.fieldAccountNo}>{detail?.payInBankAccountNo ?? '—'}</InfoRow>
-          <InfoRow label={m.fieldAccountName}>{detail?.payInBankAccountName ?? '—'}</InfoRow>
           <InfoRow label={m.fieldPaymentRequestId}>
             {detail?.paymentRequestId ? (
-              <a href={`/payment/pay-in-requests/${detail.paymentRequestId}`}
-                className="text-primary-600 hover:underline text-sm">
+              <a
+                href={`/payment/pay-out-requests/${detail.paymentRequestId}`}
+                className="text-primary-600 hover:underline text-sm"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
                 {detail.paymentRequestId}
               </a>
             ) : '—'}
           </InfoRow>
-          <InfoRow label={m.fieldRefId}>{detail?.refId1 ?? '—'}</InfoRow>
-          <InfoRow label={m.fieldRefId1}>{detail?.refId2 ?? '—'}</InfoRow>
-          <InfoRow label={m.fieldRefId2}>{detail?.refId3 ?? '—'}</InfoRow>
-          {detail?.description && (
-            <InfoRow label={m.fieldDescription}>{detail.description}</InfoRow>
+          {(detail?.refId1 || detail?.refId2 || detail?.refId3) && (
+            <>
+              {detail?.refId1 && <InfoRow label="REF 1">{detail.refId1}</InfoRow>}
+              {detail?.refId2 && <InfoRow label="REF 2">{detail.refId2}</InfoRow>}
+              {detail?.refId3 && <InfoRow label="REF 3">{detail.refId3}</InfoRow>}
+            </>
+          )}
+          {detail?.description && <InfoRow label={m.fieldDescription}>{detail.description}</InfoRow>}
+          {detail?.statusReason && (
+            <InfoRow label={m.fieldStatusReason}>
+              <span className="text-red-600">{detail.statusReason}</span>
+            </InfoRow>
           )}
         </div>
       </div>
 
       {/* Fee Info */}
       {hasFeeInfo && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 px-7 py-6">
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-6 py-5">
           <SectionHeader>{m.sectionFee}</SectionHeader>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <InfoRow label={m.fieldTxAmount}>
               <span className="font-semibold tabular-nums">{formatAmount(detail?.txAmountDecimal ?? detail?.txAmount)}</span>
             </InfoRow>
-            <InfoRow label={m.fieldPayInFeePct}>
-              {detail?.payInFeePct != null ? `${detail.payInFeePct}%` : '—'}
+            <InfoRow label={m.fieldPayOutFeePct}>
+              {detail?.payoutFeePct != null ? `${detail.payoutFeePct}%` : '—'}
             </InfoRow>
-            <InfoRow label={m.fieldPayInFee}>
-              <span className="tabular-nums">{formatAmount(detail?.payInFeeDecimal ?? detail?.payInFee)}</span>
+            <InfoRow label={m.fieldPayOutFee}>
+              <span className="tabular-nums">{formatAmount(detail?.payoutFeeDecimal)}</span>
             </InfoRow>
-            <InfoRow label={m.fieldPayInTotalAmount}>
-              <span className="font-bold text-primary-700 tabular-nums text-base">{formatAmount(detail?.payInTotalAmountDecimal ?? detail?.payInTotalAmount)}</span>
+            <InfoRow label={m.fieldPayOutTotalAmount}>
+              <span className="font-bold text-primary-700 tabular-nums text-base">{formatAmount(detail?.payOutTotalAmountDecimal)}</span>
             </InfoRow>
           </div>
         </div>
       )}
 
-      {/* Sender Info */}
-      {hasSenderInfo && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 px-7 py-6">
-          <SectionHeader>{m.sectionSender}</SectionHeader>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-            <InfoRow label={m.fieldSenderBank}>{detail?.fromBankCode ?? '—'}</InfoRow>
-            <InfoRow label={m.fieldSenderAccountNo}>{detail?.fromBankAccountNo ?? '—'}</InfoRow>
-            {detail?.fromBankAccountName && (
-              <InfoRow label={m.fieldSenderName}>{detail.fromBankAccountName}</InfoRow>
+      {/* Destination Bank */}
+      {hasDestInfo && (
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-6 py-5">
+          <SectionHeader>{m.sectionDestination}</SectionHeader>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <InfoRow label={m.fieldDestBank}>{detail?.payInBankCode ?? '—'}</InfoRow>
+            <InfoRow label={m.fieldDestAccountNo}>{detail?.payInBankAccountNo ?? '—'}</InfoRow>
+            {detail?.payInBankAccountName && (
+              <InfoRow label={m.fieldDestAccountName}>{detail.payInBankAccountName}</InfoRow>
+            )}
+            {detail?.payInPromptPayId && (
+              <InfoRow label="PromptPay ID">{detail.payInPromptPayId}</InfoRow>
             )}
           </div>
         </div>
       )}
 
+      {/* Source Bank */}
+      {hasSourceInfo && (
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-6 py-5">
+          <SectionHeader>{m.sectionSource}</SectionHeader>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {(() => {
+              const known = (v?: string | null) => (v && v.toUpperCase() !== 'UNKNOWN') ? v : null
+              return (
+                <>
+                  <InfoRow label={m.fieldSourceBank}>{known(detail?.payOutBankCode) ?? '—'}</InfoRow>
+                  <InfoRow label={m.fieldSourceAccountNo}>{known(detail?.payOutBankAccountNo) ?? '—'}</InfoRow>
+                  {known(detail?.payOutBankAccountName) && (
+                    <InfoRow label={m.fieldSourceName}>{known(detail?.payOutBankAccountName)}</InfoRow>
+                  )}
+                  {detail?.payOutPromptPayId && (
+                    <InfoRow label="PromptPay ID">{detail.payOutPromptPayId}</InfoRow>
+                  )}
+                </>
+              )
+            })()}
+          </div>
+        </div>
+      )}
+
       {/* Input Data */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 px-7 py-6">
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-6 py-5">
         <SectionHeader>{m.sectionInputData}</SectionHeader>
         {inputDataJson ? (
           <JsonHighlight json={inputDataJson} />
@@ -320,7 +327,7 @@ export default function PayInTxDetailPage() {
       </div>
 
       {/* Processing Steps */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 px-7 py-6">
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-6 py-5">
         <SectionHeader>{m.sectionProcessing}</SectionHeader>
         {detail?.processingSteps && detail.processingSteps.length > 0 ? (
           <ol className="flex flex-col gap-2">
@@ -340,7 +347,7 @@ export default function PayInTxDetailPage() {
 
       {/* Job */}
       {(detail?.jobId || loadingJob) && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 px-7 py-6">
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-6 py-5">
           <SectionHeader>{m.sectionJob}</SectionHeader>
           {loadingJob ? (
             <div className="flex items-center gap-2 text-sm text-gray-400">
@@ -351,13 +358,21 @@ export default function PayInTxDetailPage() {
               {t.common.loading}
             </div>
           ) : job ? (
-            <div className="flex flex-col gap-6">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <div className="flex flex-col gap-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <InfoRow label={m.fieldJobId}>
                   <span className="text-xs text-gray-600 break-all">{job.id ?? detail?.jobId ?? '—'}</span>
                 </InfoRow>
                 <InfoRow label={m.fieldJobStatus}>
-                  <JobStatusBadge status={job.status} />
+                  <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ring-1 ${
+                    ['success', 'completed', 'done'].includes(job.status?.toLowerCase() ?? '')
+                      ? 'bg-emerald-50 text-emerald-700 ring-emerald-200'
+                      : ['failed', 'error'].includes(job.status?.toLowerCase() ?? '')
+                        ? 'bg-red-50 text-red-700 ring-red-200'
+                        : 'bg-amber-50 text-amber-700 ring-amber-200'
+                  }`}>
+                    {job.status ?? '—'}
+                  </span>
                 </InfoRow>
                 {job.type && (
                   <InfoRow label={m.fieldJobType}>

@@ -5,14 +5,14 @@ import { useRouter } from 'next/navigation'
 import { useOrgChange } from '@/hooks/useOrgChange'
 import { useLang } from '@/context/LanguageContext'
 import { paymentTxApi } from '@/lib/api/payment-tx.api'
-import type { PayInTxItem } from '@/lib/api/types'
+import type { PayOutTxItem } from '@/lib/api/types'
 import { toast } from 'sonner'
 import { Search, RefreshCw, ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react'
 import clsx from 'clsx'
 import { AdvancedTimeRangeSelector, type TimeRangeValue } from '@/components/AdvancedTimeRangeSelector'
 
-const HIGHLIGHTED_KEY = 'payInTransactions_highlightedId'
-const FILTER_KEY = 'merchantPayInTx_filter'
+const HIGHLIGHTED_KEY = 'payOutTransactions_highlightedId'
+const FILTER_KEY = 'merchantPayOutTx_filter'
 
 function getTimeFilter(tr: TimeRangeValue): { fromDate: string; toDate: string } {
   if (tr.type === 'absolute' && tr.start && tr.end) {
@@ -30,6 +30,16 @@ function formatAmount(n?: number | null): string {
   return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
+function formatDateTime(d?: string | null) {
+  if (!d) return '—'
+  try {
+    return new Date(d).toLocaleString('th-TH', {
+      day: '2-digit', month: '2-digit', year: 'numeric',
+      hour: '2-digit', minute: '2-digit', second: '2-digit',
+    })
+  } catch { return d }
+}
+
 function formatAge(createdDate?: string | null): string {
   if (!createdDate) return ''
   const diffMs = Date.now() - new Date(createdDate).getTime()
@@ -41,85 +51,45 @@ function formatAge(createdDate?: string | null): string {
   return `${hours}h ${mins}min`
 }
 
-function formatDateTime(d?: string | null) {
-  if (!d) return '—'
-  try {
-    return new Date(d).toLocaleString('th-TH', {
-      day: '2-digit', month: '2-digit', year: 'numeric',
-      hour: '2-digit', minute: '2-digit', second: '2-digit',
-    })
-  } catch { return d }
-}
-
-function StatusBadge({ status, createdDate, paymentRequestId, statusReason, txIsPeerToPeer }: {
+function StatusBadge({ status, createdDate, statusReason, isPeerToPeer }: {
   status?: string | null
   createdDate?: string | null
-  paymentRequestId?: string | null
   statusReason?: string | null
-  txIsPeerToPeer?: boolean | null
+  isPeerToPeer?: boolean | null
 }) {
   const s = status?.toLowerCase()
-  if (s === 'identified' || s === 'approved') return (
+  const badgeEl = s === 'completed' || s === 'success' || s === 'paid' || s === 'approved' ? (
+    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200">
+      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0" />{status}
+    </span>
+  ) : s === 'failed' || s === 'error' || s === 'rejected' ? (
+    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-red-50 text-red-700 ring-1 ring-red-200">
+      <span className="w-1.5 h-1.5 rounded-full bg-red-500 flex-shrink-0" />{status}
+    </span>
+  ) : (
+    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 ring-1 ring-amber-200">
+      <span className="w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0" />{status ?? '—'}
+    </span>
+  )
+  const age = (s === 'pending' || s === 'processing') ? formatAge(createdDate) : null
+
+  return (
     <div className="flex flex-col gap-0.5 items-start">
       <div className="inline-flex items-center gap-1">
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0" />{status}
-        </span>
-        {txIsPeerToPeer && <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold ring-1 bg-emerald-50 text-emerald-700 ring-emerald-200">P2P</span>}
+        {badgeEl}
+        {isPeerToPeer && <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold ring-1 bg-emerald-50 text-emerald-700 ring-emerald-200">P2P</span>}
       </div>
-      {paymentRequestId && (
-        <a
-          href={`/payment/pay-in-requests/${paymentRequestId}`}
-          onClick={e => e.stopPropagation()}
-          className="inline-flex items-center gap-1 text-xs text-primary-600 hover:text-primary-800 hover:underline ml-1"
-        >
-          <span className="truncate max-w-[130px]">{paymentRequestId}</span>
-          <ExternalLink className="w-3 h-3 flex-shrink-0" />
-        </a>
+      {age && <span className="text-[10px] text-gray-400 ml-1">{age}</span>}
+      {(s === 'failed' || s === 'error' || s === 'rejected') && statusReason && (
+        <span className="text-[11px] text-red-500 ml-1 truncate max-w-[140px]" title={statusReason}>{statusReason}</span>
       )}
     </div>
   )
-  if (s === 'unidentified' || s === 'rejected') {
-    const isRejected = s === 'rejected'
-    const age = !isRejected ? formatAge(createdDate) : null
-    return (
-      <div className="flex flex-col gap-0.5 items-start">
-        <div className="inline-flex items-center gap-1">
-          <span className={clsx(
-            'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ring-1',
-            isRejected
-              ? 'bg-red-50 text-red-700 ring-red-200'
-              : 'bg-amber-50 text-amber-700 ring-amber-200'
-          )}>
-            <span className={clsx('w-1.5 h-1.5 rounded-full flex-shrink-0', isRejected ? 'bg-red-500' : 'bg-amber-400')} />
-            {status}
-          </span>
-          {txIsPeerToPeer && <span className={clsx('px-1.5 py-0.5 rounded-full text-[10px] font-bold ring-1', isRejected ? 'bg-red-50 text-red-700 ring-red-200' : 'bg-amber-50 text-amber-700 ring-amber-200')}>P2P</span>}
-        </div>
-        {age && <span className="text-[10px] text-gray-400 ml-1">{age}</span>}
-        {isRejected && statusReason && (
-          <span className="text-[10px] text-red-500 ml-1 max-w-[160px] truncate" title={statusReason}>{statusReason}</span>
-        )}
-      </div>
-    )
-  }
-  if (s === 'error' || s === 'failed') return (
-    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-red-50 text-red-700 ring-1 ring-red-200">
-      <span className="w-1.5 h-1.5 rounded-full bg-red-500 flex-shrink-0" />
-      {status}
-    </span>
-  )
-  return (
-    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-600 ring-1 ring-gray-200">
-      <span className="w-1.5 h-1.5 rounded-full bg-gray-400 flex-shrink-0" />
-      {status ?? '—'}
-    </span>
-  )
 }
 
-export default function PayInTransactionsPage() {
+export default function PayOutTransactionsPage() {
   const { t } = useLang()
-  const m = t.payInTx
+  const m = t.payOutTx
   const router = useRouter()
 
   const [inputSearch, setInputSearch] = useState<string>(() =>
@@ -134,7 +104,7 @@ export default function PayInTransactionsPage() {
   const [timeRange, setTimeRange] = useState<TimeRangeValue>(() =>
     typeof window !== 'undefined' ? (JSON.parse(sessionStorage.getItem(FILTER_KEY) ?? 'null')?.timeRange ?? { type: 'relative', value: '30d' }) : { type: 'relative', value: '30d' }
   )
-  const [items, setItems] = useState<PayInTxItem[]>([])
+  const [items, setItems] = useState<PayOutTxItem[]>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(25)
@@ -148,21 +118,21 @@ export default function PayInTransactionsPage() {
     setLoading(true)
     try {
       const { fromDate, toDate } = getTimeFilter(tr)
-      const payload: Record<string, unknown> = { offset: (currentPage - 1) * limit, limit, fromDate, toDate, direction: 'PayIn' }
+      const payload: Record<string, unknown> = { offset: (currentPage - 1) * limit, limit, fromDate, toDate }
       if (q.trim()) payload.fullTextSearch = q.trim()
       if (status) payload.status = status
 
       const [listRes, countRes] = await Promise.allSettled([
-        paymentTxApi.getPayInTransactions(payload as any),
-        paymentTxApi.getPayInTransactionCount(payload as any),
+        paymentTxApi.getPayOutTransactions(payload as any),
+        paymentTxApi.getPayOutTransactionCount(payload as any),
       ])
 
       if (listRes.status === 'rejected') throw listRes.reason
       const d = listRes.value.data as any
-      setItems(Array.isArray(d) ? d : (d?.payInTransactions ?? d?.items ?? []))
+      setItems(Array.isArray(d) ? d : (d?.payOutTransactions ?? d?.payInTransactions ?? d?.items ?? []))
       if (countRes.status === 'fulfilled') {
-        const d = countRes.value.data as any
-        setTotal(typeof d === 'number' ? d : (d?.count ?? 0))
+        const cd = countRes.value.data as any
+        setTotal(typeof cd === 'number' ? cd : (cd?.count ?? 0))
       }
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : m.noData)
@@ -200,7 +170,7 @@ export default function PayInTransactionsPage() {
   const startRow = total === 0 ? 0 : (page - 1) * itemsPerPage + 1
   const endRow = Math.min(page * itemsPerPage, total)
 
-  const cols = [m.colDate, m.colMerchant, m.colAmount, m.colFee, m.colBankAccount, m.colStatus, 'REF']
+  const cols = [m.colDate, m.colAmount, m.colFee, m.colDestBank, m.colSourceBank, m.colStatus, 'REF']
 
   return (
     <div className="flex flex-col gap-4 h-full">
@@ -235,8 +205,9 @@ export default function PayInTransactionsPage() {
           className="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500"
         >
           <option value="">{m.statusAll}</option>
-          <option value="Identified">Identified</option>
-          <option value="UnIdentified">UnIdentified</option>
+          <option value="Pending">Pending</option>
+          <option value="Completed">Completed</option>
+          <option value="Failed">Failed</option>
           <option value="Error">Error</option>
         </select>
         <AdvancedTimeRangeSelector value={timeRange} onChange={handleTimeRangeChange} disabled={loading} />
@@ -249,13 +220,13 @@ export default function PayInTransactionsPage() {
       {/* Table */}
       <div className="flex-1 min-h-0 overflow-hidden flex flex-col bg-white rounded-2xl border border-gray-100 shadow-sm">
         <div className="flex-1 overflow-auto custom-scrollbar">
-          <table className="w-full text-sm border-separate border-spacing-0 min-w-[1100px]">
+          <table className="w-full text-sm border-separate border-spacing-0 min-w-[900px]">
             <thead className="sticky top-0 z-10">
               <tr className="bg-gray-50">
                 {cols.map((col, i) => (
                   <th key={col} className={clsx(
                     'px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200 whitespace-nowrap',
-                    i === 0 ? 'text-left' : (i === 2 || i === 3) ? 'text-right' : 'text-left'
+                    (i === 1 || i === 2) ? 'text-right' : 'text-left'
                   )}>
                     {col}
                   </th>
@@ -287,36 +258,42 @@ export default function PayInTransactionsPage() {
                       : idx % 2 === 0 ? 'bg-white hover:bg-gray-50' : 'bg-gray-50/40 hover:bg-gray-100/50'
                   )}>
                   {/* Date */}
-                  <td className="px-4 py-3 border-b border-gray-100 whitespace-nowrap cursor-pointer group"
-                    onClick={e => { e.stopPropagation(); handleRowHighlight(item.id); router.push(`/payment/pay-in-transactions/${item.id}`) }}>
-                    <span className="text-sm text-gray-600 group-hover:text-primary-600 group-hover:underline">
-                      {formatDateTime(item.createdDate)}
-                    </span>
+                  <td
+                    className="px-4 py-3 border-b border-gray-100 whitespace-nowrap cursor-pointer group"
+                    onClick={e => { e.stopPropagation(); handleRowHighlight(item.id); router.push(`/payment/pay-out-transactions/${item.id}`) }}
+                  >
+                    <span className="text-sm text-gray-600 group-hover:text-primary-600 group-hover:underline">{formatDateTime(item.createdDate)}</span>
                     {item.refId1 && <p className="text-xs text-gray-400 mt-0.5">{item.refId1}</p>}
                   </td>
-                  {/* Merchant */}
-                  <td className="px-4 py-3 border-b border-gray-100">
-                    {item.merchantCode || item.merchantName ? (
-                      <>
-                        <p className="text-sm font-semibold text-gray-800">{item.merchantCode ?? '—'}</p>
-                        {item.merchantName && <p className="text-xs text-gray-500 mt-0.5">{item.merchantName}</p>}
-                      </>
-                    ) : <p className="text-sm text-gray-400">—</p>}
-                  </td>
-                  {/* Amount (net of commission — what's actually credited) */}
+                  {/* Amount */}
                   <td className="px-4 py-3 border-b border-gray-100 text-right whitespace-nowrap">
                     <p className="text-sm font-semibold text-gray-800 tabular-nums">
-                      {formatAmount(item.payInTotalAmountDecimal ?? item.payInTotalAmount)}
+                      {formatAmount(item.txAmountDecimal ?? item.txAmount)}
                     </p>
                     <p className="text-xs text-gray-400">{item.currency ?? '—'}</p>
                   </td>
                   {/* Fee */}
                   <td className="px-4 py-3 border-b border-gray-100 text-right whitespace-nowrap">
-                    <p className="text-sm text-gray-700 tabular-nums">
-                      {formatAmount(item.payInFeeDecimal ?? item.payInFee)}
-                    </p>
+                    {item.payoutFeeDecimal != null && item.payoutFeeDecimal > 0 ? (
+                      <>
+                        <p className="text-sm font-semibold tabular-nums text-gray-800">{formatAmount(item.payoutFeeDecimal)}</p>
+                        {(() => { const pct = item.payOutFeePct ?? item.payoutFeePct; return pct != null && pct > 0 ? <p className="text-xs text-gray-400">{pct}%</p> : null })()}
+                      </>
+                    ) : (
+                      <p className="text-sm text-gray-400">—</p>
+                    )}
+                    {item.payoutFeePayer && (
+                      <span className={clsx(
+                        'inline-flex items-center px-1.5 py-0.5 text-[10px] font-bold rounded-full ring-1 mt-0.5',
+                        item.payoutFeePayer.toLowerCase() === 'merchant'
+                          ? 'bg-blue-50 text-blue-700 ring-blue-200'
+                          : 'bg-orange-50 text-orange-700 ring-orange-200'
+                      )}>
+                        {item.payoutFeePayer}
+                      </span>
+                    )}
                   </td>
-                  {/* Bank Account */}
+                  {/* Dest Bank */}
                   <td className="px-4 py-3 border-b border-gray-100 min-w-[180px]">
                     {item.payInBankCode || item.payInBankAccountNo ? (
                       <p className="text-sm font-semibold text-gray-800">
@@ -324,23 +301,42 @@ export default function PayInTransactionsPage() {
                       </p>
                     ) : <p className="text-sm text-gray-400">—</p>}
                     {item.payInBankAccountName && <p className="text-xs text-gray-500 mt-0.5">{item.payInBankAccountName}</p>}
-                    <div className="flex gap-1 mt-1 flex-wrap items-center">
-                      {item.payInPromptPayId ? (
+                    {item.payInPromptPayId && (
+                      <div className="flex gap-1 mt-1">
                         <span className="px-1.5 py-0.5 bg-blue-50 text-blue-700 text-[10px] font-bold rounded-full ring-1 ring-blue-200">PromptPay</span>
-                      ) : item.payInAccountType ? (
-                        <span className="px-1.5 py-0.5 bg-blue-50 text-blue-700 text-[10px] font-bold rounded-full ring-1 ring-blue-200">{item.payInAccountType}</span>
-                      ) : null}
-                      {item.payInPromptPayId && (
                         <span className="text-[10px] text-gray-500">{item.payInPromptPayId}</span>
-                      )}
-                      {item.txIsPeerToPeer && (
-                        <span className="px-1.5 py-0.5 bg-violet-50 text-violet-700 text-[10px] font-bold rounded-full ring-1 ring-violet-200">P2P</span>
-                      )}
-                    </div>
+                      </div>
+                    )}
                   </td>
+                  {/* Source Bank */}
+                  <td className="px-4 py-3 border-b border-gray-100 min-w-[160px]">
+                    {(() => {
+                      const isKnown = (v?: string | null) => v && v.toUpperCase() !== 'UNKNOWN'
+                      const code = isKnown(item.payOutBankCode) ? item.payOutBankCode : null
+                      const acctNo = isKnown(item.payOutBankAccountNo) ? item.payOutBankAccountNo : null
+                      const acctName = isKnown(item.payOutBankAccountName) ? item.payOutBankAccountName : null
+                      const promptPay = item.payOutPromptPayId
+                      if (!code && !acctNo) return <p className="text-sm text-gray-400">—</p>
+                      return (
+                        <>
+                          <p className="text-sm font-semibold text-gray-800">
+                            {[code, acctNo].filter(Boolean).join(' · ')}
+                          </p>
+                          {acctName && <p className="text-xs text-gray-500 mt-0.5">{acctName}</p>}
+                          {promptPay && (
+                            <div className="flex gap-1 mt-1">
+                              <span className="px-1.5 py-0.5 bg-blue-50 text-blue-700 text-[10px] font-bold rounded-full ring-1 ring-blue-200">PromptPay</span>
+                              <span className="text-[10px] text-gray-500">{promptPay}</span>
+                            </div>
+                          )}
+                        </>
+                      )
+                    })()}
+                  </td>
+
                   {/* Status */}
                   <td className="px-4 py-3 border-b border-gray-100">
-                    <StatusBadge status={item.status} createdDate={item.createdDate} paymentRequestId={item.paymentRequestId} statusReason={item.statusReason} txIsPeerToPeer={item.txIsPeerToPeer} />
+                    <StatusBadge status={item.status} createdDate={item.createdDate} statusReason={item.statusReason} isPeerToPeer={item.txIsPeerToPeer} />
                   </td>
                   {/* REF */}
                   <td className="px-4 py-3 border-b border-gray-100">

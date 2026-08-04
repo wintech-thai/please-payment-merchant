@@ -1,5 +1,5 @@
 import { client } from '@/lib/axios'
-import type { PayInTxItem, PayInTxDetail, PaymentTxJob, GetPayInTxPayload } from './types'
+import type { PayInTxItem, PayInTxDetail, PayOutTxItem, PaymentTxJob, GetPayInTxPayload, GetPayOutTxPayload } from './types'
 
 function getBase() {
   if (typeof window === 'undefined') return '/api/PaymentTransaction/org/temp/action'
@@ -13,6 +13,12 @@ export const paymentTxApi = {
 
   getPayInTransactionCount: (payload: GetPayInTxPayload = {}) =>
     client.post<{ count: number }>(`${getBase()}/GetPaymentTransactionCount`, payload),
+
+  getPayOutTransactions: (payload: GetPayOutTxPayload = {}) =>
+    client.post<{ payOutTransactions: PayOutTxItem[] }>(`${getBase()}/GetPaymentTransactions`, { ...payload, Direction: 'PayOut' }),
+
+  getPayOutTransactionCount: (payload: GetPayOutTxPayload = {}) =>
+    client.post<{ count: number }>(`${getBase()}/GetPaymentTransactionCount`, { ...payload, Direction: 'PayOut' }),
 
   getPaymentTransactionById: (id: string) =>
     client.get<{ paymentTransaction: PayInTxDetail }>(`${getBase()}/GetPaymentTransactionById/${id}`),
