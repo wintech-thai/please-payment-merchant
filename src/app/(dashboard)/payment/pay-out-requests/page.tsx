@@ -268,7 +268,7 @@ export default function PayOutRequestsPage() {
                     onClick={e => { e.stopPropagation(); handleRowHighlight(item.id); router.push(`/payment/pay-out-requests/${item.id}`) }}
                   >
                     <div className="text-sm font-medium text-gray-700 group-hover:text-primary-600 group-hover:underline">{item.createdDate ? new Date(item.createdDate).toLocaleString('th-TH') : '—'}</div>
-                    <div className="text-xs text-gray-400 truncate max-w-[160px]">{item.refId || '—'}</div>
+                    <div className="text-xs text-gray-400 truncate max-w-[160px]">{item.refId1 || '—'}</div>
                   </td>
                   <td className="px-4 py-3 border-b border-gray-100 whitespace-nowrap">
                     <div className="text-sm font-semibold text-gray-800">{item.merchantCode || '—'}</div>
@@ -412,8 +412,8 @@ export default function PayOutRequestsPage() {
               </div>
               <h3 className="text-base font-bold text-gray-900 mb-1">{tr.deleteModalTitle}</h3>
               <p className="text-sm text-gray-500">{tr.deleteModalDesc}</p>
-              {deleteModal.item?.refId && (
-                <p className="mt-2 text-sm font-semibold text-gray-700">&ldquo;{deleteModal.item.refId}&rdquo;</p>
+              {deleteModal.item?.refId1 && (
+                <p className="mt-2 text-sm font-semibold text-gray-700">&ldquo;{deleteModal.item.refId1}&rdquo;</p>
               )}
             </div>
             <div className="flex gap-2 px-6 pb-5">
