@@ -185,7 +185,6 @@ export default function AddPayOutRequestPage() {
     try {
       await paymentRequestApi.createPayOutRequest({
         MerchantId: merchantId,
-        RefId: refId.trim(),
         RefId1: refId.trim(),
         RefId2: refId1.trim() || undefined,
         RefId3: refId2.trim() || undefined,

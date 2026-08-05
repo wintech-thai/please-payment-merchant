@@ -856,7 +856,7 @@ export interface GetPayOutRequestsPayload {
 
 export interface CreatePayOutRequestPayload {
   MerchantId: string
-  RefId: string
+  RefId?: string
   RefId1?: string
   RefId2?: string
   RefId3?: string
