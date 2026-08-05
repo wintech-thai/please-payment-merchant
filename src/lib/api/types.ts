@@ -379,6 +379,7 @@ export interface PayInRequestItem {
   requestedAmount?: number | null
   currency?: string | null
   status?: string | null
+  statusCode?: string | null
   statusReason?: string | null
   refId?: string | null
   refId1?: string | null
@@ -407,6 +408,7 @@ export interface PayInRequestDetail extends PayInRequestItem {
   merchantId?: string | null
   paymentTxId?: string | null
   direction?: string | null
+  jobId?: string | null
 }
 
 export interface GetPayInRequestsPayload {
@@ -786,6 +788,7 @@ export interface PayOutRequestItem {
   refId2?: string | null
   refId3?: string | null
   rejectReason?: string | null
+  statusCode?: string | null
   paymentTxId?: string | null
   // Source (PayIn) bank account — API uses camelCase "payin" (lowercase)
   payinBankAccountId?: string | null
@@ -839,6 +842,7 @@ export interface PayOutRequestDetail extends PayOutRequestItem {
   qrCodeImage?: string | null
   qrCodeP2P?: string | null
   partialPayouts?: PartialPayoutItem[] | null
+  jobId?: string | null
 }
 
 export interface GetPayOutRequestsPayload {

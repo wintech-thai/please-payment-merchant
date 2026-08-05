@@ -8,6 +8,7 @@ import type {
   GetPayOutRequestsPayload,
   CreatePayOutRequestPayload,
   UpdatePayOutRequestPayload,
+  PaymentTxJob,
 } from './types'
 
 function getBase() {
@@ -45,4 +46,7 @@ export const paymentRequestApi = {
 
   deletePayOutRequestById: (id: string) =>
     client.post<{ status: string; description: string }>(`${getBase()}/DeletePayOutRequestById/${id}`, {}),
+
+  getPaymentRequestJobById: (pmtId: string, jobId: string) =>
+    client.get<PaymentTxJob>(`${getBase()}/GetPaymentRequestJobById/${pmtId}/${jobId}`),
 }
