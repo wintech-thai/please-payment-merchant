@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, Suspense } from 'react'
 import { useParams } from 'next/navigation'
 import { Loader2, Upload, CheckCircle2, AlertCircle, ImageIcon, X, RefreshCw } from 'lucide-react'
 import NavbarClean from '@/components/NavbarClean'
-import { LanguageProvider } from '@/context/LanguageContext'
+import { LanguageProvider, useLang } from '@/context/LanguageContext'
 
 async function compressImage(file: File, maxWidth = 1200, quality = 0.82): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -41,6 +41,8 @@ function SlipUploadContent() {
   const orgId = params?.orgId as string
   const paymentRequestId = params?.paymentRequestId as string
   const token = params?.token as string
+  const { t } = useLang()
+  const m = t.slipUpload
 
   const [pageState, setPageState] = useState<PageState>('verifying')
   const [errorMsg, setErrorMsg] = useState('')
@@ -101,7 +103,7 @@ function SlipUploadContent() {
         setPageState('error')
       }
     } catch {
-      setErrorMsg('เกิดข้อผิดพลาด กรุณาลองใหม่')
+      setErrorMsg(m.errorDefault)
       setPageState('error')
     }
   }
@@ -128,8 +130,8 @@ function SlipUploadContent() {
                   <ImageIcon className="w-5 h-5 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-base font-bold leading-tight">อัปโหลดสลิปการโอนเงิน</h1>
-                  <p className="text-orange-200 text-xs mt-0.5">Upload Payment Slip</p>
+                  <h1 className="text-base font-bold leading-tight">{m.title}</h1>
+                  <p className="text-orange-200 text-xs mt-0.5">{m.subtitle}</p>
                 </div>
               </div>
             </div>
@@ -140,7 +142,7 @@ function SlipUploadContent() {
               {pageState === 'verifying' && (
                 <div className="flex flex-col items-center py-12 text-gray-400">
                   <Loader2 className="w-8 h-8 animate-spin mb-3" />
-                  <p className="text-sm">กำลังตรวจสอบลิงก์...</p>
+                  <p className="text-sm">{m.verifying}</p>
                 </div>
               )}
 
@@ -149,17 +151,14 @@ function SlipUploadContent() {
                   <div className="w-14 h-14 rounded-full bg-red-50 flex items-center justify-center mb-4">
                     <AlertCircle className="w-7 h-7 text-red-400" />
                   </div>
-                  <p className="text-gray-800 font-semibold text-base mb-1">ลิงก์ไม่ถูกต้องหรือหมดอายุ</p>
-                  <p className="text-gray-500 text-sm">Link is invalid or expired</p>
-                  <p className="text-xs text-gray-400 mt-3">กรุณาขอลิงก์ใหม่จากผู้ดูแลระบบ</p>
+                  <p className="text-gray-800 font-semibold text-base mb-1">{m.invalidTitle}</p>
+                  <p className="text-xs text-gray-400 mt-3">{m.invalidDesc}</p>
                 </div>
               )}
 
               {(pageState === 'ready' || pageState === 'uploading') && (
                 <div className="space-y-5">
-                  <p className="text-sm text-gray-600 text-center">
-                    เลือกรูปสลิปการโอนเงินเพื่ออัปโหลด
-                  </p>
+                  <p className="text-sm text-gray-600 text-center">{m.selectPrompt}</p>
 
                   {!selectedFile ? (
                     <button
@@ -171,7 +170,7 @@ function SlipUploadContent() {
                         <Upload className="w-6 h-6 text-primary-600" />
                       </div>
                       <div className="text-center">
-                        <p className="text-sm font-medium text-gray-700">แตะเพื่อเลือกรูปภาพ</p>
+                        <p className="text-sm font-medium text-gray-700">{m.tapToSelect}</p>
                         <p className="text-xs text-gray-400 mt-0.5">JPG, PNG, WebP</p>
                       </div>
                     </button>
@@ -211,12 +210,12 @@ function SlipUploadContent() {
                     {pageState === 'uploading' ? (
                       <>
                         <Loader2 className="w-4 h-4 animate-spin" />
-                        กำลังอัปโหลด...
+                        {m.uploading}
                       </>
                     ) : (
                       <>
                         <Upload className="w-4 h-4" />
-                        อัปโหลดสลิป
+                        {m.uploadBtn}
                       </>
                     )}
                   </button>
@@ -228,9 +227,8 @@ function SlipUploadContent() {
                   <div className="w-16 h-16 rounded-full bg-green-50 flex items-center justify-center mb-4">
                     <CheckCircle2 className="w-8 h-8 text-green-500" />
                   </div>
-                  <p className="text-gray-800 font-semibold text-base mb-1">อัปโหลดสำเร็จ</p>
-                  <p className="text-gray-500 text-sm">Upload successful</p>
-                  <p className="text-xs text-gray-400 mt-3">ระบบได้รับสลิปของคุณเรียบร้อยแล้ว</p>
+                  <p className="text-gray-800 font-semibold text-base mb-1">{m.successTitle}</p>
+                  <p className="text-xs text-gray-400 mt-3">{m.successDesc}</p>
                 </div>
               )}
 
@@ -239,7 +237,7 @@ function SlipUploadContent() {
                   <div className="w-14 h-14 rounded-full bg-red-50 flex items-center justify-center mb-4">
                     <AlertCircle className="w-7 h-7 text-red-400" />
                   </div>
-                  <p className="text-gray-800 font-semibold text-base mb-1">อัปโหลดล้มเหลว</p>
+                  <p className="text-gray-800 font-semibold text-base mb-1">{m.errorTitle}</p>
                   <p className="text-red-500 text-sm font-medium mb-4">{errorMsg}</p>
                   <button
                     type="button"
@@ -247,7 +245,7 @@ function SlipUploadContent() {
                     className="flex items-center gap-1.5 text-xs text-primary-600 hover:text-primary-700 font-medium"
                   >
                     <RefreshCw className="w-3 h-3" />
-                    ลองอีกครั้ง
+                    {m.retry}
                   </button>
                 </div>
               )}
