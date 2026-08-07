@@ -52,4 +52,7 @@ export const paymentRequestApi = {
 
   getPayInSlipUploads: (paymentRequestId: string) =>
     client.get(`${getBase()}/GetPayInSlipUpload/${paymentRequestId}`),
+
+  generatePayInSlipUploadToken: (paymentRequestId: string) =>
+    client.get(`${getBase()}/GeneratePayInSlipUploadToken/${paymentRequestId}`),
 }

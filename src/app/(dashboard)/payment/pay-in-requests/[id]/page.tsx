@@ -6,7 +6,7 @@ import { useLang } from '@/context/LanguageContext'
 import { paymentRequestApi } from '@/lib/api/payment-request.api'
 import type { PayInRequestDetail, PaymentTxJob, PaymentTxJobParameter } from '@/lib/api/types'
 import { toast } from 'sonner'
-import { ChevronLeft, CheckCircle, AlertCircle, Clock, ExternalLink, X, Copy, Check, Upload, Paperclip, ChevronRight } from 'lucide-react'
+import { ChevronLeft, CheckCircle, AlertCircle, Clock, ExternalLink, X, Copy, Check, Paperclip, ChevronRight, Link2 } from 'lucide-react'
 import QRCode from 'react-qr-code'
 
 function formatAmount(n?: number | null): string {
@@ -204,6 +204,88 @@ function SlipViewerModal({
   )
 }
 
+function SlipLinkModal({
+  paymentRequestId,
+  onClose,
+}: {
+  paymentRequestId: string
+  onClose: () => void
+}) {
+  const { t } = useLang()
+  const tr = t.payInRequest
+  const [url, setUrl] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [errorMsg, setErrorMsg] = useState('')
+  const [copied, setCopied] = useState(false)
+
+  useEffect(() => {
+    paymentRequestApi.generatePayInSlipUploadToken(paymentRequestId)
+      .then(res => {
+        const d = res.data as any
+        const relUrl = d?.slipUploadUrl ?? d?.SlipUploadUrl
+        if (!relUrl) throw new Error('no url')
+        setUrl(`${window.location.origin}${relUrl}`)
+      })
+      .catch(() => setErrorMsg(tr.slipLinkError))
+      .finally(() => setLoading(false))
+  }, [paymentRequestId])
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-gray-100">
+          <div className="flex items-center gap-2">
+            <Link2 className="w-4 h-4 text-primary-600" />
+            <h3 className="text-base font-bold text-gray-900">{tr.slipLinkTitle}</h3>
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 transition-colors">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+        <div className="p-6">
+          {loading ? (
+            <div className="flex items-center justify-center gap-2 py-8 text-gray-400">
+              <svg className="w-5 h-5 animate-spin text-primary-400" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              </svg>
+              <span className="text-sm">{tr.slipLinkLoading}</span>
+            </div>
+          ) : errorMsg ? (
+            <p className="text-sm text-red-500 text-center py-4">{errorMsg}</p>
+          ) : url ? (
+            <div className="space-y-4">
+              <p className="text-xs text-gray-500">{tr.slipLinkDesc}</p>
+              <div className="flex justify-center p-3 bg-white border border-gray-200 rounded-xl">
+                <QRCode value={url} size={160} />
+              </div>
+              <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
+                <span className="flex-1 text-xs text-gray-700 font-mono break-all">{url}</span>
+                <button
+                  onClick={() => { navigator.clipboard.writeText(url); setCopied(true); setTimeout(() => setCopied(false), 2000) }}
+                  className="flex-shrink-0 flex items-center gap-1 px-2 py-1 text-xs font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-200 rounded transition-colors"
+                >
+                  {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                  {copied ? 'Copied!' : 'Copy'}
+                </button>
+              </div>
+              <a
+                href={url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-xs text-primary-600 hover:text-primary-800 hover:underline"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                {tr.slipLinkOpen}
+              </a>
+            </div>
+          ) : null}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function PayInRequestDetailPage() {
   const { t } = useLang()
   const tr = t.payInRequest
@@ -220,7 +302,7 @@ export default function PayInRequestDetailPage() {
   const [loadingSlips, setLoadingSlips] = useState(false)
   const [showSlipViewer, setShowSlipViewer] = useState(false)
   const [slipViewerIndex, setSlipViewerIndex] = useState(0)
-  const [copiedSlipUrl, setCopiedSlipUrl] = useState(false)
+  const [showSlipLink, setShowSlipLink] = useState(false)
 
   useEffect(() => {
     const load = async () => {
@@ -277,18 +359,6 @@ export default function PayInRequestDetailPage() {
     )
   }
 
-  const slipUploadUrl = (() => {
-    if (!data?.responseDataObj) return null
-    try {
-      const parsed = typeof data.responseDataObj === 'string' ? JSON.parse(data.responseDataObj) : data.responseDataObj
-      return parsed?.slipUploadUrl ?? parsed?.SlipUploadUrl ?? null
-    } catch { return null }
-  })()
-
-  const fullSlipUrl = slipUploadUrl && typeof window !== 'undefined'
-    ? `${window.location.origin}${slipUploadUrl}`
-    : slipUploadUrl
-
   const responseJson = (() => {
     if (!data?.responseDataObj) return null
     try {
@@ -326,7 +396,16 @@ export default function PayInRequestDetailPage() {
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors disabled:opacity-50"
           >
             <Paperclip className="w-3.5 h-3.5" />
-            {loadingSlips ? '...' : `สลิป (${slips.length})`}
+            {loadingSlips ? '...' : `${tr.slipViewBtn} (${slips.length})`}
+          </button>
+        )}
+        {data && (
+          <button
+            onClick={() => setShowSlipLink(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-primary-700 bg-primary-50 hover:bg-primary-100 border border-primary-200 rounded-lg transition-colors"
+          >
+            <Link2 className="w-3.5 h-3.5" />
+            {tr.slipLinkBtn}
           </button>
         )}
         {data && (
@@ -338,6 +417,9 @@ export default function PayInRequestDetailPage() {
       {showRawJson && <RawJsonModal data={data} onClose={() => setShowRawJson(false)} />}
       {showSlipViewer && slips.length > 0 && (
         <SlipViewerModal slips={slips} initialIndex={slipViewerIndex} onClose={() => setShowSlipViewer(false)} />
+      )}
+      {showSlipLink && (
+        <SlipLinkModal paymentRequestId={id} onClose={() => setShowSlipLink(false)} />
       )}
 
       {/* General Info */}
@@ -402,50 +484,6 @@ export default function PayInRequestDetailPage() {
           )}
         </div>
       </div>
-
-      {/* Slip Upload Link */}
-      {fullSlipUrl && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 px-7 py-6">
-          <SectionHeader>
-            <span className="flex items-center gap-2">
-              <Upload className="w-4 h-4 text-primary-500" />
-              ลิงก์อัปโหลดสลิป
-            </span>
-          </SectionHeader>
-          <div className="flex flex-col sm:flex-row gap-6 items-start">
-            <div className="flex-shrink-0 p-3 bg-white border border-gray-200 rounded-xl shadow-sm">
-              <QRCode value={fullSlipUrl} size={140} />
-            </div>
-            <div className="flex flex-col gap-3 flex-1 min-w-0">
-              <p className="text-xs text-gray-500">ให้ลูกค้าสแกน QR หรือเปิดลิงก์นี้เพื่ออัปโหลดสลิปการโอนเงิน</p>
-              <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
-                <span className="flex-1 text-xs text-gray-700 font-mono break-all">{fullSlipUrl}</span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    navigator.clipboard.writeText(fullSlipUrl)
-                    setCopiedSlipUrl(true)
-                    setTimeout(() => setCopiedSlipUrl(false), 2000)
-                  }}
-                  className="flex-shrink-0 flex items-center gap-1 px-2 py-1 text-xs font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-200 rounded transition-colors"
-                >
-                  {copiedSlipUrl ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
-                  {copiedSlipUrl ? 'Copied!' : 'Copy'}
-                </button>
-              </div>
-              <a
-                href={fullSlipUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 text-xs text-primary-600 hover:text-primary-800 hover:underline"
-              >
-                <ExternalLink className="w-3.5 h-3.5" />
-                เปิดหน้าอัปโหลด
-              </a>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Response Data */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 px-7 py-6">
