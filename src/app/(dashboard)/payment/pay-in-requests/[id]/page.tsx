@@ -249,7 +249,7 @@ export default function PayInRequestDetailPage() {
             const rawSlips = res.data as any
             const list: Array<{ imageBase64: string; uploadedAt: string }> = Array.isArray(rawSlips)
               ? rawSlips
-              : (rawSlips?.slipUploads ?? rawSlips?.SlipUploads ?? rawSlips?.data ?? [])
+              : (rawSlips?.slips ?? rawSlips?.Slips ?? rawSlips?.data ?? [])
             setSlips([...list].sort((a, b) =>
               new Date(b.uploadedAt || 0).getTime() - new Date(a.uploadedAt || 0).getTime()
             ))
