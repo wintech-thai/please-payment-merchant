@@ -6,7 +6,8 @@ import { useLang } from '@/context/LanguageContext'
 import { paymentRequestApi } from '@/lib/api/payment-request.api'
 import type { PayInRequestDetail, PaymentTxJob, PaymentTxJobParameter } from '@/lib/api/types'
 import { toast } from 'sonner'
-import { ChevronLeft, CheckCircle, AlertCircle, Clock, ExternalLink, X, Copy, Check } from 'lucide-react'
+import { ChevronLeft, CheckCircle, AlertCircle, Clock, ExternalLink, X, Copy, Check, Upload, Paperclip, ChevronRight } from 'lucide-react'
+import QRCode from 'react-qr-code'
 
 function formatAmount(n?: number | null): string {
   if (n == null) return '—'
@@ -159,6 +160,50 @@ function RawJsonModal({ data, onClose }: { data: unknown; onClose: () => void })
   )
 }
 
+function SlipViewerModal({
+  slips,
+  initialIndex,
+  onClose,
+}: {
+  slips: Array<{ imageBase64: string; uploadedAt: string }>
+  initialIndex: number
+  onClose: () => void
+}) {
+  const [idx, setIdx] = useState(initialIndex)
+  const slip = slips[idx]
+  return (
+    <div className="fixed inset-0 z-50 flex flex-col bg-black/90" onClick={onClose}>
+      <div className="flex items-center justify-between px-4 py-3 flex-shrink-0" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center gap-2">
+          <Paperclip className="w-4 h-4 text-white/70" />
+          <span className="text-sm font-semibold text-white">สลิป {idx + 1} / {slips.length}</span>
+          {slip?.uploadedAt && (
+            <span className="text-xs text-white/50">{new Date(slip.uploadedAt).toLocaleString('th-TH')}</span>
+          )}
+        </div>
+        <button onClick={onClose} className="p-2 rounded-lg text-white/70 hover:bg-white/10 transition-colors">
+          <X className="w-5 h-5" />
+        </button>
+      </div>
+      <div className="flex-1 flex items-center justify-center relative" onClick={e => e.stopPropagation()}>
+        {slip?.imageBase64 && (
+          <img src={`data:image/jpeg;base64,${slip.imageBase64}`} alt={`สลิป ${idx + 1}`} className="max-h-full max-w-full object-contain" />
+        )}
+        {slips.length > 1 && idx > 0 && (
+          <button onClick={() => setIdx(i => i - 1)} className="absolute left-4 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors">
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+        )}
+        {slips.length > 1 && idx < slips.length - 1 && (
+          <button onClick={() => setIdx(i => i + 1)} className="absolute right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors">
+            <ChevronRight className="w-5 h-5" />
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export default function PayInRequestDetailPage() {
   const { t } = useLang()
   const tr = t.payInRequest
@@ -171,6 +216,11 @@ export default function PayInRequestDetailPage() {
   const [job, setJob] = useState<PaymentTxJob | null>(null)
   const [loadingJob, setLoadingJob] = useState(false)
   const [showRawJson, setShowRawJson] = useState(false)
+  const [slips, setSlips] = useState<Array<{ imageBase64: string; uploadedAt: string }>>([])
+  const [loadingSlips, setLoadingSlips] = useState(false)
+  const [showSlipViewer, setShowSlipViewer] = useState(false)
+  const [slipViewerIndex, setSlipViewerIndex] = useState(0)
+  const [copiedSlipUrl, setCopiedSlipUrl] = useState(false)
 
   useEffect(() => {
     const load = async () => {
@@ -184,13 +234,28 @@ export default function PayInRequestDetailPage() {
         const jobId = raw?.jobId ?? raw?.JobId
         if (jobId) {
           setLoadingJob(true)
-          try {
-            const jobRes = await paymentRequestApi.getPaymentRequestJobById(id, jobId)
-            const jobData = jobRes.data as any
-            setJob(jobData?.job ?? jobData?.Job ?? jobData)
-          } catch { /* job section shows no data */ }
-          finally { setLoadingJob(false) }
+          paymentRequestApi.getPaymentRequestJobById(id, jobId)
+            .then(jobRes => {
+              const jobData = jobRes.data as any
+              setJob(jobData?.job ?? jobData?.Job ?? jobData)
+            })
+            .catch(() => {})
+            .finally(() => setLoadingJob(false))
         }
+
+        setLoadingSlips(true)
+        paymentRequestApi.getPayInSlipUploads(id)
+          .then(res => {
+            const rawSlips = res.data as any
+            const list: Array<{ imageBase64: string; uploadedAt: string }> = Array.isArray(rawSlips)
+              ? rawSlips
+              : (rawSlips?.slipUploads ?? rawSlips?.SlipUploads ?? rawSlips?.data ?? [])
+            setSlips([...list].sort((a, b) =>
+              new Date(b.uploadedAt || 0).getTime() - new Date(a.uploadedAt || 0).getTime()
+            ))
+          })
+          .catch(() => {})
+          .finally(() => setLoadingSlips(false))
       } catch {
         toast.error(tr.detailTitle)
       } finally {
@@ -211,6 +276,18 @@ export default function PayInRequestDetailPage() {
       </div>
     )
   }
+
+  const slipUploadUrl = (() => {
+    if (!data?.responseDataObj) return null
+    try {
+      const parsed = typeof data.responseDataObj === 'string' ? JSON.parse(data.responseDataObj) : data.responseDataObj
+      return parsed?.slipUploadUrl ?? parsed?.SlipUploadUrl ?? null
+    } catch { return null }
+  })()
+
+  const fullSlipUrl = slipUploadUrl && typeof window !== 'undefined'
+    ? `${window.location.origin}${slipUploadUrl}`
+    : slipUploadUrl
 
   const responseJson = (() => {
     if (!data?.responseDataObj) return null
@@ -242,6 +319,16 @@ export default function PayInRequestDetailPage() {
           <h1 className="text-xl font-bold text-gray-900">{tr.detailTitle}</h1>
           <p className="text-sm text-gray-500 mt-0.5">{id}</p>
         </div>
+        {(loadingSlips || slips.length > 0) && (
+          <button
+            onClick={() => { setSlipViewerIndex(0); setShowSlipViewer(true) }}
+            disabled={loadingSlips || slips.length === 0}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors disabled:opacity-50"
+          >
+            <Paperclip className="w-3.5 h-3.5" />
+            {loadingSlips ? '...' : `สลิป (${slips.length})`}
+          </button>
+        )}
         {data && (
           <button onClick={() => setShowRawJson(true)} className="px-2 py-1 text-[11px] font-mono font-semibold text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-md border border-gray-200 transition-colors">
             {'{ }'}
@@ -249,6 +336,9 @@ export default function PayInRequestDetailPage() {
         )}
       </div>
       {showRawJson && <RawJsonModal data={data} onClose={() => setShowRawJson(false)} />}
+      {showSlipViewer && slips.length > 0 && (
+        <SlipViewerModal slips={slips} initialIndex={slipViewerIndex} onClose={() => setShowSlipViewer(false)} />
+      )}
 
       {/* General Info */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 px-7 py-6">
@@ -312,6 +402,50 @@ export default function PayInRequestDetailPage() {
           )}
         </div>
       </div>
+
+      {/* Slip Upload Link */}
+      {fullSlipUrl && (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 px-7 py-6">
+          <SectionHeader>
+            <span className="flex items-center gap-2">
+              <Upload className="w-4 h-4 text-primary-500" />
+              ลิงก์อัปโหลดสลิป
+            </span>
+          </SectionHeader>
+          <div className="flex flex-col sm:flex-row gap-6 items-start">
+            <div className="flex-shrink-0 p-3 bg-white border border-gray-200 rounded-xl shadow-sm">
+              <QRCode value={fullSlipUrl} size={140} />
+            </div>
+            <div className="flex flex-col gap-3 flex-1 min-w-0">
+              <p className="text-xs text-gray-500">ให้ลูกค้าสแกน QR หรือเปิดลิงก์นี้เพื่ออัปโหลดสลิปการโอนเงิน</p>
+              <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
+                <span className="flex-1 text-xs text-gray-700 font-mono break-all">{fullSlipUrl}</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard.writeText(fullSlipUrl)
+                    setCopiedSlipUrl(true)
+                    setTimeout(() => setCopiedSlipUrl(false), 2000)
+                  }}
+                  className="flex-shrink-0 flex items-center gap-1 px-2 py-1 text-xs font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-200 rounded transition-colors"
+                >
+                  {copiedSlipUrl ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                  {copiedSlipUrl ? 'Copied!' : 'Copy'}
+                </button>
+              </div>
+              <a
+                href={fullSlipUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-xs text-primary-600 hover:text-primary-800 hover:underline"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                เปิดหน้าอัปโหลด
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Response Data */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 px-7 py-6">

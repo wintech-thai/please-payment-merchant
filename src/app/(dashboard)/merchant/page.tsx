@@ -4,10 +4,11 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useOrgChange } from '@/hooks/useOrgChange'
 import { userApi } from '@/lib/api/user.api'
+import { paymentRequestApi } from '@/lib/api/payment-request.api'
 import { useLang } from '@/context/LanguageContext'
 import { toast } from 'sonner'
 import clsx from 'clsx'
-import { Loader2, Copy, Check, Store, CreditCard, Webhook, Wallet, ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react'
+import { Loader2, Copy, Check, Store, CreditCard, Webhook, Wallet, ChevronLeft, ChevronRight, ExternalLink, Mail, Phone, Hash, User, Activity, Percent, TrendingUp, TrendingDown, ArrowDownCircle, ArrowUpCircle, Zap, Globe } from 'lucide-react'
 
 interface MerchantData {
   // from GetMerchants (admin MerchantItem field names)
@@ -51,19 +52,21 @@ function DailyBar({ current, limit }: { current: number; limit: number }) {
   )
 }
 
-function SectionHeader({ children }: { children: React.ReactNode }) {
+function SectionHeader({ children, icon }: { children: React.ReactNode; icon?: React.ReactNode }) {
   return (
     <h2 className="flex items-center gap-2.5 text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">
       <span className="w-1 h-4 bg-primary-500 rounded-full flex-shrink-0" />
+      {icon && <span className="text-primary-400">{icon}</span>}
       {children}
     </h2>
   )
 }
 
-function ReadonlyField({ label, value, mono, suffix }: { label: string; value?: string | number | null; mono?: boolean; suffix?: string }) {
+function ReadonlyField({ label, value, mono, suffix, icon }: { label: string; value?: string | number | null; mono?: boolean; suffix?: string; icon?: React.ReactNode }) {
   return (
     <div>
-      <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">
+      <label className="flex items-center gap-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">
+        {icon && <span className="text-gray-300">{icon}</span>}
         {label}
       </label>
       <div className={clsx(
@@ -72,6 +75,24 @@ function ReadonlyField({ label, value, mono, suffix }: { label: string; value?: 
       )}>
         <span>{value ?? <span className="text-gray-300">—</span>}</span>
         {suffix && value != null && <span className="text-gray-400 text-xs font-semibold ml-1">{suffix}</span>}
+      </div>
+    </div>
+  )
+}
+
+function FeeCard({ label, value, color }: { label: string; value?: number | null; color: 'emerald' | 'blue' }) {
+  const styles = color === 'emerald'
+    ? { bg: 'bg-emerald-50', border: 'border-emerald-100', text: 'text-emerald-700', val: 'text-emerald-800', icon: 'text-emerald-400' }
+    : { bg: 'bg-blue-50', border: 'border-blue-100', text: 'text-blue-700', val: 'text-blue-800', icon: 'text-blue-400' }
+  const Icon = color === 'emerald' ? ArrowDownCircle : ArrowUpCircle
+  return (
+    <div className={clsx('rounded-xl border p-4 flex flex-col gap-1', styles.bg, styles.border)}>
+      <div className={clsx('flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest', styles.text)}>
+        <Icon className={clsx('w-3.5 h-3.5', styles.icon)} />
+        {label}
+      </div>
+      <div className={clsx('text-2xl font-bold', styles.val)}>
+        {value != null ? `${value}%` : <span className="text-gray-300 text-sm font-normal">—</span>}
       </div>
     </div>
   )
@@ -275,25 +296,24 @@ export default function MerchantInfoPage() {
 
       <div className="flex-1 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col min-h-0">
         {/* Tab bar */}
-        <div className="flex border-b border-gray-100 flex-none overflow-x-auto">
-          {tabs.map(tab => (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              className={clsx(
-                'flex items-center gap-2 px-5 py-3.5 text-sm font-medium transition-colors relative whitespace-nowrap',
-                activeTab === tab.key
-                  ? 'text-primary-700 bg-primary-50/50'
-                  : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
-              )}
-            >
-              {tab.icon}
-              <span>{tab.label}</span>
-              {activeTab === tab.key && (
-                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-500" />
-              )}
-            </button>
-          ))}
+        <div className="flex-none border-b border-gray-100 px-4 pt-3 pb-0">
+          <div className="flex gap-1 overflow-x-auto">
+            {tabs.map(tab => (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                className={clsx(
+                  'flex items-center gap-2 px-4 py-2 rounded-t-xl text-sm font-semibold transition-all whitespace-nowrap border border-b-0',
+                  activeTab === tab.key
+                    ? 'bg-white text-primary-700 border-gray-200 -mb-px pb-[9px] shadow-sm'
+                    : 'text-gray-400 hover:text-gray-600 border-transparent hover:bg-gray-50'
+                )}
+              >
+                {tab.icon}
+                <span>{tab.label}</span>
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className={clsx('flex-1 p-6 flex flex-col', activeTab === 'wallet' ? 'overflow-hidden' : 'overflow-y-auto custom-scrollbar')}>
@@ -302,13 +322,14 @@ export default function MerchantInfoPage() {
           {activeTab === 'info' && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="bg-gray-50/50 rounded-2xl border border-gray-100 p-6 space-y-5">
-                <SectionHeader>{mi.sectionBasicInfo}</SectionHeader>
-                <ReadonlyField label={mi.fieldCode}  value={orgCode} />
-                <ReadonlyField label={mi.fieldName}  value={orgName} />
-                <ReadonlyField label={mi.fieldEmail} value={email} />
-                <ReadonlyField label={mi.fieldPhone} value={phone} />
+                <SectionHeader icon={<Store className="w-3.5 h-3.5" />}>{mi.sectionBasicInfo}</SectionHeader>
+                <ReadonlyField label={mi.fieldCode}  value={orgCode} icon={<Hash className="w-3 h-3" />} />
+                <ReadonlyField label={mi.fieldName}  value={orgName} icon={<User className="w-3 h-3" />} />
+                <ReadonlyField label={mi.fieldEmail} value={email}   icon={<Mail className="w-3 h-3" />} />
+                <ReadonlyField label={mi.fieldPhone} value={phone}   icon={<Phone className="w-3 h-3" />} />
                 <div>
-                  <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">
+                  <label className="flex items-center gap-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">
+                    <Activity className="w-3 h-3 text-gray-300" />
                     {mi.fieldStatus}
                   </label>
                   <div className="px-3 py-2.5 rounded-lg bg-white border border-gray-100 min-h-[38px] flex items-center">
@@ -316,7 +337,8 @@ export default function MerchantInfoPage() {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">
+                  <label className="flex items-center gap-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">
+                    <Zap className="w-3 h-3 text-gray-300" />
                     {mi.fieldDiscardCent}
                   </label>
                   <div className="px-3 py-2.5 rounded-lg bg-gray-50 border border-gray-100 min-h-[38px] flex items-center gap-2">
@@ -336,27 +358,27 @@ export default function MerchantInfoPage() {
 
               <div className="space-y-5">
                 <div className="bg-gray-50/50 rounded-2xl border border-gray-100 p-6">
-                  <SectionHeader>{mi.sectionFees}</SectionHeader>
-                  <div className="grid grid-cols-2 gap-5">
-                    <ReadonlyField label={mi.fieldPayInFee}  value={payInFee}  suffix="%" />
-                    <ReadonlyField label={mi.fieldPayOutFee} value={payOutFee} suffix="%" />
+                  <SectionHeader icon={<Percent className="w-3.5 h-3.5" />}>{mi.sectionFees}</SectionHeader>
+                  <div className="grid grid-cols-2 gap-4">
+                    <FeeCard label={mi.fieldPayInFee}  value={payInFee}  color="emerald" />
+                    <FeeCard label={mi.fieldPayOutFee} value={payOutFee} color="blue" />
                   </div>
                 </div>
 
                 <div className="bg-gray-50/50 rounded-2xl border border-gray-100 p-6">
-                  <SectionHeader>{mi.sectionLimits}</SectionHeader>
+                  <SectionHeader icon={<TrendingUp className="w-3.5 h-3.5" />}>{mi.sectionLimits}</SectionHeader>
                   <div className="space-y-4">
                     <LimitRow label={mi.fieldPayIn}  min={payInMin}  max={payInMax}  minLabel={mi.fieldMin} maxLabel={mi.fieldMax} />
-                    <div className="rounded-xl border border-gray-100 overflow-hidden">
-                      <div className="grid grid-cols-2 divide-x divide-gray-100">
+                    <div className="rounded-xl border border-amber-100 bg-amber-50/40 overflow-hidden">
+                      <div className="grid grid-cols-2 divide-x divide-amber-100">
                         <div className="px-4 py-3">
-                          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">{mi.fieldDailyTxAmountLimit}</p>
+                          <p className="text-[10px] font-bold text-amber-500 uppercase tracking-widest mb-1">{mi.fieldDailyTxAmountLimit}</p>
                           <p className="text-sm font-semibold text-gray-800">
                             {payinDailyAmountLimit != null ? (payinDailyAmountLimit === 0 ? '∞' : payinDailyAmountLimit.toLocaleString()) : <span className="text-gray-300 font-normal">—</span>}
                           </p>
                         </div>
                         <div className="px-4 py-3">
-                          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">{mi.fieldDailyTxCountLimit}</p>
+                          <p className="text-[10px] font-bold text-amber-500 uppercase tracking-widest mb-1">{mi.fieldDailyTxCountLimit}</p>
                           <p className="text-sm font-semibold text-gray-800">
                             {payinDailyCountLimit != null ? (payinDailyCountLimit === 0 ? '∞' : payinDailyCountLimit.toLocaleString()) : <span className="text-gray-300 font-normal">—</span>}
                           </p>
@@ -372,24 +394,26 @@ export default function MerchantInfoPage() {
 
           {/* ── Endpoint tab ── */}
           {activeTab === 'endpoint' && (
-            <div className="flex flex-col gap-5">
-              <SectionHeader>{mi.sectionEndpoint}</SectionHeader>
-              {/* Pay-In */}
-              <div>
-                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">
-                  {mi.endpointLabel}
-                </label>
-                <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-xl border border-gray-200">
+            <div className="flex flex-col gap-5 max-w-2xl">
+              <SectionHeader icon={<CreditCard className="w-3.5 h-3.5" />}>{mi.sectionEndpoint}</SectionHeader>
+
+              {/* Pay-In endpoint */}
+              <div className="rounded-xl border border-gray-200 overflow-hidden">
+                <div className="flex items-center gap-2 px-4 py-2.5 bg-emerald-50 border-b border-gray-200">
+                  <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-600 text-white uppercase tracking-wider">POST</span>
+                  <span className="text-xs font-semibold text-emerald-800">{mi.endpointLabel}</span>
+                </div>
+                <div className="flex items-center gap-2 px-4 py-3 bg-gray-50">
                   {endpointUrl
-                    ? <p className="flex-1 text-xs text-gray-700 break-all">{endpointUrl}</p>
-                    : <p className="flex-1 text-xs text-gray-300 italic">—</p>}
+                    ? <code className="flex-1 text-xs text-gray-700 font-mono break-all">{endpointUrl}</code>
+                    : <span className="flex-1 text-xs text-gray-300 italic">—</span>}
                   <button
                     onClick={() => endpointUrl && handleCopy(endpointUrl, 'payin')}
                     disabled={!endpointUrl}
                     className={clsx(
                       'flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors',
                       copied ? 'bg-green-100 text-green-700'
-                      : endpointUrl ? 'bg-primary-100 text-primary-700 hover:bg-primary-200'
+                      : endpointUrl ? 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
                       : 'bg-gray-100 text-gray-300 cursor-not-allowed'
                     )}
                   >
@@ -398,22 +422,24 @@ export default function MerchantInfoPage() {
                   </button>
                 </div>
               </div>
-              {/* Pay-Out */}
-              <div>
-                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">
-                  {mi.endpointPayOutLabel}
-                </label>
-                <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-xl border border-gray-200">
+
+              {/* Pay-Out endpoint */}
+              <div className="rounded-xl border border-gray-200 overflow-hidden">
+                <div className="flex items-center gap-2 px-4 py-2.5 bg-blue-50 border-b border-gray-200">
+                  <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-blue-600 text-white uppercase tracking-wider">POST</span>
+                  <span className="text-xs font-semibold text-blue-800">{mi.endpointPayOutLabel}</span>
+                </div>
+                <div className="flex items-center gap-2 px-4 py-3 bg-gray-50">
                   {payOutEndpointUrl
-                    ? <p className="flex-1 text-xs text-gray-700 break-all">{payOutEndpointUrl}</p>
-                    : <p className="flex-1 text-xs text-gray-300 italic">—</p>}
+                    ? <code className="flex-1 text-xs text-gray-700 font-mono break-all">{payOutEndpointUrl}</code>
+                    : <span className="flex-1 text-xs text-gray-300 italic">—</span>}
                   <button
                     onClick={() => payOutEndpointUrl && handleCopy(payOutEndpointUrl, 'payout')}
                     disabled={!payOutEndpointUrl}
                     className={clsx(
                       'flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors',
                       copiedPayOut ? 'bg-green-100 text-green-700'
-                      : payOutEndpointUrl ? 'bg-primary-100 text-primary-700 hover:bg-primary-200'
+                      : payOutEndpointUrl ? 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
                       : 'bg-gray-100 text-gray-300 cursor-not-allowed'
                     )}
                   >
@@ -441,7 +467,7 @@ export default function MerchantInfoPage() {
           {/* ── Webhooks tab ── */}
           {activeTab === 'webhooks' && (
             <div className="flex-1 flex flex-col min-h-0">
-              <SectionHeader>{mi.sectionWebhooks}</SectionHeader>
+              <SectionHeader icon={<Globe className="w-3.5 h-3.5" />}>{mi.sectionWebhooks}</SectionHeader>
               <div className="flex-1 overflow-auto rounded-xl border border-gray-100">
                 <table className="w-full text-sm">
                   <thead className="bg-gray-50 border-b border-gray-100">
@@ -453,9 +479,27 @@ export default function MerchantInfoPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {webhooksData.length > 0 ? webhooksData.map((wh: any, idx) => (
+                    {webhooksData.length > 0 ? (webhooksData as any[]).map((wh: any, idx) => (
                       <tr key={idx} className="border-b border-gray-100 last:border-0 hover:bg-gray-50/50 transition">
-                        <td className="px-4 py-3 text-gray-700 font-medium">{wh.eventName ?? wh.event ?? '—'}</td>
+                        <td className="px-4 py-3">
+                          {(() => {
+                            const ev = wh.eventName ?? wh.event ?? ''
+                            if (!ev) return <span className="text-gray-300">—</span>
+                            const isPayIn = /payin|pay.in/i.test(ev)
+                            const isPayOut = /payout|pay.out/i.test(ev)
+                            const cls = isPayIn
+                              ? 'bg-emerald-100 text-emerald-700 border-emerald-200'
+                              : isPayOut
+                              ? 'bg-blue-100 text-blue-700 border-blue-200'
+                              : 'bg-violet-100 text-violet-700 border-violet-200'
+                            return (
+                              <span className={clsx('inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold border', cls)}>
+                                <Zap className="w-3 h-3" />
+                                {ev}
+                              </span>
+                            )
+                          })()}
+                        </td>
                         <td className="px-4 py-3 text-gray-600">{wh.description ?? '—'}</td>
                         <td className="px-4 py-3 text-gray-600">
                           <div className="text-sm font-mono break-all">{wh.endpointUrl ?? wh.url ?? '—'}</div>
@@ -483,7 +527,14 @@ export default function MerchantInfoPage() {
                       </tr>
                     )) : (
                       <tr>
-                        <td colSpan={4} className="px-4 py-10 text-center text-sm text-gray-400">{mi.noWebhooks}</td>
+                        <td colSpan={4} className="px-4 py-14 text-center">
+                          <div className="flex flex-col items-center gap-2">
+                            <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center">
+                              <Webhook className="w-5 h-5 text-gray-300" />
+                            </div>
+                            <p className="text-sm text-gray-400">{mi.noWebhooks}</p>
+                          </div>
+                        </td>
                       </tr>
                     )}
                   </tbody>
@@ -606,6 +657,7 @@ export default function MerchantInfoPage() {
                           const payOutMatch = tags.match(/PayOutRequestId=\[([^\]]+)\]/)
                           const payInTxMatch = tags.match(/PaymentTxId=\[([^\]]+)\]/)
                           const payInReqMatch = tags.match(/PaymentRequestId=\[([^\]]+)\]/)
+                          const refId1 = tags.match(/RefId1=\[([^\]]+)\]/)?.[1] ?? null
                           const tagUuid = (payOutMatch ?? payInTxMatch ?? payInReqMatch)?.[1] ?? null
                           const tagLink = payOutMatch
                             ? `/payment/pay-out-requests/${payOutMatch[1]}`
@@ -614,6 +666,7 @@ export default function MerchantInfoPage() {
                             : payInReqMatch
                             ? `/payment/pay-in-requests/${payInReqMatch[1]}`
                             : null
+                          const tagLabel = refId1 ?? (payOutMatch ? 'Pay-Out' : payInTxMatch ? 'Pay-In Tx' : 'Pay-In Req')
                           const globalIdx = (walletPage - 1) * walletPageSize + idx
                           const isHighlighted = highlightedTxIdx === globalIdx
                           return (
@@ -633,14 +686,29 @@ export default function MerchantInfoPage() {
                               <td className="px-4 py-3 text-gray-500 text-sm max-w-[200px] truncate">
                                 {tags
                                   ? tagLink && tagUuid
-                                    ? <Link href={tagLink} target="_blank" rel="noopener noreferrer" className={clsx(
-                                        'inline-block px-2 py-0.5 rounded text-xs font-semibold hover:opacity-80 transition-opacity',
-                                        payOutMatch && 'bg-red-100 text-red-700',
-                                        payInTxMatch && 'bg-green-100 text-green-700',
-                                        payInReqMatch && 'bg-blue-100 text-blue-700',
-                                      )}>
-                                        {payOutMatch ? 'Pay-Out' : payInTxMatch ? 'Pay-In Tx' : 'Pay-In Req'}
-                                      </Link>
+                                    ? payOutMatch
+                                      ? <button
+                                          type="button"
+                                          onClick={async (e) => {
+                                            e.stopPropagation()
+                                            try {
+                                              await paymentRequestApi.getPayOutRequestById(payOutMatch[1])
+                                              window.open(tagLink, '_blank', 'noopener,noreferrer')
+                                            } catch {
+                                              toast.error(mi.crossMerchantTitle, { description: mi.crossMerchantDesc })
+                                            }
+                                          }}
+                                          className="inline-block px-2 py-0.5 rounded text-xs font-semibold hover:opacity-80 transition-opacity bg-red-100 text-red-700 cursor-pointer"
+                                        >
+                                          {tagLabel}
+                                        </button>
+                                      : <Link href={tagLink} target="_blank" rel="noopener noreferrer" className={clsx(
+                                          'inline-block px-2 py-0.5 rounded text-xs font-semibold hover:opacity-80 transition-opacity',
+                                          payInTxMatch && 'bg-green-100 text-green-700',
+                                          payInReqMatch && 'bg-blue-100 text-blue-700',
+                                        )}>
+                                          {tagLabel}
+                                        </Link>
                                     : <span className="text-gray-500 text-xs">{tags}</span>
                                   : <span className="text-gray-300">—</span>}
                               </td>

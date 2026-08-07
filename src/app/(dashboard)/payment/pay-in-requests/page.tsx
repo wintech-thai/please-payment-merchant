@@ -7,7 +7,7 @@ import { useLang } from '@/context/LanguageContext'
 import { paymentRequestApi } from '@/lib/api/payment-request.api'
 import type { PayInRequestItem } from '@/lib/api/types'
 import { toast } from 'sonner'
-import { Loader2, ChevronLeft, ChevronRight, Search, ExternalLink, RefreshCw } from 'lucide-react'
+import { Loader2, ChevronLeft, ChevronRight, Search, ExternalLink, RefreshCw, Paperclip } from 'lucide-react'
 import clsx from 'clsx'
 import { AdvancedTimeRangeSelector, type TimeRangeValue } from '@/components/AdvancedTimeRangeSelector'
 
@@ -291,7 +291,15 @@ export default function PayInRequestsPage() {
                   </td>
                   <td className="px-4 py-3 border-b border-gray-100"><BankAccountCell item={item} /></td>
                   <td className="px-4 py-3 border-b border-gray-100">
-                    <StatusBadge status={item.status} createdDate={item.createdDate} payinIsPeerToPeer={item.payinIsPeerToPeer} />
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <StatusBadge status={item.status} createdDate={item.createdDate} payinIsPeerToPeer={item.payinIsPeerToPeer} />
+                      {(item.payInSlipUploadCount ?? 0) > 0 && (
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 ring-1 ring-blue-200">
+                          <Paperclip className="w-3 h-3" />
+                          {item.payInSlipUploadCount}
+                        </span>
+                      )}
+                    </div>
                     {(item.status?.toLowerCase() === 'paid' || item.status?.toLowerCase() === 'approved') && item.paymentTxId && (
                       <a
                         href={`/payment/pay-in-transactions/${item.paymentTxId}`}
@@ -309,7 +317,7 @@ export default function PayInRequestsPage() {
                         {item.statusReason}
                       </span>
                     )}
-                  </td>
+                    </td>
                   <td className="px-4 py-3 border-b border-gray-100">
                     <div className="flex flex-col gap-0.5">
                       {item.refId1 ? <span className="text-xs text-gray-600 whitespace-nowrap">{item.refId1}</span> : null}
