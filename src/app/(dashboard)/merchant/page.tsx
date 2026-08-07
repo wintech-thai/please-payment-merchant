@@ -485,12 +485,12 @@ export default function MerchantInfoPage() {
                           {(() => {
                             const ev = wh.eventName ?? wh.event ?? ''
                             if (!ev) return <span className="text-gray-300">—</span>
-                            const isPayIn = /payin|pay.in/i.test(ev)
-                            const isPayOut = /payout|pay.out/i.test(ev)
-                            const cls = isPayIn
+                            const isSuccess = /success/i.test(ev)
+                            const isReject = /reject/i.test(ev)
+                            const cls = isSuccess
                               ? 'bg-emerald-100 text-emerald-700 border-emerald-200'
-                              : isPayOut
-                              ? 'bg-blue-100 text-blue-700 border-blue-200'
+                              : isReject
+                              ? 'bg-red-100 text-red-600 border-red-200'
                               : 'bg-violet-100 text-violet-700 border-violet-200'
                             return (
                               <span className={clsx('inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold border', cls)}>
