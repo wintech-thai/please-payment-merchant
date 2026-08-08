@@ -9,6 +9,14 @@ import { toast } from 'sonner'
 import { ChevronLeft, CheckCircle, AlertCircle, Clock, ExternalLink, X, Copy, Check, Paperclip, ChevronRight, Link2 } from 'lucide-react'
 import QRCode from 'react-qr-code'
 
+function mimeFromBase64(b64: string): string {
+  if (b64.startsWith('/9j/')) return 'image/jpeg'
+  if (b64.startsWith('iVBOR')) return 'image/png'
+  if (b64.startsWith('R0lG')) return 'image/gif'
+  if (b64.startsWith('UklG')) return 'image/webp'
+  return 'image/jpeg'
+}
+
 function formatAmount(n?: number | null): string {
   if (n == null) return '—'
   return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -169,6 +177,8 @@ function SlipViewerModal({
   initialIndex: number
   onClose: () => void
 }) {
+  const { t } = useLang()
+  const tr = t.payInRequest
   const [idx, setIdx] = useState(initialIndex)
   const slip = slips[idx]
   return (
@@ -176,7 +186,7 @@ function SlipViewerModal({
       <div className="flex-none flex items-center justify-between px-5 py-3" onClick={e => e.stopPropagation()}>
         <div className="flex items-center gap-3">
           <span className="text-white text-sm font-semibold">
-            สลิปที่อัปโหลด ({idx + 1} / {slips.length})
+            {tr.slipViewerTitle} ({idx + 1} / {slips.length})
           </span>
           {slip?.uploadedAt && (
             <span className="text-white/60 text-xs">
@@ -202,7 +212,7 @@ function SlipViewerModal({
         <div className="flex-1 flex items-center justify-center min-h-0">
           {slip?.imageBase64 && (
             <img
-              src={`data:image/jpeg;base64,${slip.imageBase64}`}
+              src={`data:${mimeFromBase64(slip.imageBase64)};base64,${slip.imageBase64}`}
               alt={`สลิป ${idx + 1}`}
               className="max-h-[calc(100vh-120px)] max-w-full rounded-xl shadow-2xl object-contain"
             />
@@ -375,6 +385,9 @@ export default function PayInRequestDetailPage() {
     )
   }
 
+  const s = data?.status?.toLowerCase()
+  const isPending = s !== 'match' && s !== 'paid' && s !== 'approved' && s !== 'rejected' && s !== 'error'
+
   const responseJson = (() => {
     if (!data?.responseDataObj) return null
     try {
@@ -415,7 +428,7 @@ export default function PayInRequestDetailPage() {
             {loadingSlips ? '...' : `${tr.slipViewBtn} (${slips.length})`}
           </button>
         )}
-        {data && (
+        {data && isPending && (
           <button
             onClick={() => setShowSlipLink(true)}
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-primary-700 bg-primary-50 hover:bg-primary-100 border border-primary-200 rounded-lg transition-colors"

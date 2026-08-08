@@ -987,6 +987,7 @@ export const translations = {
       slipLinkLoading: 'กำลังโหลด...',
       slipLinkError: 'ไม่สามารถโหลดลิงก์ได้',
       slipLinkOpen: 'เปิดหน้าอัปโหลด',
+      slipViewerTitle: 'สลิปที่อัปโหลด',
     },
     payInTx: {
       title: 'Pay-In Transactions',
@@ -2450,6 +2451,7 @@ export const translations = {
       slipLinkLoading: 'Loading...',
       slipLinkError: 'Failed to load link',
       slipLinkOpen: 'Open Upload Page',
+      slipViewerTitle: 'Uploaded Slips',
     },
     payInTx: {
       title: 'Pay-In Transactions',
