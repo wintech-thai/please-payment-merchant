@@ -173,32 +173,48 @@ function SlipViewerModal({
   const slip = slips[idx]
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-black/90" onClick={onClose}>
-      <div className="flex items-center justify-between px-4 py-3 flex-shrink-0" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center gap-2">
-          <Paperclip className="w-4 h-4 text-white/70" />
-          <span className="text-sm font-semibold text-white">สลิป {idx + 1} / {slips.length}</span>
+      <div className="flex-none flex items-center justify-between px-5 py-3" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center gap-3">
+          <span className="text-white text-sm font-semibold">
+            สลิปที่อัปโหลด ({idx + 1} / {slips.length})
+          </span>
           {slip?.uploadedAt && (
-            <span className="text-xs text-white/50">{new Date(slip.uploadedAt).toLocaleString('th-TH')}</span>
+            <span className="text-white/60 text-xs">
+              {new Date(slip.uploadedAt).toLocaleString('th-TH')}
+            </span>
           )}
         </div>
-        <button onClick={onClose} className="p-2 rounded-lg text-white/70 hover:bg-white/10 transition-colors">
+        <button
+          onClick={onClose}
+          className="w-9 h-9 rounded-full bg-white/20 hover:bg-white/40 flex items-center justify-center text-white transition-colors"
+        >
           <X className="w-5 h-5" />
         </button>
       </div>
-      <div className="flex-1 flex items-center justify-center relative" onClick={e => e.stopPropagation()}>
-        {slip?.imageBase64 && (
-          <img src={`data:image/jpeg;base64,${slip.imageBase64}`} alt={`สลิป ${idx + 1}`} className="max-h-full max-w-full object-contain" />
-        )}
-        {slips.length > 1 && idx > 0 && (
-          <button onClick={() => setIdx(i => i - 1)} className="absolute left-4 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors">
-            <ChevronLeft className="w-5 h-5" />
-          </button>
-        )}
-        {slips.length > 1 && idx < slips.length - 1 && (
-          <button onClick={() => setIdx(i => i + 1)} className="absolute right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors">
-            <ChevronRight className="w-5 h-5" />
-          </button>
-        )}
+      <div className="flex-1 flex items-center gap-4 px-4 min-h-0" onClick={e => e.stopPropagation()}>
+        <button
+          onClick={() => setIdx(i => Math.max(0, i - 1))}
+          disabled={idx <= 0}
+          className="flex-shrink-0 w-10 h-10 rounded-full bg-white/20 hover:bg-white/40 flex items-center justify-center text-white disabled:opacity-30 transition-colors"
+        >
+          <ChevronLeft className="w-5 h-5" />
+        </button>
+        <div className="flex-1 flex items-center justify-center min-h-0">
+          {slip?.imageBase64 && (
+            <img
+              src={`data:image/jpeg;base64,${slip.imageBase64}`}
+              alt={`สลิป ${idx + 1}`}
+              className="max-h-[calc(100vh-120px)] max-w-full rounded-xl shadow-2xl object-contain"
+            />
+          )}
+        </div>
+        <button
+          onClick={() => setIdx(i => Math.min(slips.length - 1, i + 1))}
+          disabled={idx >= slips.length - 1}
+          className="flex-shrink-0 w-10 h-10 rounded-full bg-white/20 hover:bg-white/40 flex items-center justify-center text-white disabled:opacity-30 transition-colors"
+        >
+          <ChevronRight className="w-5 h-5" />
+        </button>
       </div>
     </div>
   )
