@@ -52,11 +52,13 @@ function DailyBar({ current, limit }: { current: number; limit: number }) {
   )
 }
 
-function SectionHeader({ children, icon }: { children: React.ReactNode; icon?: React.ReactNode }) {
+function SectionHeader({ children, icon, color = 'primary' }: { children: React.ReactNode; icon?: React.ReactNode; color?: 'primary' | 'emerald' | 'blue' | 'violet' | 'amber' }) {
+  const bar = color === 'emerald' ? 'bg-emerald-500' : color === 'blue' ? 'bg-blue-500' : color === 'violet' ? 'bg-violet-500' : color === 'amber' ? 'bg-amber-500' : 'bg-primary-500'
+  const ico = color === 'emerald' ? 'text-emerald-500' : color === 'blue' ? 'text-blue-500' : color === 'violet' ? 'text-violet-500' : color === 'amber' ? 'text-amber-500' : 'text-primary-400'
   return (
     <h2 className="flex items-center gap-2.5 text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">
-      <span className="w-1 h-4 bg-primary-500 rounded-full flex-shrink-0" />
-      {icon && <span className="text-primary-400">{icon}</span>}
+      <span className={clsx('w-1 h-4 rounded-full flex-shrink-0', bar)} />
+      {icon && <span className={ico}>{icon}</span>}
       {children}
     </h2>
   )
@@ -81,18 +83,20 @@ function ReadonlyField({ label, value, mono, suffix, icon }: { label: string; va
 }
 
 function FeeCard({ label, value, color }: { label: string; value?: number | null; color: 'emerald' | 'blue' }) {
-  const styles = color === 'emerald'
-    ? { bg: 'bg-emerald-50', border: 'border-emerald-100', text: 'text-emerald-700', val: 'text-emerald-800', icon: 'text-emerald-400' }
-    : { bg: 'bg-blue-50', border: 'border-blue-100', text: 'text-blue-700', val: 'text-blue-800', icon: 'text-blue-400' }
-  const Icon = color === 'emerald' ? ArrowDownCircle : ArrowUpCircle
+  const isEmerald = color === 'emerald'
+  const Icon = isEmerald ? ArrowDownCircle : ArrowUpCircle
   return (
-    <div className={clsx('rounded-xl border p-4 flex flex-col gap-1', styles.bg, styles.border)}>
-      <div className={clsx('flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest', styles.text)}>
-        <Icon className={clsx('w-3.5 h-3.5', styles.icon)} />
+    <div className={clsx(
+      'rounded-xl p-4 flex flex-col gap-2 relative overflow-hidden',
+      isEmerald ? 'bg-gradient-to-br from-emerald-500 to-emerald-600' : 'bg-gradient-to-br from-blue-500 to-blue-600'
+    )}>
+      <div className="absolute top-0 right-0 w-16 h-16 rounded-full opacity-10 bg-white -translate-y-4 translate-x-4" />
+      <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-white/80">
+        <Icon className="w-3.5 h-3.5 text-white/70" />
         {label}
       </div>
-      <div className={clsx('text-2xl font-bold', styles.val)}>
-        {value != null ? `${value}%` : <span className="text-gray-300 text-sm font-normal">—</span>}
+      <div className="text-2xl font-bold text-white">
+        {value != null ? `${value}%` : <span className="text-white/40 text-sm font-normal">—</span>}
       </div>
     </div>
   )
@@ -266,11 +270,11 @@ export default function MerchantInfoPage() {
     })
   }
 
-  const tabs: { key: Tab; label: string; icon: React.ReactNode }[] = [
-    { key: 'info',     label: mi.tabInfo,     icon: <Store      className="w-4 h-4" /> },
-    { key: 'endpoint', label: mi.tabEndpoint, icon: <CreditCard className="w-4 h-4" /> },
-    { key: 'webhooks', label: mi.tabWebhooks, icon: <Webhook    className="w-4 h-4" /> },
-    { key: 'wallet',   label: mi.tabWallet,   icon: <Wallet     className="w-4 h-4" /> },
+  const tabs: { key: Tab; label: string; icon: React.ReactNode; activeClass: string; iconClass: string }[] = [
+    { key: 'info',     label: mi.tabInfo,     icon: <Store      className="w-4 h-4" />, activeClass: 'bg-emerald-500 text-white shadow-md shadow-emerald-200', iconClass: 'text-emerald-500' },
+    { key: 'endpoint', label: mi.tabEndpoint, icon: <CreditCard className="w-4 h-4" />, activeClass: 'bg-blue-500 text-white shadow-md shadow-blue-200',    iconClass: 'text-blue-500' },
+    { key: 'webhooks', label: mi.tabWebhooks, icon: <Webhook    className="w-4 h-4" />, activeClass: 'bg-violet-500 text-white shadow-md shadow-violet-200', iconClass: 'text-violet-500' },
+    { key: 'wallet',   label: mi.tabWallet,   icon: <Wallet     className="w-4 h-4" />, activeClass: 'bg-amber-500 text-white shadow-md shadow-amber-200',   iconClass: 'text-amber-500' },
   ]
 
   if (loading) {
@@ -296,17 +300,17 @@ export default function MerchantInfoPage() {
 
       <div className="flex-1 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col min-h-0">
         {/* Tab bar */}
-        <div className="flex-none border-b border-gray-100 px-4 pt-3 pb-0">
-          <div className="flex gap-1 overflow-x-auto">
+        <div className="flex-none px-4 py-3 border-b border-gray-100 bg-gray-50/60">
+          <div className="flex gap-2 overflow-x-auto">
             {tabs.map(tab => (
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
                 className={clsx(
-                  'flex items-center gap-2 px-4 py-2 rounded-t-xl text-sm font-semibold transition-all whitespace-nowrap border border-b-0',
+                  'flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all whitespace-nowrap',
                   activeTab === tab.key
-                    ? 'bg-white text-primary-700 border-gray-200 -mb-px pb-[9px] shadow-sm'
-                    : 'text-gray-400 hover:text-gray-600 border-transparent hover:bg-gray-50'
+                    ? tab.activeClass
+                    : clsx('text-gray-500 hover:bg-white hover:shadow-sm', `hover:${tab.iconClass}`)
                 )}
               >
                 {tab.icon}
@@ -320,9 +324,26 @@ export default function MerchantInfoPage() {
 
           {/* ── Info tab ── */}
           {activeTab === 'info' && (
+            <div className="space-y-5">
+              {/* Merchant header card */}
+              <div className="rounded-2xl bg-gradient-to-r from-primary-600 via-primary-500 to-emerald-500 p-5 flex items-center gap-4 text-white relative overflow-hidden">
+                <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 80% 50%, white 0%, transparent 60%)' }} />
+                <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-xl font-bold flex-shrink-0 border border-white/30">
+                  {(orgName || orgCode || '?').slice(0, 2).toUpperCase()}
+                </div>
+                <div className="min-w-0">
+                  <p className="text-lg font-bold truncate">{orgName || orgCode || '—'}</p>
+                  <p className="text-sm text-white/70 truncate">{orgCode}</p>
+                  {email && <p className="text-xs text-white/60 truncate mt-0.5">{email}</p>}
+                </div>
+                <div className="ml-auto flex-shrink-0">
+                  <StatusBadge status={status} />
+                </div>
+              </div>
+
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="bg-gray-50/50 rounded-2xl border border-gray-100 p-6 space-y-5">
-                <SectionHeader icon={<Store className="w-3.5 h-3.5" />}>{mi.sectionBasicInfo}</SectionHeader>
+                <SectionHeader icon={<Store className="w-3.5 h-3.5" />} color="emerald">{mi.sectionBasicInfo}</SectionHeader>
                 <ReadonlyField label={mi.fieldCode}  value={orgCode} icon={<Hash className="w-3 h-3" />} />
                 <ReadonlyField label={mi.fieldName}  value={orgName} icon={<User className="w-3 h-3" />} />
                 <ReadonlyField label={mi.fieldEmail} value={email}   icon={<Mail className="w-3 h-3" />} />
@@ -358,7 +379,7 @@ export default function MerchantInfoPage() {
 
               <div className="space-y-5">
                 <div className="bg-gray-50/50 rounded-2xl border border-gray-100 p-6">
-                  <SectionHeader icon={<Percent className="w-3.5 h-3.5" />}>{mi.sectionFees}</SectionHeader>
+                  <SectionHeader icon={<Percent className="w-3.5 h-3.5" />} color="emerald">{mi.sectionFees}</SectionHeader>
                   <div className="grid grid-cols-2 gap-4">
                     <FeeCard label={mi.fieldPayInFee}  value={payInFee}  color="emerald" />
                     <FeeCard label={mi.fieldPayOutFee} value={payOutFee} color="blue" />
@@ -366,7 +387,7 @@ export default function MerchantInfoPage() {
                 </div>
 
                 <div className="bg-gray-50/50 rounded-2xl border border-gray-100 p-6">
-                  <SectionHeader icon={<TrendingUp className="w-3.5 h-3.5" />}>{mi.sectionLimits}</SectionHeader>
+                  <SectionHeader icon={<TrendingUp className="w-3.5 h-3.5" />} color="amber">{mi.sectionLimits}</SectionHeader>
                   <div className="space-y-4">
                     <LimitRow label={mi.fieldPayIn}  min={payInMin}  max={payInMax}  minLabel={mi.fieldMin} maxLabel={mi.fieldMax} />
                     <div className="rounded-xl border border-amber-100 bg-amber-50/40 overflow-hidden">
@@ -390,12 +411,13 @@ export default function MerchantInfoPage() {
                 </div>
               </div>
             </div>
+            </div>
           )}
 
           {/* ── Endpoint tab ── */}
           {activeTab === 'endpoint' && (
             <div className="flex flex-col gap-5 max-w-2xl">
-              <SectionHeader icon={<CreditCard className="w-3.5 h-3.5" />}>{mi.sectionEndpoint}</SectionHeader>
+              <SectionHeader icon={<CreditCard className="w-3.5 h-3.5" />} color="blue">{mi.sectionEndpoint}</SectionHeader>
 
               {/* Pay-In endpoint */}
               <div className="rounded-xl border border-gray-200 overflow-hidden">
@@ -467,7 +489,7 @@ export default function MerchantInfoPage() {
           {/* ── Webhooks tab ── */}
           {activeTab === 'webhooks' && (
             <div className="flex-1 flex flex-col min-h-0">
-              <SectionHeader icon={<Globe className="w-3.5 h-3.5" />}>{mi.sectionWebhooks}</SectionHeader>
+              <SectionHeader icon={<Globe className="w-3.5 h-3.5" />} color="violet">{mi.sectionWebhooks}</SectionHeader>
               <div className="flex-1 overflow-auto rounded-xl border border-gray-100">
                 <table className="w-full text-sm">
                   <thead className="bg-gray-50 border-b border-gray-100">
