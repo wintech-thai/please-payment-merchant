@@ -21,6 +21,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="th" className="font-sans">
       <head>
+        <link rel="preload" href="/fonts/Prompt-Regular.ttf" as="font" type="font/ttf" crossOrigin="anonymous" />
+        <link rel="preload" href="/fonts/Prompt-Medium.ttf" as="font" type="font/ttf" crossOrigin="anonymous" />
+        <link rel="preload" href="/fonts/Prompt-Bold.ttf" as="font" type="font/ttf" crossOrigin="anonymous" />
         <script dangerouslySetInnerHTML={{ __html: `
           try {
             var v = localStorage.getItem('brandThemeVars');

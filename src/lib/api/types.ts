@@ -396,6 +396,7 @@ export interface PayInRequestItem {
   payinIsPeerToPeer?: boolean | null
   payInFeePct?: number | null
   payInFeeDecimal?: number | null
+  payInSlipUploadCount?: number | null
 }
 
 export interface PayInRequestDetail extends PayInRequestItem {
@@ -409,6 +410,7 @@ export interface PayInRequestDetail extends PayInRequestItem {
   paymentTxId?: string | null
   direction?: string | null
   jobId?: string | null
+  slipUploadUrl?: string | null
 }
 
 export interface GetPayInRequestsPayload {

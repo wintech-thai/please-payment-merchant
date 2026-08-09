@@ -203,6 +203,7 @@ export default function AddPayOutRequestPage() {
         }),
       })
       toast.success(tr.toastCreateSuccess)
+      router.refresh()
       router.push('/payment/pay-out-requests')
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : tr.toastCreateFailed)

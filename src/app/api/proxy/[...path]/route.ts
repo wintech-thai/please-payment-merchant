@@ -16,11 +16,16 @@ async function handler(request: NextRequest, { params }: { params: { path: strin
     'Onix-Application-Type': 'PLEASE-PAYMENT-MERCHANT',
   }
 
+  const ANONYMOUS_PATHS = ['VerifyPayInToken', 'UploadPayInSlipById']
+  const isAnonymous = ANONYMOUS_PATHS.some(p => path.includes(p))
+
   const incomingAuth = request.headers.get('Authorization')
-  if (incomingAuth) {
-    headers['Authorization'] = incomingAuth
-  } else if (accessToken) {
-    headers['Authorization'] = `Bearer ${Buffer.from(accessToken).toString('base64')}`
+  if (!isAnonymous) {
+    if (incomingAuth) {
+      headers['Authorization'] = incomingAuth
+    } else if (accessToken) {
+      headers['Authorization'] = `Bearer ${Buffer.from(accessToken).toString('base64')}`
+    }
   }
 
   let body: string | undefined

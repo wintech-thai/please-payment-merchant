@@ -49,4 +49,10 @@ export const paymentRequestApi = {
 
   getPaymentRequestJobById: (pmtId: string, jobId: string) =>
     client.get<PaymentTxJob>(`${getBase()}/GetPaymentRequestJobById/${pmtId}/${jobId}`),
+
+  getPayInSlipUploads: (paymentRequestId: string) =>
+    client.get(`${getBase()}/GetPayInSlipUpload/${paymentRequestId}`),
+
+  generatePayInSlipUploadToken: (paymentRequestId: string) =>
+    client.get(`${getBase()}/GeneratePayInSlipUploadToken/${paymentRequestId}`),
 }

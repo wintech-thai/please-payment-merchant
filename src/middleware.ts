@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
 const AUTH_ONLY_PUBLIC_PATHS = ['/login']
-const ALWAYS_PUBLIC_PATHS = ['/forgot-password', '/user-signup-confirm']
+const ALWAYS_PUBLIC_PATHS = ['/forgot-password', '/user-signup-confirm', '/payin-slip-upload']
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
