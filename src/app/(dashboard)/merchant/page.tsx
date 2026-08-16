@@ -30,6 +30,7 @@ interface MerchantData {
   currentPayinDailyTxCount?: number | null
   status?: string
   discardCent?: boolean | null
+  payinExpireMinute?: number | null
   currentBalance?: number | null
   currentBalanceDecimal?: number | null
   // fallback aliases
@@ -257,6 +258,7 @@ export default function MerchantInfoPage() {
   const currentDailyAmount    = data?.currentPayinDailyTxAmount ?? null
   const currentDailyCount     = data?.currentPayinDailyTxCount ?? null
   const discardCent = data?.discardCent ?? false
+  const payinExpireMinute = data?.payinExpireMinute ?? null
 
   function handleCopy(text: string, type: 'payin' | 'payout' = 'payin') {
     navigator.clipboard.writeText(text).then(() => {
@@ -375,6 +377,12 @@ export default function MerchantInfoPage() {
                     <span className="text-xs text-gray-400">{mi.fieldDiscardCentHint}</span>
                   </div>
                 </div>
+                <ReadonlyField
+                  label={mi.fieldPayinExpireMinute}
+                  value={payinExpireMinute != null ? payinExpireMinute : '—'}
+                  suffix={payinExpireMinute != null ? mi.minuteSuffix : undefined}
+                  icon={<Zap className="w-3 h-3" />}
+                />
               </div>
 
               <div className="space-y-5">
