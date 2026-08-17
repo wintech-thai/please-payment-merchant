@@ -429,15 +429,15 @@ export default function PayOutRequestDetailPage() {
             <SectionHeader>{tr.sectionPartialPayouts}</SectionHeader>
 
             {detail.totalPayOutPaidAmountDecimal != null && detail.totalPayOutPaidAmountDecimal > 0 && (
-              <div className="flex gap-6 mb-4">
-                <div>
-                  <p className="text-xs text-gray-400">{tr.fieldTotalPaid}</p>
-                  <p className="text-sm font-bold text-emerald-600 tabular-nums">{formatAmount(detail.totalPayOutPaidAmountDecimal)}</p>
+              <div className="flex flex-wrap gap-3 mb-5">
+                <div className="px-4 py-2.5 bg-emerald-50 border border-emerald-200 rounded-xl">
+                  <p className="text-[10px] text-emerald-600 font-bold uppercase tracking-wide mb-0.5">{tr.fieldTotalPaid}</p>
+                  <p className="text-base font-bold text-emerald-700 tabular-nums">{formatAmount(detail.totalPayOutPaidAmountDecimal)}</p>
                 </div>
                 {detail.totalPayOutPendingPaidAmountDecimal != null && detail.totalPayOutPendingPaidAmountDecimal > 0 && (
-                  <div>
-                    <p className="text-xs text-gray-400">{tr.fieldTotalPending}</p>
-                    <p className="text-sm font-bold text-amber-600 tabular-nums">{formatAmount(detail.totalPayOutPendingPaidAmountDecimal)}</p>
+                  <div className="px-4 py-2.5 bg-amber-50 border border-amber-200 rounded-xl">
+                    <p className="text-[10px] text-amber-600 font-bold uppercase tracking-wide mb-0.5">{tr.fieldTotalPending}</p>
+                    <p className="text-base font-bold text-amber-700 tabular-nums">{formatAmount(detail.totalPayOutPendingPaidAmountDecimal)}</p>
                   </div>
                 )}
               </div>
@@ -464,15 +464,22 @@ export default function PayOutRequestDetailPage() {
                           {p.status ? (
                             <div className="flex flex-col gap-0.5 w-fit">
                               <span className={clsx(
-                                'px-2 py-0.5 text-xs font-semibold rounded-full ring-1',
+                                'inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold rounded-full ring-1',
                                 p.status.toLowerCase() === 'paid' || p.status.toLowerCase() === 'approved'
                                   ? 'bg-emerald-50 text-emerald-700 ring-emerald-200'
                                   : p.status.toLowerCase() === 'rejected'
                                     ? 'bg-red-50 text-red-700 ring-red-200'
                                     : 'bg-amber-50 text-amber-700 ring-amber-200'
-                              )}>{p.status}</span>
+                              )}>
+                                {(p.status.toLowerCase() === 'paid' || p.status.toLowerCase() === 'approved')
+                                  ? <CheckCircle className="w-3 h-3" />
+                                  : p.status.toLowerCase() === 'pending'
+                                    ? <Clock className="w-3 h-3" />
+                                    : <AlertCircle className="w-3 h-3" />}
+                                {p.status}
+                              </span>
                               {p.status.toLowerCase() === 'pending' && p.txDate && (
-                                <span className="text-[10px] text-gray-400">{formatAge(p.txDate)}</span>
+                                <span className="text-[10px] text-amber-500 font-medium pl-0.5">{formatAge(p.txDate)}</span>
                               )}
                             </div>
                           ) : '—'}

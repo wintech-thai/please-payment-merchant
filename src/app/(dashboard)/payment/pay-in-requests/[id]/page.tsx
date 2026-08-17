@@ -181,16 +181,22 @@ function SlipViewerModal({
   initialIndex,
   orgId,
   paymentRequestId,
+  destBankCode,
   destAccountName,
   destAccountNo,
+  destAccountType,
+  destPromptPayId,
   onClose,
 }: {
   slips: SlipItem[]
   initialIndex: number
   orgId?: string | null
   paymentRequestId: string
+  destBankCode?: string | null
   destAccountName?: string | null
   destAccountNo?: string | null
+  destAccountType?: string | null
+  destPromptPayId?: string | null
   onClose: () => void
 }) {
   const { t } = useLang()
@@ -239,7 +245,7 @@ function SlipViewerModal({
         <div className="flex-none mx-5 mb-1 rounded-lg bg-red-600/90 px-4 py-2.5 flex items-start gap-2" onClick={e => e.stopPropagation()}>
           <TriangleAlert className="w-4 h-4 text-white flex-shrink-0 mt-0.5" />
           <div className="text-xs text-white">
-            <span className="font-semibold">{tr.slipDupFound}</span>
+            <span className="font-semibold">{tr.slipDupFound} ({dupIds.length})</span>
             {dupIds.map(docId => (
               <span key={docId} className="block mt-0.5 opacity-90">
                 {tr.slipDupViewRequest}{' '}
@@ -259,24 +265,34 @@ function SlipViewerModal({
       )}
 
       {/* Slip metadata */}
-      {(slip?.first4 || slip?.last4 || slip?.note || destAccountName) && (
-        <div className="flex-none mx-5 mb-1 flex flex-wrap gap-4 px-4 py-2 bg-black/40 rounded-lg" onClick={e => e.stopPropagation()}>
+      {(slip?.first4 || slip?.last4 || slip?.note || destAccountName || destAccountNo || destPromptPayId) && (
+        <div className="flex-none mx-5 mb-1 flex flex-wrap gap-3 px-4 py-3 bg-black/40 rounded-xl" onClick={e => e.stopPropagation()}>
           {(slip?.first4 || slip?.last4) && (
-            <div>
-              <p className="text-[10px] text-white/50 uppercase tracking-wide">{tr.slipRefLabel}</p>
-              <p className="text-sm font-mono text-white">{slip.first4} — {slip.last4}</p>
+            <div className="bg-white/10 rounded-lg px-3 py-2 min-w-[120px]">
+              <p className="text-[9px] text-white/50 uppercase tracking-widest mb-1">{tr.slipRefLabel}</p>
+              <p className="text-sm font-mono font-bold text-yellow-300 tracking-wider">{slip.first4} — {slip.last4}</p>
             </div>
           )}
-          {destAccountName && (
-            <div>
-              <p className="text-[10px] text-white/50 uppercase tracking-wide">{tr.slipDestAccount}</p>
-              <p className="text-sm text-white">{destAccountName}{destAccountNo ? ` · ${destAccountNo}` : ''}</p>
+          {(destBankCode || destAccountName || destAccountNo || destPromptPayId) && (
+            <div className="bg-teal-900/60 border border-teal-500/40 rounded-lg px-3 py-2 min-w-[160px]">
+              <p className="text-[9px] text-teal-300/70 uppercase tracking-widest mb-1.5">{tr.slipDestAccount}</p>
+              {destBankCode && (
+                <span className="inline-block mb-1 px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-teal-500 text-white uppercase tracking-wide">{destBankCode}</span>
+              )}
+              {destAccountNo && <p className="text-sm font-mono font-bold text-white leading-tight">{destAccountNo}</p>}
+              {destAccountName && <p className="text-xs text-teal-100 font-medium mt-0.5">{destAccountName}</p>}
+              {destPromptPayId && (
+                <div className="flex items-center gap-1.5 mt-1">
+                  <span className="text-[9px] font-bold text-teal-400 uppercase tracking-wide">PromptPay</span>
+                  <span className="text-xs font-mono font-bold text-yellow-300">{destPromptPayId}</span>
+                </div>
+              )}
             </div>
           )}
           {slip?.note && (
-            <div>
-              <p className="text-[10px] text-white/50 uppercase tracking-wide">{tr.slipNoteLabel}</p>
-              <p className="text-sm text-white">{slip.note}</p>
+            <div className="bg-white/10 rounded-lg px-3 py-2 min-w-[100px]">
+              <p className="text-[9px] text-white/50 uppercase tracking-widest mb-1">{tr.slipNoteLabel}</p>
+              <p className="text-sm text-white font-medium">{slip.note}</p>
             </div>
           )}
         </div>
@@ -538,8 +554,11 @@ export default function PayInRequestDetailPage() {
           initialIndex={slipViewerIndex}
           orgId={data?.orgId}
           paymentRequestId={id}
+          destBankCode={data?.payinBankCode}
           destAccountName={data?.payinBankAccountName}
           destAccountNo={data?.payinBankAccountNo}
+          destAccountType={data?.payinAccountType}
+          destPromptPayId={data?.payinPromptPayId}
           onClose={() => setShowSlipViewer(false)}
         />
       )}
