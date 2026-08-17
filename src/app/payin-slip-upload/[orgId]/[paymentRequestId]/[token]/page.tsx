@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, Suspense } from 'react'
 import { useParams } from 'next/navigation'
-import { Loader2, Upload, CheckCircle2, AlertCircle, ImageIcon, X, RefreshCw } from 'lucide-react'
+import { Loader2, Upload, CheckCircle2, AlertCircle, ImageIcon, X, RefreshCw, TriangleAlert } from 'lucide-react'
 import NavbarClean from '@/components/NavbarClean'
 import { LanguageProvider, useLang } from '@/context/LanguageContext'
 
@@ -34,7 +34,16 @@ async function compressImage(file: File, maxWidth = 1200, quality = 0.82): Promi
   })
 }
 
-type PageState = 'verifying' | 'invalid' | 'ready' | 'uploading' | 'success' | 'error'
+interface DupRecord {
+  documentId?: string | null
+  orgId?: string | null
+  dupType?: string | null
+  first4?: string | null
+  last4?: string | null
+  createdAt?: string | null
+}
+
+type PageState = 'verifying' | 'invalid' | 'ready' | 'checking_dup' | 'dup_warning' | 'uploading' | 'success' | 'error'
 
 function SlipUploadContent() {
   const params = useParams()
@@ -48,6 +57,10 @@ function SlipUploadContent() {
   const [errorMsg, setErrorMsg] = useState('')
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [first4, setFirst4] = useState('')
+  const [last4, setLast4] = useState('')
+  const [note, setNote] = useState('')
+  const [dupRecords, setDupRecords] = useState<DupRecord[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -82,7 +95,7 @@ function SlipUploadContent() {
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
-  const handleUpload = async () => {
+  const doUpload = async () => {
     if (!selectedFile) return
     setPageState('uploading')
     try {
@@ -92,7 +105,12 @@ function SlipUploadContent() {
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ImageBase64: base64 }),
+          body: JSON.stringify({
+            ImageBase64: base64,
+            First4: first4.trim().toUpperCase() || null,
+            Last4: last4.trim().toUpperCase() || null,
+            Note: note.trim() || null,
+          }),
         }
       )
       const data = await res.json()
@@ -108,6 +126,32 @@ function SlipUploadContent() {
     }
   }
 
+  const handleUpload = async () => {
+    if (!selectedFile) return
+    const f4 = first4.trim().toUpperCase()
+    const l4 = last4.trim().toUpperCase()
+
+    if (f4.length === 4 && l4.length === 4) {
+      setPageState('checking_dup')
+      try {
+        const res = await fetch(
+          `/api/proxy/api/PaymentRequest/org/${orgId}/action/CheckPayInSlipDup/${paymentRequestId}/${f4}/${l4}`
+        )
+        const data = await res.json()
+        const dups: DupRecord[] = data?.Duplicates ?? data?.duplicates ?? []
+        if (dups.length > 0) {
+          setDupRecords(dups)
+          setPageState('dup_warning')
+          return
+        }
+      } catch {
+        // dup check failed silently — proceed with upload
+      }
+    }
+
+    await doUpload()
+  }
+
   const gradientStyle = {
     background: 'linear-gradient(135deg, rgb(var(--color-primary-900)) 0%, rgb(var(--color-primary-800)) 40%, rgb(var(--color-primary-500)) 100%)',
   }
@@ -115,6 +159,8 @@ function SlipUploadContent() {
   const btnGradientStyle = {
     background: 'linear-gradient(135deg, rgb(var(--color-primary-700)) 0%, rgb(var(--color-primary-500)) 100%)',
   }
+
+  const isReady = pageState === 'ready' || pageState === 'checking_dup'
 
   return (
     <>
@@ -156,7 +202,7 @@ function SlipUploadContent() {
                 </div>
               )}
 
-              {(pageState === 'ready' || pageState === 'uploading') && (
+              {(isReady || pageState === 'uploading') && (
                 <div className="space-y-5">
                   <p className="text-sm text-gray-600 text-center">{m.selectPrompt}</p>
 
@@ -200,17 +246,62 @@ function SlipUploadContent() {
                     onChange={handleFileChange}
                   />
 
+                  {/* Slip reference 4+4 boxes */}
+                  <div>
+                    <p className="text-xs font-semibold text-gray-500 mb-2">{m.slipIdLabel}</p>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        maxLength={4}
+                        value={first4}
+                        onChange={e => setFirst4(e.target.value.replace(/[^A-Za-z0-9]/g, '').toUpperCase())}
+                        placeholder={m.first4Placeholder}
+                        className="flex-1 border border-gray-200 rounded-lg px-3 py-2.5 text-sm font-mono text-center tracking-widest uppercase bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+                      />
+                      <span className="text-gray-400 font-bold text-lg select-none">—</span>
+                      <input
+                        type="text"
+                        maxLength={4}
+                        value={last4}
+                        onChange={e => setLast4(e.target.value.replace(/[^A-Za-z0-9]/g, '').toUpperCase())}
+                        placeholder={m.last4Placeholder}
+                        className="flex-1 border border-gray-200 rounded-lg px-3 py-2.5 text-sm font-mono text-center tracking-widest uppercase bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+                      />
+                    </div>
+                    <div className="flex justify-between mt-1 px-0.5">
+                      <p className="text-[10px] text-gray-400">{m.first4Label}</p>
+                      <p className="text-[10px] text-gray-400">{m.last4Label}</p>
+                    </div>
+                  </div>
+
+                  {/* Note field */}
+                  <div>
+                    <label className="text-xs font-semibold text-gray-500 block mb-1.5">{m.noteLabel}</label>
+                    <textarea
+                      value={note}
+                      onChange={e => setNote(e.target.value)}
+                      placeholder={m.notePlaceholder}
+                      rows={2}
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent resize-none"
+                    />
+                  </div>
+
                   <button
                     type="button"
                     onClick={handleUpload}
-                    disabled={!selectedFile || pageState === 'uploading'}
+                    disabled={!selectedFile || pageState === 'uploading' || pageState === 'checking_dup'}
                     className="w-full py-3 rounded-xl font-semibold text-sm text-white transition-opacity disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                    style={selectedFile && pageState !== 'uploading' ? btnGradientStyle : { background: 'rgb(156 163 175)' }}
+                    style={selectedFile && isReady ? btnGradientStyle : { background: 'rgb(156 163 175)' }}
                   >
                     {pageState === 'uploading' ? (
                       <>
                         <Loader2 className="w-4 h-4 animate-spin" />
                         {m.uploading}
+                      </>
+                    ) : pageState === 'checking_dup' ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        {m.checkingDup}
                       </>
                     ) : (
                       <>
@@ -219,6 +310,48 @@ function SlipUploadContent() {
                       </>
                     )}
                   </button>
+                </div>
+              )}
+
+              {pageState === 'dup_warning' && (
+                <div className="space-y-4">
+                  <div className="rounded-xl border border-red-200 bg-red-50 p-4">
+                    <div className="flex items-start gap-3">
+                      <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <TriangleAlert className="w-4 h-4 text-red-500" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-red-700 mb-0.5">{m.dupWarningTitle}</p>
+                        <p className="text-xs text-red-600 mb-3">{m.dupWarningDesc}</p>
+                        <div className="space-y-1.5">
+                          {dupRecords.map((d, i) => (
+                            <div key={i} className="text-xs text-red-600">
+                              <span className="font-medium">{m.dupViewRequest}</span>{' '}
+                              <span className="font-mono bg-red-100 px-1.5 py-0.5 rounded text-red-700">{d.documentId}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setPageState('ready')}
+                      className="flex-1 py-3 rounded-xl font-semibold text-sm text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors"
+                    >
+                      {m.cancelBtn}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={doUpload}
+                      className="flex-1 py-3 rounded-xl font-semibold text-sm text-white flex items-center justify-center gap-2"
+                      style={btnGradientStyle}
+                    >
+                      <Upload className="w-4 h-4" />
+                      {m.uploadAnywayBtn}
+                    </button>
+                  </div>
                 </div>
               )}
 

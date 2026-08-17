@@ -15,6 +15,17 @@ function formatAmount(n?: number | null): string {
   return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
+function formatAge(d?: string | null): string {
+  if (!d) return ''
+  const diffMs = Date.now() - new Date(d).getTime()
+  if (diffMs < 0) return ''
+  const totalMin = Math.floor(diffMs / 60_000)
+  const hours = Math.floor(totalMin / 60)
+  const mins = totalMin % 60
+  if (hours === 0) return `${mins}min`
+  return `${hours}h ${mins}min`
+}
+
 function formatDateTime(d?: string | null) {
   if (!d) return '—'
   try {
@@ -451,14 +462,19 @@ export default function PayOutRequestDetailPage() {
                         <td className="px-3 py-2.5 text-right font-semibold tabular-nums text-gray-800">{formatAmount(p.partialAmount)}</td>
                         <td className="px-3 py-2.5">
                           {p.status ? (
-                            <span className={clsx(
-                              'px-2 py-0.5 text-xs font-semibold rounded-full ring-1',
-                              p.status.toLowerCase() === 'paid' || p.status.toLowerCase() === 'approved'
-                                ? 'bg-emerald-50 text-emerald-700 ring-emerald-200'
-                                : p.status.toLowerCase() === 'rejected'
-                                  ? 'bg-red-50 text-red-700 ring-red-200'
-                                  : 'bg-amber-50 text-amber-700 ring-amber-200'
-                            )}>{p.status}</span>
+                            <div className="flex flex-col gap-0.5 w-fit">
+                              <span className={clsx(
+                                'px-2 py-0.5 text-xs font-semibold rounded-full ring-1',
+                                p.status.toLowerCase() === 'paid' || p.status.toLowerCase() === 'approved'
+                                  ? 'bg-emerald-50 text-emerald-700 ring-emerald-200'
+                                  : p.status.toLowerCase() === 'rejected'
+                                    ? 'bg-red-50 text-red-700 ring-red-200'
+                                    : 'bg-amber-50 text-amber-700 ring-amber-200'
+                              )}>{p.status}</span>
+                              {p.status.toLowerCase() === 'pending' && p.txDate && (
+                                <span className="text-[10px] text-gray-400">{formatAge(p.txDate)}</span>
+                              )}
+                            </div>
                           ) : '—'}
                         </td>
                       </tr>
