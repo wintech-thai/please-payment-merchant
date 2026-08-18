@@ -165,8 +165,8 @@ function SlipUploadContent() {
   return (
     <>
       <NavbarClean />
-      <div className="min-h-[calc(100vh-4rem)] bg-gray-50 flex items-start justify-center px-4 py-8">
-        <div className="w-full max-w-md">
+      <div className="min-h-[calc(100vh-4rem)] bg-gray-50 px-4 py-8 overflow-x-hidden">
+        <div className="w-full max-w-md mx-auto">
           <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
 
             {/* Header */}

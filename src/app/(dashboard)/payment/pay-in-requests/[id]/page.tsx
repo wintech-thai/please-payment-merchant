@@ -264,64 +264,70 @@ function SlipViewerModal({
         </div>
       )}
 
-      {/* Slip metadata */}
-      {(slip?.first4 || slip?.last4 || slip?.note || destAccountName || destAccountNo || destPromptPayId) && (
-        <div className="flex-none mx-5 mb-1 flex flex-wrap gap-3 px-4 py-3 bg-black/40 rounded-xl" onClick={e => e.stopPropagation()}>
-          {(slip?.first4 || slip?.last4) && (
-            <div className="bg-white/10 rounded-lg px-3 py-2 min-w-[120px]">
-              <p className="text-[9px] text-white/50 uppercase tracking-widest mb-1">{tr.slipRefLabel}</p>
-              <p className="text-sm font-mono font-bold text-yellow-300 tracking-wider">{slip.first4} — {slip.last4}</p>
-            </div>
-          )}
-          {(destBankCode || destAccountName || destAccountNo || destPromptPayId) && (
-            <div className="bg-teal-900/60 border border-teal-500/40 rounded-lg px-3 py-2 min-w-[160px]">
-              <p className="text-[9px] text-teal-300/70 uppercase tracking-widest mb-1.5">{tr.slipDestAccount}</p>
-              {destBankCode && (
-                <span className="inline-block mb-1 px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-teal-500 text-white uppercase tracking-wide">{destBankCode}</span>
-              )}
-              {destAccountNo && <p className="text-sm font-mono font-bold text-white leading-tight">{destAccountNo}</p>}
-              {destAccountName && <p className="text-xs text-teal-100 font-medium mt-0.5">{destAccountName}</p>}
-              {destPromptPayId && (
-                <div className="flex items-center gap-1.5 mt-1">
-                  <span className="text-[9px] font-bold text-teal-400 uppercase tracking-wide">PromptPay</span>
-                  <span className="text-xs font-mono font-bold text-yellow-300">{destPromptPayId}</span>
-                </div>
-              )}
-            </div>
-          )}
-          {slip?.note && (
-            <div className="bg-white/10 rounded-lg px-3 py-2 min-w-[100px]">
-              <p className="text-[9px] text-white/50 uppercase tracking-widest mb-1">{tr.slipNoteLabel}</p>
-              <p className="text-sm text-white font-medium">{slip.note}</p>
-            </div>
-          )}
-        </div>
-      )}
+      {/* Image + left metadata panel */}
+      <div className="flex-1 flex items-stretch gap-0 min-h-0" onClick={e => e.stopPropagation()}>
 
-      <div className="flex-1 flex items-center gap-4 px-4 min-h-0" onClick={e => e.stopPropagation()}>
-        <button
-          onClick={() => setIdx(i => Math.max(0, i - 1))}
-          disabled={idx <= 0}
-          className="flex-shrink-0 w-10 h-10 rounded-full bg-white/20 hover:bg-white/40 flex items-center justify-center text-white disabled:opacity-30 transition-colors"
-        >
-          <ChevronLeft className="w-5 h-5" />
-        </button>
-        <div className="flex-1 flex items-center justify-center min-h-0">
-          {slip?.imageBase64 && (
-            <img
-              src={`data:${mimeFromBase64(slip.imageBase64)};base64,${slip.imageBase64}`}
-              alt={`สลิป ${idx + 1}`}
-              className="max-h-[calc(100vh-200px)] max-w-full rounded-xl shadow-2xl object-contain"
-            />
-          )}
+        {/* Left metadata panel */}
+        {(slip?.first4 || slip?.last4 || slip?.note || destBankCode || destAccountName || destAccountNo || destPromptPayId) && (
+          <div className="flex-none w-52 flex flex-col gap-3 px-4 py-4 overflow-y-auto">
+            {(destBankCode || destAccountName || destAccountNo || destPromptPayId) && (
+              <div className="bg-teal-900/60 border border-teal-500/40 rounded-xl px-3 py-3">
+                <p className="text-[9px] text-teal-300/70 uppercase tracking-widest mb-2">{tr.slipDestAccount}</p>
+                {destBankCode && (
+                  <span className="inline-block mb-1.5 px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-teal-500 text-white uppercase tracking-wide">{destBankCode}</span>
+                )}
+                {destAccountNo && <p className="text-sm font-mono font-bold text-white leading-tight">{destAccountNo}</p>}
+                {destAccountName && <p className="text-xs text-teal-100 font-medium mt-1">{destAccountName}</p>}
+                {destPromptPayId && (
+                  <div className="mt-2 pt-2 border-t border-teal-700/50">
+                    <p className="text-[9px] font-bold text-teal-400 uppercase tracking-wide mb-0.5">PromptPay</p>
+                    <p className="text-xs font-mono font-bold text-yellow-300">{destPromptPayId}</p>
+                  </div>
+                )}
+              </div>
+            )}
+            {(slip?.first4 || slip?.last4) && (
+              <div className="bg-white/10 rounded-xl px-3 py-3">
+                <p className="text-[9px] text-white/50 uppercase tracking-widest mb-1.5">{tr.slipRefLabel}</p>
+                <p className="text-sm font-mono font-bold text-yellow-300 tracking-wider">{slip.first4} — {slip.last4}</p>
+              </div>
+            )}
+            {slip?.note && (
+              <div className="bg-white/10 rounded-xl px-3 py-3">
+                <p className="text-[9px] text-white/50 uppercase tracking-widest mb-1.5">{tr.slipNoteLabel}</p>
+                <p className="text-sm text-white font-medium leading-snug">{slip.note}</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Nav + image */}
+        <div className="flex-1 flex items-center gap-4 px-4 min-h-0">
+          <button
+            onClick={() => setIdx(i => Math.max(0, i - 1))}
+            disabled={idx <= 0}
+            className="flex-shrink-0 w-10 h-10 rounded-full bg-white/20 hover:bg-white/40 flex items-center justify-center text-white disabled:opacity-30 transition-colors"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          <div className="flex-1 flex items-center justify-center min-h-0">
+            {slip?.imageBase64 && (
+              <img
+                src={`data:${mimeFromBase64(slip.imageBase64)};base64,${slip.imageBase64}`}
+                alt={`สลิป ${idx + 1}`}
+                className="max-h-[calc(100vh-160px)] max-w-full rounded-xl shadow-2xl object-contain"
+              />
+            )}
+          </div>
+          <button
+            onClick={() => setIdx(i => Math.min(slips.length - 1, i + 1))}
+            disabled={idx >= slips.length - 1}
+            className="flex-shrink-0 w-10 h-10 rounded-full bg-white/20 hover:bg-white/40 flex items-center justify-center text-white disabled:opacity-30 transition-colors"
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
         </div>
-        <button
-          onClick={() => setIdx(i => Math.min(slips.length - 1, i + 1))}
-          disabled={idx >= slips.length - 1}
-          className="flex-shrink-0 w-10 h-10 rounded-full bg-white/20 hover:bg-white/40 flex items-center justify-center text-white disabled:opacity-30 transition-colors"
-        >
-          <ChevronRight className="w-5 h-5" />
-        </button>
+
       </div>
     </div>
   )
