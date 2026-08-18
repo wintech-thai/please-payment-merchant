@@ -8,7 +8,7 @@ import { paymentRequestApi } from '@/lib/api/payment-request.api'
 import { useLang } from '@/context/LanguageContext'
 import { toast } from 'sonner'
 import clsx from 'clsx'
-import { Loader2, Copy, Check, Store, CreditCard, Webhook, Wallet, ChevronLeft, ChevronRight, ExternalLink, Mail, Phone, Hash, User, Activity, Percent, TrendingUp, TrendingDown, ArrowDownCircle, ArrowUpCircle, Zap, Globe } from 'lucide-react'
+import { Loader2, Copy, Check, Store, CreditCard, Webhook, Wallet, ChevronLeft, ChevronRight, Mail, Phone, Hash, User, Activity, Percent, TrendingUp, TrendingDown, ArrowDownCircle, ArrowUpCircle, Zap, Globe, ExternalLink } from 'lucide-react'
 
 interface MerchantData {
   // from GetMerchants (admin MerchantItem field names)
@@ -162,6 +162,35 @@ function processPaymentUrl(raw: string): string {
   return raw.replace('<PAYMENT-REQUEST-SERVICE>', apiDomain)
 }
 
+function EndpointRow({ ep, copyLabel, copiedLabel, isLast, isSelected, onClick }: { ep: { name: string; value: string }; copyLabel: string; copiedLabel: string; isLast: boolean; isSelected: boolean; onClick: () => void }) {
+  const [copied, setCopied] = useState(false)
+  const handleCopy = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    navigator.clipboard.writeText(ep.value).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    })
+  }
+  return (
+    <tr onClick={onClick} className={clsx('transition-colors cursor-pointer', isSelected ? 'bg-primary-50' : 'bg-white hover:bg-gray-50')}>
+      <td className={clsx('px-4 py-3 text-xs font-semibold whitespace-nowrap', isSelected ? 'text-primary-700' : 'text-gray-700', !isLast && 'border-b border-gray-100')}>{ep.name}</td>
+      <td className={clsx('px-4 py-3 text-xs font-mono break-all', isSelected ? 'text-primary-600' : 'text-gray-500', !isLast && 'border-b border-gray-100')}>{ep.value}</td>
+      <td className={clsx('px-4 py-3', !isLast && 'border-b border-gray-100')}>
+        <button
+          onClick={handleCopy}
+          className={clsx(
+            'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors',
+            copied ? 'bg-green-100 text-green-700' : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
+          )}
+        >
+          {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+          {copied ? copiedLabel : copyLabel}
+        </button>
+      </td>
+    </tr>
+  )
+}
+
 type Tab = 'info' | 'endpoint' | 'webhooks' | 'wallet'
 
 export default function MerchantInfoPage() {
@@ -169,14 +198,12 @@ export default function MerchantInfoPage() {
   const mi = t.merchantInfo
   const [activeTab, setActiveTab] = useState<Tab>('info')
   const [data, setData] = useState<MerchantData | null>(null)
-  const [endpointUrl, setEndpointUrl] = useState('')
-  const [payOutEndpointUrl, setPayOutEndpointUrl] = useState('')
-  const [copiedPayOut, setCopiedPayOut] = useState(false)
+  const [paymentEndpoints, setPaymentEndpoints] = useState<Array<{ name: string; value: string }>>([])
+  const [selectedEndpointIdx, setSelectedEndpointIdx] = useState<number | null>(null)
   const [webhooksData, setWebhooksData] = useState<any[]>([])
   const [walletData, setWalletData] = useState<any | null>(null)
   const [walletTxs, setWalletTxs] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [copied, setCopied] = useState(false)
   const [walletPage, setWalletPage] = useState(1)
   const [walletPageSize, setWalletPageSize] = useState(25)
   const [highlightedTxIdx, setHighlightedTxIdx] = useState<number | null>(null)
@@ -188,10 +215,9 @@ export default function MerchantInfoPage() {
     const load = async () => {
       try {
         // Call all merchant endpoints in parallel — backend resolves merchantId from current user
-        const [detailRes, endpointRes, payOutEndpointRes, webhooksRes, walletRes] = await Promise.allSettled([
+        const [detailRes, endpointsRes, webhooksRes, walletRes] = await Promise.allSettled([
           userApi.getMyMerchantInfo(),
-          userApi.getMerchantPaymentEndpoint(),
-          userApi.getMerchantPayOutEndpoint(),
+          userApi.getMerchantPaymentEndpoints(),
           userApi.getMerchantWebhooks(),
           userApi.getMerchantWallet(),
         ])
@@ -201,16 +227,10 @@ export default function MerchantInfoPage() {
         const detail = d?.merchant ?? d?.merchantInfo ?? d?.data ?? d
         if (detail) setData(detail)
 
-        if (endpointRes.status === 'fulfilled') {
-          const d = endpointRes.value.data as any
-          const raw = d?.paymentRequestEndpointUrl ?? d?.url ?? d?.endpointUrl ?? d?.paymentRequestUrl ?? ''
-          setEndpointUrl(raw ? processPaymentUrl(raw) : '')
-        }
-
-        if (payOutEndpointRes.status === 'fulfilled') {
-          const d = payOutEndpointRes.value.data as any
-          const raw = d?.paymentRequestUrl ?? d?.payOutEndpointUrl ?? d?.payoutEndpointUrl ?? d?.paymentRequestEndpointUrl ?? d?.url ?? d?.endpointUrl ?? ''
-          setPayOutEndpointUrl(raw ? processPaymentUrl(raw) : '')
+        if (endpointsRes.status === 'fulfilled') {
+          const d = endpointsRes.value.data as any
+          const list: Array<{ name: string; value: string }> = Array.isArray(d) ? d : (Array.isArray(d?.endpoints) ? d.endpoints : [])
+          setPaymentEndpoints(list.map(ep => ({ name: ep.name, value: processPaymentUrl(ep.value) })))
         }
 
         if (webhooksRes.status === 'fulfilled') {
@@ -259,18 +279,6 @@ export default function MerchantInfoPage() {
   const currentDailyCount     = data?.currentPayinDailyTxCount ?? null
   const discardCent = data?.discardCent ?? false
   const payinExpireMinute = data?.payinExpireMinute ?? null
-
-  function handleCopy(text: string, type: 'payin' | 'payout' = 'payin') {
-    navigator.clipboard.writeText(text).then(() => {
-      if (type === 'payout') {
-        setCopiedPayOut(true)
-        setTimeout(() => setCopiedPayOut(false), 2000)
-      } else {
-        setCopied(true)
-        setTimeout(() => setCopied(false), 2000)
-      }
-    })
-  }
 
   const tabs: { key: Tab; label: string; icon: React.ReactNode; activeClass: string; iconClass: string }[] = [
     { key: 'info',     label: mi.tabInfo,     icon: <Store      className="w-4 h-4" />, activeClass: 'bg-emerald-500 text-white shadow-md shadow-emerald-200', iconClass: 'text-emerald-500' },
@@ -424,62 +432,28 @@ export default function MerchantInfoPage() {
 
           {/* ── Endpoint tab ── */}
           {activeTab === 'endpoint' && (
-            <div className="flex flex-col gap-5 max-w-2xl">
+            <div className="flex flex-col gap-5">
               <SectionHeader icon={<CreditCard className="w-3.5 h-3.5" />} color="blue">{mi.sectionEndpoint}</SectionHeader>
-
-              {/* Pay-In endpoint */}
-              <div className="rounded-xl border border-gray-200 overflow-hidden">
-                <div className="flex items-center gap-2 px-4 py-2.5 bg-emerald-50 border-b border-gray-200">
-                  <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-600 text-white uppercase tracking-wider">POST</span>
-                  <span className="text-xs font-semibold text-emerald-800">{mi.endpointLabel}</span>
+              {paymentEndpoints.length === 0 ? (
+                <p className="text-sm text-gray-400">—</p>
+              ) : (
+                <div className="overflow-x-auto rounded-xl border border-gray-200">
+                  <table className="w-full text-sm border-separate border-spacing-0">
+                    <thead>
+                      <tr className="bg-gray-50">
+                        <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200 w-48">Type</th>
+                        <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">Endpoint</th>
+                        <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200 w-24">{mi.copy}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {paymentEndpoints.map((ep, idx) => (
+                        <EndpointRow key={idx} ep={ep} copyLabel={mi.copy} copiedLabel={mi.copied} isLast={idx === paymentEndpoints.length - 1} isSelected={selectedEndpointIdx === idx} onClick={() => setSelectedEndpointIdx(prev => prev === idx ? null : idx)} />
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
-                <div className="flex items-center gap-2 px-4 py-3 bg-gray-50">
-                  {endpointUrl
-                    ? <code className="flex-1 text-xs text-gray-700 font-mono break-all">{endpointUrl}</code>
-                    : <span className="flex-1 text-xs text-gray-300 italic">—</span>}
-                  <button
-                    onClick={() => endpointUrl && handleCopy(endpointUrl, 'payin')}
-                    disabled={!endpointUrl}
-                    className={clsx(
-                      'flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors',
-                      copied ? 'bg-green-100 text-green-700'
-                      : endpointUrl ? 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
-                      : 'bg-gray-100 text-gray-300 cursor-not-allowed'
-                    )}
-                  >
-                    {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                    {copied ? mi.copied : mi.copy}
-                  </button>
-                </div>
-              </div>
-
-              {/* Pay-Out endpoint */}
-              <div className="rounded-xl border border-gray-200 overflow-hidden">
-                <div className="flex items-center gap-2 px-4 py-2.5 bg-blue-50 border-b border-gray-200">
-                  <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-blue-600 text-white uppercase tracking-wider">POST</span>
-                  <span className="text-xs font-semibold text-blue-800">{mi.endpointPayOutLabel}</span>
-                </div>
-                <div className="flex items-center gap-2 px-4 py-3 bg-gray-50">
-                  {payOutEndpointUrl
-                    ? <code className="flex-1 text-xs text-gray-700 font-mono break-all">{payOutEndpointUrl}</code>
-                    : <span className="flex-1 text-xs text-gray-300 italic">—</span>}
-                  <button
-                    onClick={() => payOutEndpointUrl && handleCopy(payOutEndpointUrl, 'payout')}
-                    disabled={!payOutEndpointUrl}
-                    className={clsx(
-                      'flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors',
-                      copiedPayOut ? 'bg-green-100 text-green-700'
-                      : payOutEndpointUrl ? 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
-                      : 'bg-gray-100 text-gray-300 cursor-not-allowed'
-                    )}
-                  >
-                    {copiedPayOut ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                    {copiedPayOut ? mi.copied : mi.copy}
-                  </button>
-                </div>
-              </div>
-
-              {/* API Documentation link */}
+              )}
               <div>
                 <a
                   href={typeof window !== 'undefined' ? `https://${window.location.hostname.replace(/^merchant/, 'admin')}/documents/endpoints` : '#'}
