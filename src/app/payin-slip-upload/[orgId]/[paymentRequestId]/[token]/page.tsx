@@ -249,26 +249,26 @@ function SlipUploadContent() {
                   {/* Slip reference 4+4 boxes */}
                   <div>
                     <p className="text-xs font-semibold text-gray-500 mb-2">{m.slipIdLabel}</p>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 w-full">
                       <input
                         type="text"
                         maxLength={4}
                         value={first4}
                         onChange={e => setFirst4(e.target.value.replace(/[^A-Za-z0-9]/g, '').toUpperCase())}
                         placeholder={m.first4Placeholder}
-                        className="flex-1 border border-gray-200 rounded-lg px-3 py-2.5 text-sm font-mono text-center tracking-widest uppercase bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+                        className="min-w-0 flex-1 border border-gray-200 rounded-lg px-3 py-2.5 text-sm font-mono text-center tracking-widest uppercase bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent"
                       />
-                      <span className="text-gray-400 font-bold text-lg select-none">—</span>
+                      <span className="text-gray-400 font-bold text-lg select-none flex-shrink-0">—</span>
                       <input
                         type="text"
                         maxLength={4}
                         value={last4}
                         onChange={e => setLast4(e.target.value.replace(/[^A-Za-z0-9]/g, '').toUpperCase())}
                         placeholder={m.last4Placeholder}
-                        className="flex-1 border border-gray-200 rounded-lg px-3 py-2.5 text-sm font-mono text-center tracking-widest uppercase bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+                        className="min-w-0 flex-1 border border-gray-200 rounded-lg px-3 py-2.5 text-sm font-mono text-center tracking-widest uppercase bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent"
                       />
                     </div>
-                    <div className="flex justify-between mt-1 px-0.5">
+                    <div className="flex justify-between mt-1">
                       <p className="text-[10px] text-gray-400">{m.first4Label}</p>
                       <p className="text-[10px] text-gray-400">{m.last4Label}</p>
                     </div>
