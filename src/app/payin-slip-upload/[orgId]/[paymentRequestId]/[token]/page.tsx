@@ -256,7 +256,7 @@ function SlipUploadContent() {
                         value={first4}
                         onChange={e => setFirst4(e.target.value.replace(/[^A-Za-z0-9]/g, '').toUpperCase())}
                         placeholder={m.first4Placeholder}
-                        className="min-w-0 flex-1 border border-gray-200 rounded-lg px-3 py-2.5 text-sm font-mono text-center tracking-widest uppercase bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+                        className="min-w-0 flex-1 border border-gray-200 rounded-lg px-3 py-2.5 text-sm font-sans text-center tracking-widest uppercase bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent"
                       />
                       <span className="text-gray-400 font-bold text-lg select-none flex-shrink-0">—</span>
                       <input
@@ -265,7 +265,7 @@ function SlipUploadContent() {
                         value={last4}
                         onChange={e => setLast4(e.target.value.replace(/[^A-Za-z0-9]/g, '').toUpperCase())}
                         placeholder={m.last4Placeholder}
-                        className="min-w-0 flex-1 border border-gray-200 rounded-lg px-3 py-2.5 text-sm font-mono text-center tracking-widest uppercase bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+                        className="min-w-0 flex-1 border border-gray-200 rounded-lg px-3 py-2.5 text-sm font-sans text-center tracking-widest uppercase bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent"
                       />
                     </div>
                     <div className="flex justify-between mt-1">
@@ -282,7 +282,7 @@ function SlipUploadContent() {
                       onChange={e => setNote(e.target.value)}
                       placeholder={m.notePlaceholder}
                       rows={2}
-                      className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent resize-none"
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent resize-none font-sans"
                     />
                   </div>
 
