@@ -411,6 +411,7 @@ export interface PayInRequestDetail extends PayInRequestItem {
   direction?: string | null
   jobId?: string | null
   slipUploadUrl?: string | null
+  expireDate?: string | null
 }
 
 export interface GetPayInRequestsPayload {

@@ -576,7 +576,14 @@ export default function PayInRequestDetailPage() {
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 px-7 py-6">
         <SectionHeader>{tr.sectionGeneral}</SectionHeader>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-          <InfoRow label={tr.fieldCreated}>{formatDateTime(data?.createdDate)}</InfoRow>
+          <InfoRow label={tr.fieldCreated}>
+            <div className="flex items-center gap-3 flex-wrap">
+              <span>{formatDateTime(data?.createdDate)}</span>
+              {data?.expireDate && (
+                <span className="text-xs text-gray-400">{tr.fieldExpireDate}: {formatDateTime(data?.expireDate)}</span>
+              )}
+            </div>
+          </InfoRow>
           <InfoRow label={tr.fieldStatus}>
             <StatusBadge status={data?.status} createdDate={data?.createdDate} payinIsPeerToPeer={data?.payinIsPeerToPeer} />
             {(data?.status?.toLowerCase() === 'paid' || data?.status?.toLowerCase() === 'approved') && data?.paymentTxId && (
