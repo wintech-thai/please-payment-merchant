@@ -40,34 +40,37 @@ function SlipViewerModal({ slips, destBankCode, destAccountNo, destAccountName, 
       </div>
       <div className="flex-1 flex items-stretch min-h-0" onClick={e => e.stopPropagation()}>
         {hasSidebar && (
-          <div className="flex-none w-52 flex flex-col gap-3 px-4 py-4 overflow-y-auto">
-            {(destBankCode || destAccountNo || destAccountName || destPromptPayId) && (
-              <div className="bg-teal-900/60 border border-teal-500/40 rounded-xl px-3 py-3">
-                <p className="text-[9px] text-teal-300/70 uppercase tracking-widest mb-2">{m.slipDestAccount}</p>
-                {destBankCode && <span className="inline-block mb-1.5 px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-teal-500 text-white uppercase tracking-wide">{destBankCode}</span>}
-                {destAccountNo && <p className="text-sm font-mono font-bold text-white leading-tight">{destAccountNo}</p>}
-                {destAccountName && <p className="text-xs text-teal-100 font-medium mt-1">{destAccountName}</p>}
-                {destPromptPayId && (
-                  <div className="mt-2 pt-2 border-t border-teal-700/50">
-                    <p className="text-[9px] font-bold text-teal-400 uppercase tracking-wide mb-0.5">PromptPay</p>
-                    <p className="text-xs font-mono text-white">{destPromptPayId}</p>
-                  </div>
-                )}
-              </div>
-            )}
-            {(slip?.first4 || slip?.last4) && (
-              <div className="bg-white/10 rounded-xl px-3 py-3">
-                <p className="text-[9px] text-white/50 uppercase tracking-widest mb-2">{m.slipRefLabel}</p>
-                {slip.first4 && <p className="text-xs font-mono text-white">{slip.first4}</p>}
-                {slip.last4 && <p className="text-xs font-mono text-white">{slip.last4}</p>}
-              </div>
-            )}
-            {slip?.note && (
-              <div className="bg-white/10 rounded-xl px-3 py-3">
-                <p className="text-[9px] text-white/50 uppercase tracking-widest mb-1">{m.slipNoteLabel}</p>
-                <p className="text-xs text-white/80 leading-relaxed">{slip.note}</p>
-              </div>
-            )}
+          <div className="flex-none w-52 flex flex-col px-4 py-4 overflow-y-auto">
+            <div className="flex flex-col gap-3">
+              {(destBankCode || destAccountNo || destAccountName || destPromptPayId) && (
+                <div className="bg-teal-900/60 border border-teal-500/40 rounded-xl px-3 py-3">
+                  <p className="text-[9px] text-teal-300/70 uppercase tracking-widest mb-2">{m.slipDestAccount}</p>
+                  {destBankCode && <span className="inline-block mb-1.5 px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-teal-500 text-white uppercase tracking-wide">{destBankCode}</span>}
+                  {destAccountNo && <p className="text-sm font-mono font-bold text-white leading-tight">{destAccountNo}</p>}
+                  {destAccountName && <p className="text-xs text-teal-100 font-medium mt-1">{destAccountName}</p>}
+                  {destPromptPayId && (
+                    <div className="mt-2 pt-2 border-t border-teal-700/50">
+                      <p className="text-[9px] font-bold text-teal-400 uppercase tracking-wide mb-0.5">PromptPay</p>
+                      <p className="text-xs font-mono text-white">{destPromptPayId}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+            <div className="mt-auto flex flex-col gap-3 pt-3">
+              {(slip?.first4 || slip?.last4) && (
+                <div className="bg-white/10 rounded-xl px-3 py-3">
+                  <p className="text-[9px] text-white/50 uppercase tracking-widest mb-1.5">{m.slipRefLabel}</p>
+                  <p className="text-sm font-mono font-bold text-yellow-300 tracking-wider">{slip.first4} — {slip.last4}</p>
+                </div>
+              )}
+              {slip?.note && (
+                <div className="bg-white/10 rounded-xl px-3 py-3">
+                  <p className="text-[9px] text-white/50 uppercase tracking-widest mb-1.5">{m.slipNoteLabel}</p>
+                  <p className="text-sm text-white font-medium leading-snug">{slip.note}</p>
+                </div>
+              )}
+            </div>
           </div>
         )}
         <div className="flex-1 flex items-center min-h-0">
