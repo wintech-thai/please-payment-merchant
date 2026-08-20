@@ -733,17 +733,16 @@ export interface GetPayInDocumentsPayload {
   toDate?: string
 }
 
-export interface GetPresignedUrlPayload {
-  MimeType: string
-}
-
 export interface AddPayInDocumentPayload {
-  UploadedFilePath: string
+  ImageBase64: string
   MimeType: string
   TxAmountDecimal: number
   PayInBankAccountId: string
   MerchantId: string
   RefId: string
+  Direction?: string
+  DocumentType?: string
+  Currency?: string
 }
 
 export interface UpdatePayInDocumentPayload {

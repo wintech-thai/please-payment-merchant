@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { client } from '@/lib/axios'
+import { paymentSlipApi } from '@/lib/api/payment-slip.api'
 import { bankAccountApi } from '@/lib/api/bank-account.api'
 import type { BankAccountItem } from '@/lib/api/types'
 import { useLang } from '@/context/LanguageContext'
@@ -427,10 +427,9 @@ export default function UploadPayInSlipPage() {
     setSaving(true)
     try {
       const mimeType = file.type || 'image/jpeg'
-      const base = `/api/PaymentDocument/org/${selectedOrgId}/action`
       const imageBase64 = await compressImageToBase64(file)
 
-      await client.post(`${base}/AddPaymentDocument`, {
+      await paymentSlipApi.addPayInDocument({
         ImageBase64: imageBase64,
         MimeType: mimeType,
         TxAmountDecimal: parseFloat(amount),
