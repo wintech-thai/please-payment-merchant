@@ -182,7 +182,7 @@ export default function PayInRequestsPage() {
     setSlipViewerIdx(0)
     setSlipViewerSlips([])
     setSlipViewerLoading(true)
-    paymentRequestApi.getPayInSlipUploads('', item.id)
+    paymentRequestApi.getPayInSlipUploads(item.id)
       .then(r => {
         const d = r.data as any
         const list: any[] = Array.isArray(d) ? d : (d?.slips ?? d?.Slips ?? [])
