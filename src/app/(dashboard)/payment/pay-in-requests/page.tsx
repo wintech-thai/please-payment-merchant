@@ -416,9 +416,14 @@ export default function PayInRequestsPage() {
                   {(slipViewerTarget.payinBankCode || slipViewerTarget.payinBankAccountName || slipViewerTarget.payinBankAccountNo || slipViewerTarget.payinPromptPayId) && (
                     <div className="bg-teal-900/60 border border-teal-500/40 rounded-xl px-3 py-3">
                       <p className="text-[9px] text-teal-300/70 uppercase tracking-widest mb-2">Destination</p>
-                      {slipViewerTarget.payinBankCode && (
-                        <span className="inline-block mb-1.5 px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-teal-500 text-white uppercase tracking-wide">{slipViewerTarget.payinBankCode}</span>
-                      )}
+                      <div className="flex items-center gap-1.5 mb-1.5">
+                        {slipViewerTarget.payinBankCode && (
+                          <span className="px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-teal-500 text-white uppercase tracking-wide">{slipViewerTarget.payinBankCode}</span>
+                        )}
+                        {slipViewerTarget.payinIsPeerToPeer && (
+                          <span className="px-1.5 py-0.5 rounded-md text-[9px] font-extrabold bg-purple-500/80 text-white uppercase tracking-wide">P2P</span>
+                        )}
+                      </div>
                       {slipViewerTarget.payinBankAccountNo && <p className="text-sm font-mono font-bold text-white leading-tight">{slipViewerTarget.payinBankAccountNo}</p>}
                       {slipViewerTarget.payinBankAccountName && <p className="text-xs text-teal-100 font-medium mt-1">{slipViewerTarget.payinBankAccountName}</p>}
                       {slipViewerTarget.payinPromptPayId && (
