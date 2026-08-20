@@ -1294,6 +1294,10 @@ export const translations = {
       toastFailedToLoadBanks: 'โหลดบัญชีธนาคารไม่สำเร็จ',
       toastFailedToLoadMerchant: 'โหลดข้อมูลร้านค้าไม่สำเร็จ',
       noSourceAccounts: 'ไม่พบบัญชีธนาคาร',
+      slipViewerTitle: 'สลิปที่อัปโหลด',
+      slipRefLabel: 'เลขอ้างอิง',
+      slipNoteLabel: 'หมายเหตุ',
+      slipDestAccount: 'บัญชีปลายทาง',
       // Create page
       createTitle: 'เพิ่ม Pay-Out Request',
       createSubtitle: 'สร้างคำขอโอนเงินออกใหม่',
@@ -2858,6 +2862,10 @@ export const translations = {
       fieldJobParamName: 'Name',
       fieldJobParamValue: 'Value',
       noJobData: 'No job data',
+      slipViewerTitle: 'Uploaded Slips',
+      slipRefLabel: 'Reference',
+      slipNoteLabel: 'Note',
+      slipDestAccount: 'Destination Account',
     },
     merchantInfo: {
       pageTitle: 'Merchant Info',
