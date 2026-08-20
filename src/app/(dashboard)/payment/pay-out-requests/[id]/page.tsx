@@ -12,12 +12,13 @@ import clsx from 'clsx'
 
 type SlipItem = { imageBase64: string; uploadedAt: string; note?: string | null; first4?: string | null; last4?: string | null }
 
-function SlipViewerModal({ slips, destBankCode, destAccountNo, destAccountName, destPromptPayId, onClose }: {
+function SlipViewerModal({ slips, destBankCode, destAccountNo, destAccountName, destPromptPayId, isPeerToPeer, onClose }: {
   slips: SlipItem[]
   destBankCode?: string | null
   destAccountNo?: string | null
   destAccountName?: string | null
   destPromptPayId?: string | null
+  isPeerToPeer?: boolean | null
   onClose: () => void
 }) {
   const { t } = useLang()
@@ -45,7 +46,10 @@ function SlipViewerModal({ slips, destBankCode, destAccountNo, destAccountName, 
               {(destBankCode || destAccountNo || destAccountName || destPromptPayId) && (
                 <div className="bg-teal-900/60 border border-teal-500/40 rounded-xl px-3 py-3">
                   <p className="text-[9px] text-teal-300/70 uppercase tracking-widest mb-2">{m.slipDestAccount}</p>
-                  {destBankCode && <span className="inline-block mb-1.5 px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-teal-500 text-white uppercase tracking-wide">{destBankCode}</span>}
+                  <div className="flex items-center gap-1.5 mb-1.5">
+                    {destBankCode && <span className="px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-teal-500 text-white uppercase tracking-wide">{destBankCode}</span>}
+                    {isPeerToPeer && <span className="px-1.5 py-0.5 rounded-md text-[9px] font-extrabold bg-purple-500/80 text-white uppercase tracking-wide">P2P</span>}
+                  </div>
                   {destAccountNo && <p className="text-sm font-mono font-bold text-white leading-tight">{destAccountNo}</p>}
                   {destAccountName && <p className="text-xs text-teal-100 font-medium mt-1">{destAccountName}</p>}
                   {destPromptPayId && (
@@ -360,6 +364,7 @@ export default function PayOutRequestDetailPage() {
           destAccountNo={detail?.isPayInBankAccountOverride ? detail.payinBankAccountNoOverride : detail?.payinBankAccountNo}
           destAccountName={detail?.isPayInBankAccountOverride ? detail.payinBankAccountNameOverride : detail?.payinBankAccountName}
           destPromptPayId={detail?.isPayInBankAccountOverride ? detail.payinPromptPayIdOverride : detail?.payinPromptPayId}
+          isPeerToPeer={detail?.isPartialyPayout}
           onClose={() => setShowSlipViewer(false)}
         />
       )}
