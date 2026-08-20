@@ -1222,6 +1222,11 @@ export const translations = {
       verifyResultTitle: 'ผลการตรวจสอบ',
       verifyFound: 'พบรายการที่ตรงกัน',
       verifyNotFound: 'ไม่พบรายการ Pay-In Request ที่ตรงกัน',
+      sectionPaymentRequest: 'ข้อมูล Payment Request',
+      labelDestBank: 'บัญชีปลายทาง',
+      labelFromBank: 'บัญชีต้นทาง',
+      labelRequestId: 'Request ID',
+      labelTxId: 'Tx ID',
     },
     payOutRequest: {
       title: 'คำขอ Pay-Out',
@@ -2707,6 +2712,11 @@ export const translations = {
       verifyResultTitle: 'Verify Result',
       verifyFound: 'Matching request found',
       verifyNotFound: 'No matching Pay-In request found',
+      sectionPaymentRequest: 'Payment Request Info',
+      labelDestBank: 'Destination Account',
+      labelFromBank: 'From Bank',
+      labelRequestId: 'Request ID',
+      labelTxId: 'Tx ID',
     },
     payOutRequest: {
       title: 'Pay-Out Requests',

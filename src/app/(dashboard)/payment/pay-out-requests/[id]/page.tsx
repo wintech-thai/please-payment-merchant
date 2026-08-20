@@ -6,9 +6,41 @@ import { useLang } from '@/context/LanguageContext'
 import { paymentRequestApi } from '@/lib/api/payment-request.api'
 import type { PayOutRequestDetail, PartialPayoutItem, PaymentTxJob, PaymentTxJobParameter } from '@/lib/api/types'
 import { toast } from 'sonner'
-import { ChevronLeft, CheckCircle, AlertCircle, Clock, X, Copy, Check } from 'lucide-react'
+import { ChevronLeft, ChevronRight, CheckCircle, AlertCircle, Clock, X, Copy, Check, Paperclip } from 'lucide-react'
 import QRCode from 'react-qr-code'
 import clsx from 'clsx'
+
+type SlipItem = { imageBase64: string; uploadedAt: string; note?: string | null }
+
+function SlipViewerModal({ slips, onClose }: { slips: SlipItem[]; onClose: () => void }) {
+  const [idx, setIdx] = useState(0)
+  const slip = slips[idx]
+  return (
+    <div className="fixed inset-0 z-[9999] bg-black/90 flex flex-col" onClick={onClose}>
+      <div className="flex items-center justify-between px-4 py-3 flex-none" onClick={e => e.stopPropagation()}>
+        <span className="text-white text-sm font-semibold">สลิป {idx + 1} / {slips.length}</span>
+        <button onClick={onClose} className="p-2 rounded-full hover:bg-white/10 text-white transition-colors"><X className="w-5 h-5" /></button>
+      </div>
+      <div className="flex-1 flex items-center min-h-0" onClick={e => e.stopPropagation()}>
+        {slips.length > 1 && (
+          <button onClick={() => setIdx(i => Math.max(0, i - 1))} disabled={idx === 0}
+            className="p-2 m-2 rounded-full hover:bg-white/10 text-white disabled:opacity-30 transition-colors flex-shrink-0">
+            <ChevronLeft className="w-6 h-6" />
+          </button>
+        )}
+        <div className="flex-1 flex items-center justify-center min-h-0 px-2">
+          {slip && <img src={`data:image/jpeg;base64,${slip.imageBase64}`} alt={`สลิป ${idx + 1}`} className="max-h-[calc(100vh-120px)] max-w-full rounded-xl shadow-2xl object-contain" />}
+        </div>
+        {slips.length > 1 && (
+          <button onClick={() => setIdx(i => Math.min(slips.length - 1, i + 1))} disabled={idx === slips.length - 1}
+            className="p-2 m-2 rounded-full hover:bg-white/10 text-white disabled:opacity-30 transition-colors flex-shrink-0">
+            <ChevronRight className="w-6 h-6" />
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}
 
 function formatAmount(n?: number | null): string {
   if (n == null) return '—'
@@ -176,6 +208,8 @@ export default function PayOutRequestDetailPage() {
   const [job, setJob] = useState<PaymentTxJob | null>(null)
   const [loadingJob, setLoadingJob] = useState(false)
   const [showRawJson, setShowRawJson] = useState(false)
+  const [slips, setSlips] = useState<SlipItem[]>([])
+  const [showSlipViewer, setShowSlipViewer] = useState(false)
 
   const isRejected = detail?.status?.toLowerCase() === 'rejected'
 
@@ -209,6 +243,16 @@ export default function PayOutRequestDetailPage() {
     load()
   }, [id])
 
+  useEffect(() => {
+    paymentRequestApi.getPayOutSlipUploads(id)
+      .then(res => {
+        const d = res.data as any
+        const list: any[] = Array.isArray(d) ? d : (d?.slips ?? d?.Slips ?? [])
+        setSlips(list.map(s => ({ imageBase64: s.imageBase64 ?? s.ImageBase64 ?? '', uploadedAt: s.uploadedAt ?? s.UploadedAt ?? '', note: s.note ?? null })))
+      })
+      .catch(() => {})
+  }, [id])
+
   const msg1Lines = (job?.jobMessage ?? '').split('\n').filter(l => l.trim())
   const msg2Lines = (job?.jobMessage2 ?? '').split('\n').filter(l => l.trim())
 
@@ -239,6 +283,15 @@ export default function PayOutRequestDetailPage() {
           <h1 className="text-2xl font-bold text-gray-900">{tr.detailTitle}</h1>
           <p className="text-sm text-gray-500 mt-0.5">{id}</p>
         </div>
+        {slips.length > 0 && (
+          <button
+            onClick={() => setShowSlipViewer(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors"
+          >
+            <Paperclip className="w-3.5 h-3.5" />
+            Slips ({slips.length})
+          </button>
+        )}
         {detail && (
           <button onClick={() => setShowRawJson(true)} className="px-2 py-1 text-[11px] font-mono font-semibold text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-md border border-gray-200 transition-colors">
             {'{ }'}
@@ -247,6 +300,7 @@ export default function PayOutRequestDetailPage() {
       </div>
 
       {showRawJson && <RawJsonModal data={detail} onClose={() => setShowRawJson(false)} />}
+      {showSlipViewer && slips.length > 0 && <SlipViewerModal slips={slips} onClose={() => setShowSlipViewer(false)} />}
 
       <div className="flex-1 overflow-y-auto flex flex-col gap-4 pb-2 custom-scrollbar">
 
@@ -368,22 +422,33 @@ export default function PayOutRequestDetailPage() {
               const paidAmt = detail?.totalPayOutPaidAmountDecimal ?? 0
               const useP2P = detail?.isPartialyPayout && detail?.qrCodeP2P
               const rawQr = useP2P ? detail!.qrCodeP2P! : (detail?.qrCodeImage ?? detail?.qrCode ?? null)
-              if (!rawQr) return null
-              const isImage = rawQr.startsWith('data:') || rawQr.startsWith('iVBOR') || rawQr.startsWith('/9j/')
+              const qrAvailable = detail?.isQrAvailable !== false
+              if (!rawQr && qrAvailable) return null
+              const isImage = rawQr ? (rawQr.startsWith('data:') || rawQr.startsWith('iVBOR') || rawQr.startsWith('/9j/')) : false
               return (
                 <div className="flex-shrink-0 flex flex-col items-center gap-2 pt-1">
                   <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide self-start">
                     {useP2P ? 'QR P2P' : 'QR Code'}
                   </p>
-                  {isImage ? (
-                    <img
-                      src={rawQr.startsWith('data:') ? rawQr : `data:image/png;base64,${rawQr}`}
-                      alt="QR Code"
-                      className="w-56 h-56 rounded-lg border border-gray-200 p-1 bg-white"
-                    />
+                  {rawQr && qrAvailable ? (
+                    isImage ? (
+                      <img
+                        src={rawQr.startsWith('data:') ? rawQr : `data:image/png;base64,${rawQr}`}
+                        alt="QR Code"
+                        className="w-56 h-56 rounded-lg border border-gray-200 p-1 bg-white"
+                      />
+                    ) : (
+                      <div className="p-3 bg-white rounded-lg border border-gray-200 inline-block">
+                        <QRCode value={rawQr} size={200} />
+                      </div>
+                    )
                   ) : (
-                    <div className="p-3 bg-white rounded-lg border border-gray-200 inline-block">
-                      <QRCode value={rawQr} size={200} />
+                    <div className="w-56 h-56 rounded-lg border border-dashed border-gray-300 bg-gray-50 flex flex-col items-center justify-center gap-2 text-center p-4">
+                      <svg className="w-10 h-10 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 4a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm10 0a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V4zM3 14a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H4a1 1 0 01-1-1v-4z" />
+                      </svg>
+                      <p className="text-xs text-gray-400 font-medium">QR ยังไม่พร้อม</p>
+                      <p className="text-[10px] text-gray-400">โอนด้วยเลขบัญชีที่แสดง</p>
                     </div>
                   )}
                   {useP2P && paidAmt > 0 && detail?.payOutTotalAmountDecimalP2P != null && (

@@ -31,12 +31,25 @@ async function getTesseractWorker() {
   return _tesseractWorkerLoading
 }
 
-function buildStorageUrl(presignedUrl: string): string {
-  const origin = typeof window !== 'undefined' ? window.location.origin : ''
-  const isLocalhost = /localhost|127\.0\.0\.1/.test(origin)
-  const base = isLocalhost ? (process.env.NEXT_PUBLIC_API_URL ?? '') : origin
-  const storageBase = base.replace(/^(https?:\/\/)[^.]+\./, '$1storage-api.')
-  return presignedUrl.replace('<STORAGE-API-BASE>', storageBase)
+async function compressImageToBase64(file: File, maxWidth = 1200, quality = 0.82): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = e => {
+      const img = new Image()
+      img.onload = () => {
+        const canvas = document.createElement('canvas')
+        let w = img.width, h = img.height
+        if (w > maxWidth) { h = Math.round(h * maxWidth / w); w = maxWidth }
+        canvas.width = w; canvas.height = h
+        canvas.getContext('2d')!.drawImage(img, 0, 0, w, h)
+        resolve(canvas.toDataURL('image/jpeg', quality).split(',')[1])
+      }
+      img.onerror = reject
+      img.src = e.target?.result as string
+    }
+    reader.onerror = reject
+    reader.readAsDataURL(file)
+  })
 }
 
 async function decodeQrFromImage(file: File): Promise<string | null> {
@@ -415,27 +428,10 @@ export default function UploadPayInSlipPage() {
     try {
       const mimeType = file.type || 'image/jpeg'
       const base = `/api/PaymentDocument/org/${selectedOrgId}/action`
-
-      const presignedRes = await client.post<{ presignedUrl: string; filePath: string }>(
-        `${base}/GetPresignedUrl`,
-        { MimeType: mimeType }
-      )
-      const presignedData = presignedRes.data as any
-      const rawPresignedUrl: string = presignedData?.presignedUrl ?? ''
-      const filePath: string = presignedData?.filePath ?? presignedData?.objectName ?? ''
-
-      if (!rawPresignedUrl || !filePath) throw new Error('Invalid presigned URL response')
-
-      const uploadUrl = buildStorageUrl(rawPresignedUrl)
-      const uploadRes = await fetch(uploadUrl, {
-        method: 'PUT',
-        headers: { 'Content-Type': mimeType },
-        body: file,
-      })
-      if (!uploadRes.ok) throw new Error(`Upload failed: ${uploadRes.status}`)
+      const imageBase64 = await compressImageToBase64(file)
 
       await client.post(`${base}/AddPaymentDocument`, {
-        UploadedFilePath: filePath,
+        ImageBase64: imageBase64,
         MimeType: mimeType,
         TxAmountDecimal: parseFloat(amount),
         PayInBankAccountId: bankAccountId,

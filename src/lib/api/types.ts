@@ -716,6 +716,8 @@ export interface PayInSlipItem {
   mimeType?: string | null
   documentType?: string | null
   previewUrl?: string | null
+  imageBase64?: string | null
+  isPeerToPeer?: boolean | null
   createdDate?: string | null
 }
 
@@ -825,6 +827,11 @@ export interface PayOutRequestItem {
   totalPayOutPaidAmountDecimal?: number | null
   totalPayOutPendingPaidAmountDecimal?: number | null
   payOutTotalAmountDecimalP2P?: number | null
+  payOutSlipUploadCount?: number | null
+  isQrAvailable?: boolean | null
+  qrCodeImage?: string | null
+  qrCode?: string | null
+  qrCodeP2P?: string | null
 }
 
 export interface PartialPayoutItem {

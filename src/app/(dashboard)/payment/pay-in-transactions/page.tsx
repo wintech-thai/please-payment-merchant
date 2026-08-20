@@ -97,7 +97,7 @@ function StatusBadge({ status, createdDate, paymentRequestId, statusReason, txIs
           {txIsPeerToPeer && <span className={clsx('px-1.5 py-0.5 rounded-full text-[10px] font-bold ring-1', isRejected ? 'bg-red-50 text-red-700 ring-red-200' : 'bg-amber-50 text-amber-700 ring-amber-200')}>P2P</span>}
         </div>
         {age && <span className="text-[10px] text-gray-400 ml-1">{age}</span>}
-        {isRejected && statusReason && (
+        {statusReason && (
           <span className="text-[10px] text-red-500 ml-1 max-w-[160px] truncate" title={statusReason}>{statusReason}</span>
         )}
       </div>

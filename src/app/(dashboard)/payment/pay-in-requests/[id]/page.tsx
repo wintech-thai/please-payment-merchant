@@ -538,7 +538,7 @@ export default function PayInRequestDetailPage() {
             {loadingSlips ? '...' : `${tr.slipViewBtn} (${slips.length})`}
           </button>
         )}
-        {data && isPending && (
+        {data && (
           <button
             onClick={() => setShowSlipLink(true)}
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-primary-700 bg-primary-50 hover:bg-primary-100 border border-primary-200 rounded-lg transition-colors"
@@ -634,9 +634,9 @@ export default function PayInRequestDetailPage() {
               </span>
             </InfoRow>
           )}
-          {data?.status?.toLowerCase() === 'rejected' && data?.statusReason && (
+          {(data?.status?.toLowerCase() === 'rejected' || data?.status?.toLowerCase() === 'approved') && data?.statusReason && (
             <InfoRow label={tr.fieldStatusReason ?? 'Reason'}>
-              <span className="text-red-600 font-medium">{data.statusReason}</span>
+              <span className={data?.status?.toLowerCase() === 'approved' ? 'text-emerald-600 font-medium' : 'text-red-600 font-medium'}>{data.statusReason}</span>
             </InfoRow>
           )}
         </div>
