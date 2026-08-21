@@ -186,6 +186,8 @@ function SlipViewerModal({
   destAccountNo,
   destAccountType,
   destPromptPayId,
+  isPeerToPeer,
+  generatedAmount,
   onClose,
 }: {
   slips: SlipItem[]
@@ -197,6 +199,8 @@ function SlipViewerModal({
   destAccountNo?: string | null
   destAccountType?: string | null
   destPromptPayId?: string | null
+  isPeerToPeer?: boolean | null
+  generatedAmount?: number | null
   onClose: () => void
 }) {
   const { t } = useLang()
@@ -269,35 +273,50 @@ function SlipViewerModal({
 
         {/* Left metadata panel */}
         {(slip?.first4 || slip?.last4 || slip?.note || destBankCode || destAccountName || destAccountNo || destPromptPayId) && (
-          <div className="flex-none w-52 flex flex-col gap-3 px-4 py-4 overflow-y-auto">
-            {(destBankCode || destAccountName || destAccountNo || destPromptPayId) && (
-              <div className="bg-teal-900/60 border border-teal-500/40 rounded-xl px-3 py-3">
-                <p className="text-[9px] text-teal-300/70 uppercase tracking-widest mb-2">{tr.slipDestAccount}</p>
-                {destBankCode && (
-                  <span className="inline-block mb-1.5 px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-teal-500 text-white uppercase tracking-wide">{destBankCode}</span>
-                )}
-                {destAccountNo && <p className="text-sm font-mono font-bold text-white leading-tight">{destAccountNo}</p>}
-                {destAccountName && <p className="text-xs text-teal-100 font-medium mt-1">{destAccountName}</p>}
-                {destPromptPayId && (
-                  <div className="mt-2 pt-2 border-t border-teal-700/50">
-                    <p className="text-[9px] font-bold text-teal-400 uppercase tracking-wide mb-0.5">PromptPay</p>
-                    <p className="text-xs font-mono font-bold text-yellow-300">{destPromptPayId}</p>
+          <div className="flex-none w-52 flex flex-col px-4 py-4 overflow-y-auto">
+            <div className="flex flex-col gap-3">
+              {(destBankCode || destAccountName || destAccountNo || destPromptPayId) && (
+                <div className="bg-teal-900/60 border border-teal-500/40 rounded-xl px-3 py-3">
+                  <p className="text-[9px] text-teal-300/70 uppercase tracking-widest mb-2">{tr.slipDestAccount}</p>
+                  <div className="flex items-center gap-1.5 mb-1.5">
+                    {destBankCode && (
+                      <span className="px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-teal-500 text-white uppercase tracking-wide">{destBankCode}</span>
+                    )}
+                    {isPeerToPeer && (
+                      <span className="px-1.5 py-0.5 rounded-md text-[9px] font-extrabold bg-purple-500/80 text-white uppercase tracking-wide">P2P</span>
+                    )}
                   </div>
-                )}
+                  {destAccountNo && <p className="text-sm font-mono font-bold text-white leading-tight">{destAccountNo}</p>}
+                  {destAccountName && <p className="text-xs text-teal-100 font-medium mt-1">{destAccountName}</p>}
+                  {destPromptPayId && (
+                    <div className="mt-2 pt-2 border-t border-teal-700/50">
+                      <p className="text-[9px] font-bold text-teal-400 uppercase tracking-wide mb-0.5">PromptPay</p>
+                      <p className="text-xs font-mono font-bold text-yellow-300">{destPromptPayId}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+            {generatedAmount != null && (
+              <div className="mt-3 bg-amber-500/20 border border-amber-400/30 rounded-xl px-3 py-3">
+                <p className="text-[9px] text-amber-300/80 uppercase tracking-widest mb-1">{tr.slipAmount}</p>
+                <p className="text-base font-bold text-amber-300 tabular-nums">{Number(generatedAmount).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
               </div>
             )}
-            {(slip?.first4 || slip?.last4) && (
-              <div className="bg-white/10 rounded-xl px-3 py-3">
-                <p className="text-[9px] text-white/50 uppercase tracking-widest mb-1.5">{tr.slipRefLabel}</p>
-                <p className="text-sm font-mono font-bold text-yellow-300 tracking-wider">{slip.first4} — {slip.last4}</p>
-              </div>
-            )}
-            {slip?.note && (
-              <div className="bg-white/10 rounded-xl px-3 py-3">
-                <p className="text-[9px] text-white/50 uppercase tracking-widest mb-1.5">{tr.slipNoteLabel}</p>
-                <p className="text-sm text-white font-medium leading-snug">{slip.note}</p>
-              </div>
-            )}
+            <div className="mt-auto flex flex-col gap-3 pt-3">
+              {(slip?.first4 || slip?.last4) && (
+                <div className="bg-white/10 rounded-xl px-3 py-3">
+                  <p className="text-[9px] text-white/50 uppercase tracking-widest mb-1.5">{tr.slipRefLabel}</p>
+                  <p className="text-sm font-mono font-bold text-yellow-300 tracking-wider">{slip.first4} — {slip.last4}</p>
+                </div>
+              )}
+              {slip?.note && (
+                <div className="bg-white/10 rounded-xl px-3 py-3">
+                  <p className="text-[9px] text-white/50 uppercase tracking-widest mb-1.5">{tr.slipNoteLabel}</p>
+                  <p className="text-sm text-white font-medium leading-snug">{slip.note}</p>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
@@ -538,7 +557,7 @@ export default function PayInRequestDetailPage() {
             {loadingSlips ? '...' : `${tr.slipViewBtn} (${slips.length})`}
           </button>
         )}
-        {data && isPending && (
+        {data && (
           <button
             onClick={() => setShowSlipLink(true)}
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-primary-700 bg-primary-50 hover:bg-primary-100 border border-primary-200 rounded-lg transition-colors"
@@ -565,6 +584,8 @@ export default function PayInRequestDetailPage() {
           destAccountNo={data?.payinBankAccountNo}
           destAccountType={data?.payinAccountType}
           destPromptPayId={data?.payinPromptPayId}
+          isPeerToPeer={data?.payinIsPeerToPeer}
+          generatedAmount={data?.generatedAmount}
           onClose={() => setShowSlipViewer(false)}
         />
       )}
@@ -576,7 +597,14 @@ export default function PayInRequestDetailPage() {
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 px-7 py-6">
         <SectionHeader>{tr.sectionGeneral}</SectionHeader>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-          <InfoRow label={tr.fieldCreated}>{formatDateTime(data?.createdDate)}</InfoRow>
+          <InfoRow label={tr.fieldCreated}>
+            <div className="flex items-center gap-3 flex-wrap">
+              <span>{formatDateTime(data?.createdDate)}</span>
+              {data?.expireDate && (
+                <span className="text-xs text-gray-400">{tr.fieldExpireDate}: {formatDateTime(data?.expireDate)}</span>
+              )}
+            </div>
+          </InfoRow>
           <InfoRow label={tr.fieldStatus}>
             <StatusBadge status={data?.status} createdDate={data?.createdDate} payinIsPeerToPeer={data?.payinIsPeerToPeer} />
             {(data?.status?.toLowerCase() === 'paid' || data?.status?.toLowerCase() === 'approved') && data?.paymentTxId && (
@@ -627,9 +655,9 @@ export default function PayInRequestDetailPage() {
               </span>
             </InfoRow>
           )}
-          {data?.status?.toLowerCase() === 'rejected' && data?.statusReason && (
+          {(data?.status?.toLowerCase() === 'rejected' || data?.status?.toLowerCase() === 'approved') && data?.statusReason && (
             <InfoRow label={tr.fieldStatusReason ?? 'Reason'}>
-              <span className="text-red-600 font-medium">{data.statusReason}</span>
+              <span className={data?.status?.toLowerCase() === 'approved' ? 'text-emerald-600 font-medium' : 'text-red-600 font-medium'}>{data.statusReason}</span>
             </InfoRow>
           )}
         </div>

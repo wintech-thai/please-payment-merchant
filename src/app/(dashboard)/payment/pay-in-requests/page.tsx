@@ -7,7 +7,7 @@ import { useLang } from '@/context/LanguageContext'
 import { paymentRequestApi } from '@/lib/api/payment-request.api'
 import type { PayInRequestItem } from '@/lib/api/types'
 import { toast } from 'sonner'
-import { Loader2, ChevronLeft, ChevronRight, Search, ExternalLink, RefreshCw, Paperclip } from 'lucide-react'
+import { Loader2, ChevronLeft, ChevronRight, Search, ExternalLink, RefreshCw, Paperclip, X } from 'lucide-react'
 import clsx from 'clsx'
 import { AdvancedTimeRangeSelector, type TimeRangeValue } from '@/components/AdvancedTimeRangeSelector'
 
@@ -120,6 +120,10 @@ export default function PayInRequestsPage() {
   const [highlightedId, setHighlightedId] = useState<string>(() =>
     typeof window !== 'undefined' ? sessionStorage.getItem(HIGHLIGHTED_KEY) ?? '' : ''
   )
+  const [slipViewerTarget, setSlipViewerTarget] = useState<PayInRequestItem | null>(null)
+  const [slipViewerSlips, setSlipViewerSlips] = useState<{ imageBase64: string; uploadedAt: string; first4?: string | null; last4?: string | null; note?: string | null }[]>([])
+  const [slipViewerIdx, setSlipViewerIdx] = useState(0)
+  const [slipViewerLoading, setSlipViewerLoading] = useState(false)
 
   const load = useCallback(async () => {
     if (typeof window !== 'undefined') sessionStorage.setItem(FILTER_KEY, JSON.stringify({ search, status, timeRange }))
@@ -171,6 +175,27 @@ export default function PayInRequestsPage() {
   const handleTimeRangeChange = (tr: TimeRangeValue) => {
     setTimeRange(tr)
     setPage(1)
+  }
+
+  const handleOpenSlipViewer = (item: PayInRequestItem) => {
+    setSlipViewerTarget(item)
+    setSlipViewerIdx(0)
+    setSlipViewerSlips([])
+    setSlipViewerLoading(true)
+    paymentRequestApi.getPayInSlipUploads(item.id)
+      .then(r => {
+        const d = r.data as any
+        const list: any[] = Array.isArray(d) ? d : (d?.slips ?? d?.Slips ?? [])
+        setSlipViewerSlips(list.map(s => ({
+          imageBase64: s.imageBase64 ?? s.ImageBase64 ?? '',
+          uploadedAt: s.uploadedAt ?? s.UploadedAt ?? '',
+          first4: s.first4 ?? s.First4 ?? null,
+          last4: s.last4 ?? s.Last4 ?? null,
+          note: s.note ?? s.Note ?? null,
+        })).sort((a, b) => new Date(b.uploadedAt || 0).getTime() - new Date(a.uploadedAt || 0).getTime()))
+      })
+      .catch(() => {})
+      .finally(() => setSlipViewerLoading(false))
   }
 
   return (
@@ -294,10 +319,14 @@ export default function PayInRequestsPage() {
                     <div className="flex items-center gap-2 flex-wrap">
                       <StatusBadge status={item.status} createdDate={item.createdDate} payinIsPeerToPeer={item.payinIsPeerToPeer} />
                       {(item.payInSlipUploadCount ?? 0) > 0 && (
-                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 ring-1 ring-blue-200">
+                        <button
+                          type="button"
+                          onClick={e => { e.stopPropagation(); handleOpenSlipViewer(item) }}
+                          className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 ring-1 ring-blue-200 hover:bg-blue-100 transition-colors"
+                        >
                           <Paperclip className="w-3 h-3" />
                           {item.payInSlipUploadCount}
-                        </span>
+                        </button>
                       )}
                     </div>
                     {(item.status?.toLowerCase() === 'paid' || item.status?.toLowerCase() === 'approved') && item.paymentTxId && (
@@ -311,6 +340,11 @@ export default function PayInRequestsPage() {
                         <span className="truncate max-w-[130px]">{item.paymentTxId}</span>
                         <ExternalLink className="w-3 h-3 flex-shrink-0" />
                       </a>
+                    )}
+                    {item.status?.toLowerCase() === 'approved' && item.statusReason && (
+                      <span className="text-[10px] text-emerald-600 mt-0.5 max-w-[160px] truncate block" title={item.statusReason}>
+                        {item.statusReason}
+                      </span>
                     )}
                     {item.status?.toLowerCase() === 'rejected' && item.statusReason && (
                       <span className="text-[10px] text-red-500 mt-0.5 max-w-[160px] truncate block" title={item.statusReason}>
@@ -364,6 +398,95 @@ export default function PayInRequestsPage() {
           </div>
         </div>
       </div>
+
+      {/* Slip Viewer Modal */}
+      {slipViewerTarget && (
+        <div className="fixed inset-0 z-50 flex flex-col bg-black/90" onClick={() => setSlipViewerTarget(null)}>
+          <div className="flex-none flex items-center justify-between px-5 py-3" onClick={e => e.stopPropagation()}>
+            <span className="text-white text-sm font-semibold">{tr.slipViewerTitle} ({slipViewerSlips.length === 0 ? '—' : `${slipViewerIdx + 1} / ${slipViewerSlips.length}`})</span>
+            <button onClick={() => setSlipViewerTarget(null)} className="w-9 h-9 rounded-full bg-white/20 hover:bg-white/40 flex items-center justify-center text-white transition-colors">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          <div className="flex-1 flex items-stretch gap-0 min-h-0" onClick={e => e.stopPropagation()}>
+            {/* Left metadata panel */}
+            {!slipViewerLoading && slipViewerSlips.length > 0 && (
+              <div className="flex-none w-52 flex flex-col px-4 py-4 overflow-y-auto">
+                <div className="flex flex-col gap-3">
+                  {(slipViewerTarget.payinBankCode || slipViewerTarget.payinBankAccountName || slipViewerTarget.payinBankAccountNo || slipViewerTarget.payinPromptPayId) && (
+                    <div className="bg-teal-900/60 border border-teal-500/40 rounded-xl px-3 py-3">
+                      <p className="text-[9px] text-teal-300/70 uppercase tracking-widest mb-2">Destination</p>
+                      <div className="flex items-center gap-1.5 mb-1.5">
+                        {slipViewerTarget.payinBankCode && (
+                          <span className="px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-teal-500 text-white uppercase tracking-wide">{slipViewerTarget.payinBankCode}</span>
+                        )}
+                        {slipViewerTarget.payinIsPeerToPeer && (
+                          <span className="px-1.5 py-0.5 rounded-md text-[9px] font-extrabold bg-purple-500/80 text-white uppercase tracking-wide">P2P</span>
+                        )}
+                      </div>
+                      {slipViewerTarget.payinBankAccountNo && <p className="text-sm font-mono font-bold text-white leading-tight">{slipViewerTarget.payinBankAccountNo}</p>}
+                      {slipViewerTarget.payinBankAccountName && <p className="text-xs text-teal-100 font-medium mt-1">{slipViewerTarget.payinBankAccountName}</p>}
+                      {slipViewerTarget.payinPromptPayId && (
+                        <div className="mt-2 pt-2 border-t border-teal-700/50">
+                          <p className="text-[9px] font-bold text-teal-400 uppercase tracking-wide mb-0.5">PromptPay</p>
+                          <p className="text-xs font-mono font-bold text-yellow-300">{slipViewerTarget.payinPromptPayId}</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+                {slipViewerTarget.generatedAmount != null && (
+                  <div className="mt-3 bg-amber-500/20 border border-amber-400/30 rounded-xl px-3 py-3">
+                    <p className="text-[9px] text-amber-300/80 uppercase tracking-widest mb-1">{tr.slipAmount}</p>
+                    <p className="text-base font-bold text-amber-300 tabular-nums">{Number(slipViewerTarget.generatedAmount).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                  </div>
+                )}
+                <div className="mt-auto flex flex-col gap-3 pt-3">
+                  {(slipViewerSlips[slipViewerIdx]?.first4 || slipViewerSlips[slipViewerIdx]?.last4) && (
+                    <div className="bg-white/10 rounded-xl px-3 py-3">
+                      <p className="text-[9px] text-white/50 uppercase tracking-widest mb-1.5">Ref</p>
+                      <p className="text-sm font-mono font-bold text-yellow-300 tracking-wider">{slipViewerSlips[slipViewerIdx].first4} — {slipViewerSlips[slipViewerIdx].last4}</p>
+                    </div>
+                  )}
+                  {slipViewerSlips[slipViewerIdx]?.note && (
+                    <div className="bg-white/10 rounded-xl px-3 py-3">
+                      <p className="text-[9px] text-white/50 uppercase tracking-widest mb-1.5">Note</p>
+                      <p className="text-sm text-white font-medium leading-snug">{slipViewerSlips[slipViewerIdx].note}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Nav + image */}
+            <div className="flex-1 flex items-center gap-4 px-4 min-h-0">
+              {slipViewerLoading ? (
+                <div className="flex-1 flex items-center justify-center">
+                  <Loader2 className="w-8 h-8 animate-spin text-white/60" />
+                </div>
+              ) : slipViewerSlips.length === 0 ? (
+                <div className="flex-1 flex items-center justify-center text-white/60 text-sm">No slips</div>
+              ) : (
+                <>
+                  <button onClick={() => setSlipViewerIdx(i => Math.max(0, i - 1))} disabled={slipViewerIdx <= 0} className="flex-shrink-0 w-10 h-10 rounded-full bg-white/20 hover:bg-white/40 flex items-center justify-center text-white disabled:opacity-30 transition-colors">
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
+                  <div className="flex-1 flex items-center justify-center min-h-0">
+                    <img
+                      src={`data:image/jpeg;base64,${slipViewerSlips[slipViewerIdx]?.imageBase64}`}
+                      alt={`slip ${slipViewerIdx + 1}`}
+                      className="max-h-[calc(100vh-120px)] max-w-full rounded-xl shadow-2xl object-contain"
+                    />
+                  </div>
+                  <button onClick={() => setSlipViewerIdx(i => Math.min(slipViewerSlips.length - 1, i + 1))} disabled={slipViewerIdx >= slipViewerSlips.length - 1} className="flex-shrink-0 w-10 h-10 rounded-full bg-white/20 hover:bg-white/40 flex items-center justify-center text-white disabled:opacity-30 transition-colors">
+                    <ChevronRight className="w-5 h-5" />
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

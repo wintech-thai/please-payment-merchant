@@ -279,10 +279,14 @@ export default function PayInSlipDetailPage() {
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="p-5">
             <SectionHeader>{tr.sectionSlip}</SectionHeader>
-            {detail?.previewUrl ? (
+            {(detail?.imageBase64 || detail?.previewUrl) ? (
               <div className="rounded-xl overflow-hidden border border-gray-200">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={buildStorageUrl(detail.previewUrl)} alt={tr.previewAlt} className="w-full object-contain max-h-[600px]" />
+                <img
+                  src={detail.imageBase64 ? `data:image/jpeg;base64,${detail.imageBase64}` : buildStorageUrl(detail.previewUrl!)}
+                  alt={tr.previewAlt}
+                  className="w-full object-contain max-h-[600px]"
+                />
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center h-48 bg-gray-50 rounded-xl border border-dashed border-gray-200 gap-2">
@@ -295,13 +299,18 @@ export default function PayInSlipDetailPage() {
 
         {/* Right: Info + Editable fields */}
         <div className="space-y-5">
-          {/* Read-only info */}
+          {/* ── Upload Slip Data ── */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
             <div className="p-5">
               <SectionHeader>{tr.sectionInfo}</SectionHeader>
               <div className="grid grid-cols-2 gap-4">
                 <InfoRow label={tr.colStatus}>
-                  <StatusBadge status={detail?.status} size="sm" />
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <StatusBadge status={detail?.status} size="sm" />
+                    {detail?.isPeerToPeer && (
+                      <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold ring-1 bg-emerald-50 text-emerald-700 ring-emerald-200">P2P</span>
+                    )}
+                  </div>
                 </InfoRow>
                 <InfoRow label={tr.colMerchant}>
                   <span className="font-medium">{detail?.merchantCode ?? '—'}</span>
@@ -318,6 +327,48 @@ export default function PayInSlipDetailPage() {
               </div>
             </div>
           </div>
+
+          {/* ── Payment Request Section ── */}
+          {(detail?.paymentRequestId || detail?.payInBankCode || detail?.fromBankCode || detail?.paymentTransactionId) && (
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+              <div className="p-5">
+                <SectionHeader>
+                  <span className="w-1 h-5 bg-emerald-500 rounded-full flex-shrink-0 inline-block" />
+                  {tr.sectionPaymentRequest}
+                </SectionHeader>
+                <div className="grid grid-cols-2 gap-4">
+                  {detail?.paymentRequestId && (
+                    <InfoRow label={tr.labelRequestId}>
+                      <span className="text-xs font-mono text-gray-700 break-all">{detail.paymentRequestId}</span>
+                    </InfoRow>
+                  )}
+                  {detail?.payInBankCode && (
+                    <InfoRow label={tr.labelDestBank}>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="font-medium">{[detail.payInBankCode, detail.payInBankAccountNo].filter(Boolean).join(' · ')}</span>
+                        {detail.isPeerToPeer && (
+                          <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold ring-1 bg-purple-50 text-purple-700 ring-purple-200">P2P</span>
+                        )}
+                      </div>
+                      {detail.payInBankAccountName && <p className="text-xs text-gray-400 mt-0.5">{detail.payInBankAccountName}</p>}
+                      {detail.payInPromptPayId && <p className="text-xs text-gray-500 mt-0.5">PromptPay: {detail.payInPromptPayId}</p>}
+                    </InfoRow>
+                  )}
+                  {detail?.fromBankCode && (
+                    <InfoRow label={tr.labelFromBank}>
+                      <span className="font-medium">{[detail.fromBankCode, detail.fromBankAccountNo].filter(Boolean).join(' · ')}</span>
+                      {detail.fromBankAccountName && <p className="text-xs text-gray-400 mt-0.5">{detail.fromBankAccountName}</p>}
+                    </InfoRow>
+                  )}
+                  {detail?.paymentTransactionId && (
+                    <InfoRow label={tr.labelTxId}>
+                      <span className="text-xs font-mono text-gray-700">{detail.paymentTransactionId}</span>
+                    </InfoRow>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Editable fields */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">

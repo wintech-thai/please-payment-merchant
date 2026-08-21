@@ -411,6 +411,7 @@ export interface PayInRequestDetail extends PayInRequestItem {
   direction?: string | null
   jobId?: string | null
   slipUploadUrl?: string | null
+  expireDate?: string | null
 }
 
 export interface GetPayInRequestsPayload {
@@ -715,6 +716,8 @@ export interface PayInSlipItem {
   mimeType?: string | null
   documentType?: string | null
   previewUrl?: string | null
+  imageBase64?: string | null
+  isPeerToPeer?: boolean | null
   createdDate?: string | null
 }
 
@@ -730,17 +733,16 @@ export interface GetPayInDocumentsPayload {
   toDate?: string
 }
 
-export interface GetPresignedUrlPayload {
-  MimeType: string
-}
-
 export interface AddPayInDocumentPayload {
-  UploadedFilePath: string
+  ImageBase64: string
   MimeType: string
   TxAmountDecimal: number
   PayInBankAccountId: string
   MerchantId: string
   RefId: string
+  Direction?: string
+  DocumentType?: string
+  Currency?: string
 }
 
 export interface UpdatePayInDocumentPayload {
@@ -824,6 +826,11 @@ export interface PayOutRequestItem {
   totalPayOutPaidAmountDecimal?: number | null
   totalPayOutPendingPaidAmountDecimal?: number | null
   payOutTotalAmountDecimalP2P?: number | null
+  payOutSlipUploadCount?: number | null
+  isQrAvailable?: boolean | null
+  qrCodeImage?: string | null
+  qrCode?: string | null
+  qrCodeP2P?: string | null
 }
 
 export interface PartialPayoutItem {

@@ -7,9 +7,96 @@ import { useLang } from '@/context/LanguageContext'
 import { paymentRequestApi } from '@/lib/api/payment-request.api'
 import type { PayOutRequestItem } from '@/lib/api/types'
 import { toast } from 'sonner'
-import { Loader2, Plus, Trash2, ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react'
+import { Loader2, Plus, Trash2, ChevronLeft, ChevronRight, RefreshCw, X, Paperclip } from 'lucide-react'
 import clsx from 'clsx'
 import { AdvancedTimeRangeSelector, type TimeRangeValue } from '@/components/AdvancedTimeRangeSelector'
+
+type SlipItem = { imageBase64: string; uploadedAt: string; note?: string | null; first4?: string | null; last4?: string | null }
+
+function SlipViewerModal({ slips, item, onClose }: { slips: SlipItem[]; item: PayOutRequestItem; onClose: () => void }) {
+  const { t } = useLang()
+  const m = t.payOutRequest
+  const [idx, setIdx] = useState(0)
+  const slip = slips[idx]
+  const destBankCode = item.isPayInBankAccountOverride ? item.payinBankCodeOverride : item.payinBankCode
+  const destAccountNo = item.isPayInBankAccountOverride ? item.payinBankAccountNoOverride : item.payinBankAccountNo
+  const destAccountName = item.isPayInBankAccountOverride ? item.payinBankAccountNameOverride : item.payinBankAccountName
+  const destPromptPayId = item.isPayInBankAccountOverride ? item.payinPromptPayIdOverride : item.payinPromptPayId
+  const hasSidebar = destBankCode || destAccountNo || destAccountName || destPromptPayId || slip?.first4 || slip?.last4 || slip?.note
+  return (
+    <div className="fixed inset-0 z-[9999] bg-black/90 flex flex-col" onClick={onClose}>
+      <div className="flex items-center justify-between px-5 py-3 flex-none" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center gap-3">
+          <span className="text-white text-sm font-semibold">{m.slipViewerTitle} ({idx + 1} / {slips.length})</span>
+          {slip?.uploadedAt && (
+            <span className="text-white/60 text-xs">{new Date(slip.uploadedAt).toLocaleString('th-TH')}</span>
+          )}
+        </div>
+        <button onClick={onClose} className="w-9 h-9 rounded-full bg-white/20 hover:bg-white/40 flex items-center justify-center text-white transition-colors">
+          <X className="w-5 h-5" />
+        </button>
+      </div>
+      <div className="flex-1 flex items-stretch min-h-0" onClick={e => e.stopPropagation()}>
+        {hasSidebar && (
+          <div className="flex-none w-52 flex flex-col px-4 py-4 overflow-y-auto">
+            <div className="flex flex-col gap-3">
+              {(destBankCode || destAccountNo || destAccountName || destPromptPayId) && (
+                <div className="bg-teal-900/60 border border-teal-500/40 rounded-xl px-3 py-3">
+                  <p className="text-[9px] text-teal-300/70 uppercase tracking-widest mb-2">{m.slipDestAccount}</p>
+                  <div className="flex items-center gap-1.5 mb-1.5">
+                    {destBankCode && <span className="px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-teal-500 text-white uppercase tracking-wide">{destBankCode}</span>}
+                    {item.isPartialyPayout && <span className="px-1.5 py-0.5 rounded-md text-[9px] font-extrabold bg-purple-500/80 text-white uppercase tracking-wide">P2P</span>}
+                  </div>
+                  {destAccountNo && <p className="text-sm font-mono font-bold text-white leading-tight">{destAccountNo}</p>}
+                  {destAccountName && <p className="text-xs text-teal-100 font-medium mt-1">{destAccountName}</p>}
+                  {destPromptPayId && (
+                    <div className="mt-2 pt-2 border-t border-teal-700/50">
+                      <p className="text-[9px] font-bold text-teal-400 uppercase tracking-wide mb-0.5">PromptPay</p>
+                      <p className="text-xs font-mono font-bold text-yellow-300">{destPromptPayId}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+            {item.generatedAmount != null && (
+              <div className="mt-3 bg-amber-500/20 border border-amber-400/30 rounded-xl px-3 py-3">
+                <p className="text-[9px] text-amber-300/80 uppercase tracking-widest mb-1">{m.slipAmount}</p>
+                <p className="text-base font-bold text-amber-300 tabular-nums">{Number(item.generatedAmount).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+              </div>
+            )}
+            <div className="mt-auto flex flex-col gap-3 pt-3">
+              {(slip?.first4 || slip?.last4) && (
+                <div className="bg-white/10 rounded-xl px-3 py-3">
+                  <p className="text-[9px] text-white/50 uppercase tracking-widest mb-1.5">{m.slipRefLabel}</p>
+                  <p className="text-sm font-mono font-bold text-yellow-300 tracking-wider">{slip.first4} — {slip.last4}</p>
+                </div>
+              )}
+              {slip?.note && (
+                <div className="bg-white/10 rounded-xl px-3 py-3">
+                  <p className="text-[9px] text-white/50 uppercase tracking-widest mb-1.5">{m.slipNoteLabel}</p>
+                  <p className="text-sm text-white font-medium leading-snug">{slip.note}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+        <div className="flex-1 flex items-center gap-2 px-2 min-h-0">
+          <button onClick={() => setIdx(i => Math.max(0, i - 1))} disabled={idx === 0}
+            className="p-2 rounded-full hover:bg-white/10 text-white disabled:opacity-30 transition-colors flex-shrink-0">
+            <ChevronLeft className="w-6 h-6" />
+          </button>
+          <div className="flex-1 flex items-center justify-center min-h-0">
+            {slip && <img src={`data:image/jpeg;base64,${slip.imageBase64}`} alt={`slip ${idx + 1}`} className="max-h-[calc(100vh-120px)] max-w-full rounded-xl shadow-2xl object-contain" />}
+          </div>
+          <button onClick={() => setIdx(i => Math.min(slips.length - 1, i + 1))} disabled={idx === slips.length - 1}
+            className="p-2 rounded-full hover:bg-white/10 text-white disabled:opacity-30 transition-colors flex-shrink-0">
+            <ChevronRight className="w-6 h-6" />
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 function getTimeFilter(tr: TimeRangeValue) {
   if (tr.type === 'absolute' && tr.start && tr.end) {
@@ -110,6 +197,7 @@ export default function PayOutRequestsPage() {
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [deleteModal, setDeleteModal] = useState<{ open: boolean; item?: PayOutRequestItem }>({ open: false })
+  const [slipViewer, setSlipViewer] = useState<{ slips: SlipItem[]; item: PayOutRequestItem } | null>(null)
   const [highlightedId, setHighlightedId] = useState<string>(() =>
     typeof window !== 'undefined' ? sessionStorage.getItem(HIGHLIGHTED_KEY) ?? '' : ''
   )
@@ -342,8 +430,27 @@ export default function PayOutRequestsPage() {
                       </>
                     ) : <span className="text-gray-300">—</span>}
                   </td>
-                  <td className="px-4 py-3 border-b border-gray-100">
-                    <StatusBadge status={item.status} isPartialyPayout={item.isPartialyPayout} createdDate={item.createdDate} />
+                  <td className="px-4 py-3 border-b border-gray-100" onClick={e => e.stopPropagation()}>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <StatusBadge status={item.status} isPartialyPayout={item.isPartialyPayout} createdDate={item.createdDate} />
+                      {(item.payOutSlipUploadCount ?? 0) > 0 && (
+                        <button
+                          onClick={() => {
+                            paymentRequestApi.getPayOutSlipUploads(item.id)
+                              .then(res => {
+                                const d = res.data as any
+                                const list: any[] = Array.isArray(d) ? d : (d?.slips ?? d?.Slips ?? [])
+                                setSlipViewer({ item, slips: list.map(s => ({ imageBase64: s.imageBase64 ?? s.ImageBase64 ?? '', uploadedAt: s.uploadedAt ?? s.UploadedAt ?? '', note: s.note ?? s.Note ?? null, first4: s.first4 ?? s.First4 ?? null, last4: s.last4 ?? s.Last4 ?? null })) })
+                              })
+                              .catch(() => {})
+                          }}
+                          className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 ring-1 ring-blue-200 hover:bg-blue-100 transition-colors"
+                        >
+                          <Paperclip className="w-3 h-3" />
+                          {item.payOutSlipUploadCount}
+                        </button>
+                      )}
+                    </div>
                     {item.rejectReason && (
                       <p className="text-[11px] text-red-500 mt-1 truncate max-w-[140px]" title={item.rejectReason}>{item.rejectReason}</p>
                     )}
@@ -434,6 +541,7 @@ export default function PayOutRequestsPage() {
           </div>
         </div>
       )}
+      {slipViewer && <SlipViewerModal slips={slipViewer.slips} item={slipViewer.item} onClose={() => setSlipViewer(null)} />}
     </div>
   )
 }

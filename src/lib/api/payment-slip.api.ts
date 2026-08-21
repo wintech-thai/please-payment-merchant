@@ -3,7 +3,6 @@ import type {
   PayInSlipItem,
   PayInSlipDetail,
   GetPayInDocumentsPayload,
-  GetPresignedUrlPayload,
   AddPayInDocumentPayload,
   UpdatePayInDocumentPayload,
 } from './types'
@@ -23,9 +22,6 @@ export const paymentSlipApi = {
 
   getPayInDocumentById: (id: string) =>
     client.get<{ payInDocument: PayInSlipDetail }>(`${getBase()}/GetPaymentDocumentById/${id}`),
-
-  getPresignedUrl: (payload: GetPresignedUrlPayload) =>
-    client.post<{ presignedUrl: string; filePath: string }>(`${getBase()}/GetPresignedUrl`, payload),
 
   addPayInDocument: (payload: AddPayInDocumentPayload) =>
     client.post<{ status: string; description: string }>(`${getBase()}/AddPaymentDocument`, payload),

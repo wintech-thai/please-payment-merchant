@@ -68,7 +68,7 @@ function SlipUploadContent() {
       setPageState('invalid')
       return
     }
-    fetch(`/api/proxy/api/PaymentRequest/org/${orgId}/action/VerifyPayInToken/${paymentRequestId}/${token}`)
+    fetch(`/api/proxy/api/PaymentRequest/org/${orgId}/action/VerifyPayOutToken/${paymentRequestId}/${token}`)
       .then(r => r.json())
       .then(data => {
         if (data?.status === 'OK' || data?.Status === 'OK') {
@@ -101,7 +101,7 @@ function SlipUploadContent() {
     try {
       const base64 = await compressImage(selectedFile)
       const res = await fetch(
-        `/api/proxy/api/PaymentRequest/org/${orgId}/action/UploadPayInSlipById/${paymentRequestId}/${token}`,
+        `/api/proxy/api/PaymentRequest/org/${orgId}/action/UploadPayOutSlipById/${paymentRequestId}/${token}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -135,7 +135,7 @@ function SlipUploadContent() {
       setPageState('checking_dup')
       try {
         const res = await fetch(
-          `/api/proxy/api/PaymentRequest/org/${orgId}/action/CheckPayInSlipDup/${paymentRequestId}/${f4}/${l4}`
+          `/api/proxy/api/PaymentRequest/org/${orgId}/action/CheckPayOutSlipDup/${paymentRequestId}/${f4}/${l4}`
         )
         const data = await res.json()
         const dups: DupRecord[] = data?.Duplicates ?? data?.duplicates ?? []
@@ -391,7 +391,7 @@ function SlipUploadContent() {
   )
 }
 
-export default function PayInSlipUploadPage() {
+export default function PayOutSlipUploadPage() {
   return (
     <LanguageProvider>
       <Suspense
