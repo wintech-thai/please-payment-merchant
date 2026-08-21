@@ -12,7 +12,7 @@ import clsx from 'clsx'
 
 type SlipItem = { imageBase64: string; uploadedAt: string; note?: string | null; first4?: string | null; last4?: string | null }
 
-function SlipViewerModal({ slips, destBankCode, destAccountNo, destAccountName, destPromptPayId, isPeerToPeer, onClose }: {
+function SlipViewerModal({ slips, destBankCode, destAccountNo, destAccountName, destPromptPayId, isPeerToPeer, generatedAmount, onClose }: {
   slips: SlipItem[]
   destBankCode?: string | null
   destAccountNo?: string | null
