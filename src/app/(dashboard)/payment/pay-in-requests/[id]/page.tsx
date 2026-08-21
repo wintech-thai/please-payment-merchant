@@ -199,6 +199,7 @@ function SlipViewerModal({
   destAccountType?: string | null
   destPromptPayId?: string | null
   isPeerToPeer?: boolean | null
+  generatedAmount?: number | null
   onClose: () => void
 }) {
   const { t } = useLang()
@@ -296,6 +297,12 @@ function SlipViewerModal({
               )}
             </div>
             <div className="mt-auto flex flex-col gap-3 pt-3">
+              {generatedAmount != null && (
+                <div className="bg-amber-500/20 border border-amber-400/30 rounded-xl px-3 py-3">
+                  <p className="text-[9px] text-amber-300/80 uppercase tracking-widest mb-1">{tr.slipAmount}</p>
+                  <p className="text-base font-bold text-amber-300 tabular-nums">{Number(generatedAmount).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                </div>
+              )}
               {(slip?.first4 || slip?.last4) && (
                 <div className="bg-white/10 rounded-xl px-3 py-3">
                   <p className="text-[9px] text-white/50 uppercase tracking-widest mb-1.5">{tr.slipRefLabel}</p>
@@ -577,6 +584,7 @@ export default function PayInRequestDetailPage() {
           destAccountType={data?.payinAccountType}
           destPromptPayId={data?.payinPromptPayId}
           isPeerToPeer={data?.payinIsPeerToPeer}
+          generatedAmount={data?.generatedAmount}
           onClose={() => setShowSlipViewer(false)}
         />
       )}
