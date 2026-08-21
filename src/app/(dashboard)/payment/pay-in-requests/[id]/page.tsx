@@ -187,6 +187,7 @@ function SlipViewerModal({
   destAccountType,
   destPromptPayId,
   isPeerToPeer,
+  generatedAmount,
   onClose,
 }: {
   slips: SlipItem[]
