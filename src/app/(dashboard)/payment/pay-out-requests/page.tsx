@@ -7,9 +7,10 @@ import { useLang } from '@/context/LanguageContext'
 import { paymentRequestApi } from '@/lib/api/payment-request.api'
 import type { PayOutRequestItem } from '@/lib/api/types'
 import { toast } from 'sonner'
-import { Loader2, Plus, Trash2, ChevronLeft, ChevronRight, RefreshCw, X, Paperclip } from 'lucide-react'
+import { Loader2, Plus, Trash2, ChevronLeft, ChevronRight, RefreshCw, X, Paperclip, TriangleAlert } from 'lucide-react'
 import clsx from 'clsx'
 import { AdvancedTimeRangeSelector, type TimeRangeValue } from '@/components/AdvancedTimeRangeSelector'
+import AuditNoticeDrawer from '@/components/AuditNoticeDrawer'
 
 type SlipItem = { imageBase64: string; uploadedAt: string; note?: string | null; first4?: string | null; last4?: string | null }
 
@@ -198,6 +199,7 @@ export default function PayOutRequestsPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [deleteModal, setDeleteModal] = useState<{ open: boolean; item?: PayOutRequestItem }>({ open: false })
   const [slipViewer, setSlipViewer] = useState<{ slips: SlipItem[]; item: PayOutRequestItem } | null>(null)
+  const [noticeTarget, setNoticeTarget] = useState<string | null>(null)
   const [highlightedId, setHighlightedId] = useState<string>(() =>
     typeof window !== 'undefined' ? sessionStorage.getItem(HIGHLIGHTED_KEY) ?? '' : ''
   )
@@ -450,6 +452,16 @@ export default function PayOutRequestsPage() {
                           {item.payOutSlipUploadCount}
                         </button>
                       )}
+                      {(item.noticeCount ?? 0) > 0 && (
+                        <button
+                          type="button"
+                          onClick={e => { e.stopPropagation(); setNoticeTarget(item.id) }}
+                          className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 ring-1 ring-amber-200 hover:bg-amber-100 transition-colors"
+                        >
+                          <TriangleAlert className="w-3 h-3" />
+                          {item.noticeCount}
+                        </button>
+                      )}
                     </div>
                     {item.rejectReason && (
                       <p className="text-[11px] text-red-500 mt-1 truncate max-w-[140px]" title={item.rejectReason}>{item.rejectReason}</p>
@@ -542,6 +554,7 @@ export default function PayOutRequestsPage() {
         </div>
       )}
       {slipViewer && <SlipViewerModal slips={slipViewer.slips} item={slipViewer.item} onClose={() => setSlipViewer(null)} />}
+      {noticeTarget && <AuditNoticeDrawer rowId={noticeTarget} onClose={() => setNoticeTarget(null)} />}
     </div>
   )
 }

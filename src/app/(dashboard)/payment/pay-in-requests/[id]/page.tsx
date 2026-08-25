@@ -7,6 +7,7 @@ import { paymentRequestApi } from '@/lib/api/payment-request.api'
 import type { PayInRequestDetail, PaymentTxJob, PaymentTxJobParameter } from '@/lib/api/types'
 import { toast } from 'sonner'
 import { ChevronLeft, CheckCircle, AlertCircle, Clock, ExternalLink, X, Copy, Check, Paperclip, ChevronRight, Link2, TriangleAlert } from 'lucide-react'
+import AuditNoticeDrawer from '@/components/AuditNoticeDrawer'
 
 type SlipItem = {
   imageBase64: string
@@ -451,6 +452,7 @@ export default function PayInRequestDetailPage() {
   const [showSlipViewer, setShowSlipViewer] = useState(false)
   const [slipViewerIndex, setSlipViewerIndex] = useState(0)
   const [showSlipLink, setShowSlipLink] = useState(false)
+  const [showNoticeDrawer, setShowNoticeDrawer] = useState(false)
 
   useEffect(() => {
     const load = async () => {
@@ -573,6 +575,7 @@ export default function PayInRequestDetailPage() {
         )}
       </div>
       {showRawJson && <RawJsonModal data={data} onClose={() => setShowRawJson(false)} />}
+      {showNoticeDrawer && <AuditNoticeDrawer rowId={id} onClose={() => setShowNoticeDrawer(false)} />}
       {showSlipViewer && slips.length > 0 && (
         <SlipViewerModal
           slips={slips}
@@ -606,7 +609,19 @@ export default function PayInRequestDetailPage() {
             </div>
           </InfoRow>
           <InfoRow label={tr.fieldStatus}>
-            <StatusBadge status={data?.status} createdDate={data?.createdDate} payinIsPeerToPeer={data?.payinIsPeerToPeer} />
+            <div className="flex items-center gap-2 flex-wrap">
+              <StatusBadge status={data?.status} createdDate={data?.createdDate} payinIsPeerToPeer={data?.payinIsPeerToPeer} />
+              {(data?.noticeCount ?? 0) > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setShowNoticeDrawer(true)}
+                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 ring-1 ring-amber-200 hover:bg-amber-100 transition-colors"
+                >
+                  <TriangleAlert className="w-3 h-3" />
+                  {data?.noticeCount}
+                </button>
+              )}
+            </div>
             {(data?.status?.toLowerCase() === 'paid' || data?.status?.toLowerCase() === 'approved') && data?.paymentTxId && (
               <a
                 href={`/payment/pay-in-transactions/${data.paymentTxId}`}

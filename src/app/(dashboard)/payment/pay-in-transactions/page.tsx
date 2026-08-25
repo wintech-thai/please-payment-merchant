@@ -7,9 +7,10 @@ import { useLang } from '@/context/LanguageContext'
 import { paymentTxApi } from '@/lib/api/payment-tx.api'
 import type { PayInTxItem } from '@/lib/api/types'
 import { toast } from 'sonner'
-import { Search, RefreshCw, ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react'
+import { Search, RefreshCw, ChevronLeft, ChevronRight, ExternalLink, TriangleAlert } from 'lucide-react'
 import clsx from 'clsx'
 import { AdvancedTimeRangeSelector, type TimeRangeValue } from '@/components/AdvancedTimeRangeSelector'
+import AuditNoticeDrawer from '@/components/AuditNoticeDrawer'
 
 const HIGHLIGHTED_KEY = 'payInTransactions_highlightedId'
 const FILTER_KEY = 'merchantPayInTx_filter'
@@ -139,6 +140,7 @@ export default function PayInTransactionsPage() {
   const [page, setPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(25)
   const [loading, setLoading] = useState(false)
+  const [noticeTarget, setNoticeTarget] = useState<string | null>(null)
   const [highlightedId, setHighlightedId] = useState<string>(() =>
     typeof window !== 'undefined' ? sessionStorage.getItem(HIGHLIGHTED_KEY) ?? '' : ''
   )
@@ -340,7 +342,19 @@ export default function PayInTransactionsPage() {
                   </td>
                   {/* Status */}
                   <td className="px-4 py-3 border-b border-gray-100">
-                    <StatusBadge status={item.status} createdDate={item.createdDate} paymentRequestId={item.paymentRequestId} statusReason={item.statusReason} txIsPeerToPeer={item.txIsPeerToPeer} />
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <StatusBadge status={item.status} createdDate={item.createdDate} paymentRequestId={item.paymentRequestId} statusReason={item.statusReason} txIsPeerToPeer={item.txIsPeerToPeer} />
+                      {(item.noticeCount ?? 0) > 0 && (
+                        <button
+                          type="button"
+                          onClick={e => { e.stopPropagation(); setNoticeTarget(item.id) }}
+                          className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 ring-1 ring-amber-200 hover:bg-amber-100 transition-colors"
+                        >
+                          <TriangleAlert className="w-3 h-3" />
+                          {item.noticeCount}
+                        </button>
+                      )}
+                    </div>
                   </td>
                   {/* REF */}
                   <td className="px-4 py-3 border-b border-gray-100">
@@ -389,6 +403,7 @@ export default function PayInTransactionsPage() {
           </div>
         </div>
       </div>
+      {noticeTarget && <AuditNoticeDrawer rowId={noticeTarget} onClose={() => setNoticeTarget(null)} />}
     </div>
   )
 }

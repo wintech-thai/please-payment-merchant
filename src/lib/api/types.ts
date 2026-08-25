@@ -397,6 +397,7 @@ export interface PayInRequestItem {
   payInFeePct?: number | null
   payInFeeDecimal?: number | null
   payInSlipUploadCount?: number | null
+  noticeCount?: number | null
 }
 
 export interface PayInRequestDetail extends PayInRequestItem {
@@ -488,6 +489,7 @@ export interface PayInTxItem {
   processingSteps?: string[] | null
   rawInputObj?: unknown | null
   jobId?: string | null
+  noticeCount?: number | null
 }
 
 export interface PayInTxDetail extends PayInTxItem {
@@ -548,6 +550,7 @@ export interface PayOutTxItem {
   processingSteps?: string[] | null
   rawInputObj?: unknown | null
   jobId?: string | null
+  noticeCount?: number | null
 }
 
 export interface PayOutTxDetail extends PayOutTxItem {
@@ -831,11 +834,13 @@ export interface PayOutRequestItem {
   qrCodeImage?: string | null
   qrCode?: string | null
   qrCodeP2P?: string | null
+  noticeCount?: number | null
 }
 
 export interface PartialPayoutItem {
   payinRequestId?: string | null
   txDate?: string | null
+  expireDate?: string | null
   partialAmount?: number | null
   status?: string | null
 }

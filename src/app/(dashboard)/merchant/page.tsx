@@ -367,33 +367,13 @@ export default function MerchantInfoPage() {
                     {status ? <StatusBadge status={status} /> : <span className="text-gray-300 text-sm">—</span>}
                   </div>
                 </div>
-                <div>
-                  <label className="flex items-center gap-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">
-                    <Zap className="w-3 h-3 text-gray-300" />
-                    {mi.fieldDiscardCent}
-                  </label>
-                  <div className="px-3 py-2.5 rounded-lg bg-gray-50 border border-gray-100 min-h-[38px] flex items-center gap-2">
-                    <span className={clsx(
-                      'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border',
-                      discardCent
-                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                        : 'bg-gray-100 text-gray-500 border-gray-200'
-                    )}>
-                      <span className={clsx('w-1.5 h-1.5 rounded-full', discardCent ? 'bg-emerald-500' : 'bg-gray-400')} />
-                      {discardCent ? mi.discardCentEnabled : mi.discardCentDisabled}
-                    </span>
-                    <span className="text-xs text-gray-400">{mi.fieldDiscardCentHint}</span>
-                  </div>
-                </div>
-                <ReadonlyField
-                  label={mi.fieldPayinExpireMinute}
-                  value={payinExpireMinute != null ? payinExpireMinute : '—'}
-                  suffix={payinExpireMinute != null ? mi.minuteSuffix : undefined}
-                  icon={<Zap className="w-3 h-3" />}
-                />
               </div>
 
               <div className="space-y-5">
+                <div className="flex gap-1">
+                  <button type="button" className="px-4 py-1.5 text-sm font-semibold rounded-full bg-primary-600 text-white shadow-sm">THB</button>
+                  <button type="button" disabled className="px-4 py-1.5 text-sm font-semibold rounded-full text-gray-400 border border-gray-200 cursor-not-allowed" title="Coming Soon">Crypto</button>
+                </div>
                 <div className="bg-gray-50/50 rounded-2xl border border-gray-100 p-6">
                   <SectionHeader icon={<Percent className="w-3.5 h-3.5" />} color="emerald">{mi.sectionFees}</SectionHeader>
                   <div className="grid grid-cols-2 gap-4">
@@ -424,6 +404,33 @@ export default function MerchantInfoPage() {
                     </div>
                     <LimitRow label={mi.fieldPayOut} min={payOutMin} max={payOutMax} minLabel={mi.fieldMin} maxLabel={mi.fieldMax} />
                   </div>
+                </div>
+
+                <div className="bg-gray-50/50 rounded-2xl border border-gray-100 p-6 space-y-4">
+                  <div>
+                    <label className="flex items-center gap-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">
+                      <Zap className="w-3 h-3 text-gray-300" />
+                      {mi.fieldDiscardCent}
+                    </label>
+                    <div className="px-3 py-2.5 rounded-lg bg-white border border-gray-100 min-h-[38px] flex items-center gap-2">
+                      <span className={clsx(
+                        'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border',
+                        discardCent
+                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                          : 'bg-gray-100 text-gray-500 border-gray-200'
+                      )}>
+                        <span className={clsx('w-1.5 h-1.5 rounded-full', discardCent ? 'bg-emerald-500' : 'bg-gray-400')} />
+                        {discardCent ? mi.discardCentEnabled : mi.discardCentDisabled}
+                      </span>
+                      <span className="text-xs text-gray-400">{mi.fieldDiscardCentHint}</span>
+                    </div>
+                  </div>
+                  <ReadonlyField
+                    label={mi.fieldPayinExpireMinute}
+                    value={payinExpireMinute != null ? payinExpireMinute : '—'}
+                    suffix={payinExpireMinute != null ? mi.minuteSuffix : undefined}
+                    icon={<Zap className="w-3 h-3" />}
+                  />
                 </div>
               </div>
             </div>
