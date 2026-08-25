@@ -6,7 +6,8 @@ import { useLang } from '@/context/LanguageContext'
 import { paymentTxApi } from '@/lib/api/payment-tx.api'
 import type { PayInTxDetail, PaymentTxJob, PaymentTxJobParameter } from '@/lib/api/types'
 import { toast } from 'sonner'
-import { ChevronLeft, CheckCircle, AlertCircle, Clock, X, Copy, Check } from 'lucide-react'
+import { ChevronLeft, CheckCircle, AlertCircle, Clock, X, Copy, Check, TriangleAlert } from 'lucide-react'
+import AuditNoticeDrawer from '@/components/AuditNoticeDrawer'
 
 function formatAmount(n?: number | null): string {
   if (n == null) return '—'
@@ -154,6 +155,7 @@ export default function PayInTxDetailPage() {
   const [detail, setDetail] = useState<PayInTxDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [showRawJson, setShowRawJson] = useState(false)
+  const [showNoticeDrawer, setShowNoticeDrawer] = useState(false)
   const [job, setJob] = useState<PaymentTxJob | null>(null)
   const [loadingJob, setLoadingJob] = useState(false)
 
@@ -234,6 +236,7 @@ export default function PayInTxDetailPage() {
         )}
       </div>
       {showRawJson && <RawJsonModal data={detail} onClose={() => setShowRawJson(false)} />}
+      {showNoticeDrawer && <AuditNoticeDrawer rowId={id} onClose={() => setShowNoticeDrawer(false)} />}
 
       {/* General Info */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 px-7 py-6">
@@ -241,7 +244,19 @@ export default function PayInTxDetailPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
           <InfoRow label={m.fieldCreated}>{formatDateTime(detail?.createdDate)}</InfoRow>
           <InfoRow label={m.fieldStatus}>
-            <StatusBadge status={detail?.status} txIsPeerToPeer={detail?.txIsPeerToPeer} />
+            <div className="flex items-center gap-2 flex-wrap">
+              <StatusBadge status={detail?.status} txIsPeerToPeer={detail?.txIsPeerToPeer} />
+              {(detail?.noticeCount ?? 0) > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setShowNoticeDrawer(true)}
+                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 ring-1 ring-amber-200 hover:bg-amber-100 transition-colors"
+                >
+                  <TriangleAlert className="w-3 h-3" />
+                  {detail?.noticeCount}
+                </button>
+              )}
+            </div>
           </InfoRow>
           <InfoRow label={m.fieldMerchant}>
             {detail?.merchantCode || detail?.merchantName

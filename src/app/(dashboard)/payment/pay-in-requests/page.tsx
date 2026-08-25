@@ -7,9 +7,10 @@ import { useLang } from '@/context/LanguageContext'
 import { paymentRequestApi } from '@/lib/api/payment-request.api'
 import type { PayInRequestItem } from '@/lib/api/types'
 import { toast } from 'sonner'
-import { Loader2, ChevronLeft, ChevronRight, Search, ExternalLink, RefreshCw, Paperclip, X } from 'lucide-react'
+import { Loader2, ChevronLeft, ChevronRight, Search, ExternalLink, RefreshCw, Paperclip, X, TriangleAlert } from 'lucide-react'
 import clsx from 'clsx'
 import { AdvancedTimeRangeSelector, type TimeRangeValue } from '@/components/AdvancedTimeRangeSelector'
+import AuditNoticeDrawer from '@/components/AuditNoticeDrawer'
 
 function getTimeFilter(tr: TimeRangeValue) {
   if (tr.type === 'absolute' && tr.start && tr.end) {
@@ -124,6 +125,7 @@ export default function PayInRequestsPage() {
   const [slipViewerSlips, setSlipViewerSlips] = useState<{ imageBase64: string; uploadedAt: string; first4?: string | null; last4?: string | null; note?: string | null }[]>([])
   const [slipViewerIdx, setSlipViewerIdx] = useState(0)
   const [slipViewerLoading, setSlipViewerLoading] = useState(false)
+  const [noticeTarget, setNoticeTarget] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     if (typeof window !== 'undefined') sessionStorage.setItem(FILTER_KEY, JSON.stringify({ search, status, timeRange }))
@@ -328,6 +330,16 @@ export default function PayInRequestsPage() {
                           {item.payInSlipUploadCount}
                         </button>
                       )}
+                      {(item.noticeCount ?? 0) > 0 && (
+                        <button
+                          type="button"
+                          onClick={e => { e.stopPropagation(); setNoticeTarget(item.id) }}
+                          className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 ring-1 ring-amber-200 hover:bg-amber-100 transition-colors"
+                        >
+                          <TriangleAlert className="w-3 h-3" />
+                          {item.noticeCount}
+                        </button>
+                      )}
                     </div>
                     {(item.status?.toLowerCase() === 'paid' || item.status?.toLowerCase() === 'approved') && item.paymentTxId && (
                       <a
@@ -487,6 +499,7 @@ export default function PayInRequestsPage() {
           </div>
         </div>
       )}
+      {noticeTarget && <AuditNoticeDrawer rowId={noticeTarget} onClose={() => setNoticeTarget(null)} />}
     </div>
   )
 }
