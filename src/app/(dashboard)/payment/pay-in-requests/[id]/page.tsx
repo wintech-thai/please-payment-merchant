@@ -609,7 +609,7 @@ export default function PayInRequestDetailPage() {
             </div>
           </InfoRow>
           <InfoRow label={tr.fieldStatus}>
-            <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-start gap-2 flex-wrap">
               <StatusBadge status={data?.status} createdDate={data?.createdDate} payinIsPeerToPeer={data?.payinIsPeerToPeer} />
               {(data?.noticeCount ?? 0) > 0 && (
                 <button

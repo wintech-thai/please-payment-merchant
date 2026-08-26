@@ -342,7 +342,7 @@ export default function PayInTransactionsPage() {
                   </td>
                   {/* Status */}
                   <td className="px-4 py-3 border-b border-gray-100">
-                    <div className="flex items-center gap-1.5 flex-wrap">
+                    <div className="flex items-start gap-1.5 flex-wrap">
                       <StatusBadge status={item.status} createdDate={item.createdDate} paymentRequestId={item.paymentRequestId} statusReason={item.statusReason} txIsPeerToPeer={item.txIsPeerToPeer} />
                       {(item.noticeCount ?? 0) > 0 && (
                         <button
