@@ -634,20 +634,25 @@ export default function PayOutRequestDetailPage() {
                   <thead>
                     <tr className="border-b border-gray-100">
                       <th className="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">{tr.colPartialDate}</th>
-                      <th className="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">{tr.colPartialExpire}</th>
                       <th className="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">{tr.colPartialId}</th>
-                      <th className="px-3 py-2 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">{tr.colPartialAmount}</th>
-                      <th className="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">{tr.colPartialStatus}</th>
+                      <th className="px-3 py-2 pr-8 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">{tr.colPartialAmount}</th>
+                      <th className="px-3 py-2 pl-6 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">{tr.colPartialStatus}</th>
                     </tr>
                   </thead>
                   <tbody>
                     {detail.partialPayouts.map((p: PartialPayoutItem, i: number) => (
                       <tr key={i} className="border-b border-gray-50 hover:bg-gray-50/50">
-                        <td className="px-3 py-2.5 text-gray-600 whitespace-nowrap">{formatDateTime(p.txDate)}</td>
-                        <td className="px-3 py-2.5 text-gray-600 whitespace-nowrap">{p.expireDate ? formatDateTime(p.expireDate) : '—'}</td>
+                        <td className="px-3 py-2.5 text-gray-600 whitespace-nowrap">
+                          <div className="flex items-center gap-2">
+                            <span>{formatDateTime(p.txDate)}</span>
+                            {p.expireDate && (
+                              <span className="text-[11px] text-gray-400">{tr.colPartialExpire}: {formatDateTime(p.expireDate)}</span>
+                            )}
+                          </div>
+                        </td>
                         <td className="px-3 py-2.5 font-mono text-xs text-gray-500">{p.payinRequestId ?? '—'}</td>
-                        <td className="px-3 py-2.5 text-right font-semibold tabular-nums text-gray-800">{formatAmount(p.partialAmount)}</td>
-                        <td className="px-3 py-2.5">
+                        <td className="px-3 py-2.5 pr-8 text-right font-semibold tabular-nums text-gray-800">{formatAmount(p.partialAmount)}</td>
+                        <td className="px-3 py-2.5 pl-6">
                           {p.status ? (
                             <div className="flex flex-col gap-0.5 w-fit">
                               <span className={clsx(
