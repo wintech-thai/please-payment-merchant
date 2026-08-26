@@ -8,7 +8,37 @@ import { paymentRequestApi } from '@/lib/api/payment-request.api'
 import { useLang } from '@/context/LanguageContext'
 import { toast } from 'sonner'
 import clsx from 'clsx'
-import { Loader2, Copy, Check, Store, CreditCard, Webhook, Wallet, ChevronLeft, ChevronRight, Mail, Phone, Hash, User, Activity, Percent, TrendingUp, TrendingDown, ArrowDownCircle, ArrowUpCircle, Zap, Globe, ExternalLink } from 'lucide-react'
+import { Loader2, Copy, Check, Store, CreditCard, Webhook, Wallet, ChevronLeft, ChevronRight, Mail, Phone, Hash, User, Activity, Percent, TrendingUp, TrendingDown, ArrowDownCircle, ArrowUpCircle, Zap, Globe, ExternalLink, Coins, Search } from 'lucide-react'
+import { isCurrencyFeatureEnabled } from '@/lib/feature-flags'
+import CurrencyLogo from '@/components/CurrencyLogo'
+
+interface MerchantCurrencyRow {
+  id?: string | null
+  currency?: string | null
+  currencyName?: string | null
+  currencyCategory?: string | null
+  isDefaultCurrency?: boolean | null
+  status?: string | null
+  payinFeePct?: number | null
+  payinMinAmount?: number | null
+  payinMaxAmount?: number | null
+  payoutFeePct?: number | null
+  payoutMinAmount?: number | null
+  payoutMaxAmount?: number | null
+}
+
+function formatCurrencyPercent(val?: number | null) {
+  if (val == null) return '—'
+  return `${val}%`
+}
+
+function formatCurrencyRange(min?: number | null, max?: number | null) {
+  if (min == null && max == null) return '—'
+  const fmt = (n: number) => n.toLocaleString()
+  if (min != null && max != null) return `${fmt(min)} - ${fmt(max)}`
+  if (min != null) return `${fmt(min)} -`
+  return `- ${fmt(max!)}`
+}
 
 interface MerchantData {
   // from GetMerchants (admin MerchantItem field names)
@@ -191,7 +221,7 @@ function EndpointRow({ ep, copyLabel, copiedLabel, isLast, isSelected, onClick }
   )
 }
 
-type Tab = 'info' | 'endpoint' | 'webhooks' | 'wallet'
+type Tab = 'info' | 'endpoint' | 'webhooks' | 'wallet' | 'currencyFiat' | 'currencyCrypto'
 
 export default function MerchantInfoPage() {
   const { t } = useLang()
@@ -203,6 +233,8 @@ export default function MerchantInfoPage() {
   const [webhooksData, setWebhooksData] = useState<any[]>([])
   const [walletData, setWalletData] = useState<any | null>(null)
   const [walletTxs, setWalletTxs] = useState<any[]>([])
+  const [currencies, setCurrencies] = useState<MerchantCurrencyRow[]>([])
+  const [currencyEnabled, setCurrencyEnabled] = useState(false)
   const [loading, setLoading] = useState(true)
   const [walletPage, setWalletPage] = useState(1)
   const [walletPageSize, setWalletPageSize] = useState(25)
@@ -211,15 +243,18 @@ export default function MerchantInfoPage() {
 
   useOrgChange(() => setReloadKey(k => k + 1))
 
+  useEffect(() => { setCurrencyEnabled(isCurrencyFeatureEnabled()) }, [])
+
   useEffect(() => {
     const load = async () => {
       try {
         // Call all merchant endpoints in parallel — backend resolves merchantId from current user
-        const [detailRes, endpointsRes, webhooksRes, walletRes] = await Promise.allSettled([
+        const [detailRes, endpointsRes, webhooksRes, walletRes, currenciesRes] = await Promise.allSettled([
           userApi.getMyMerchantInfo(),
           userApi.getMerchantPaymentEndpoints(),
           userApi.getMerchantWebhooks(),
           userApi.getMerchantWallet(),
+          userApi.getMerchantCurrencies(),
         ])
 
         if (detailRes.status === 'rejected') throw detailRes.reason
@@ -253,6 +288,11 @@ export default function MerchantInfoPage() {
             } catch {}
           }
         }
+
+        if (currenciesRes.status === 'fulfilled') {
+          const d = currenciesRes.value.data as any
+          setCurrencies(Array.isArray(d) ? d : (d?.currencies ?? d?.data ?? []))
+        }
       } catch (err: unknown) {
         toast.error(err instanceof Error ? err.message : mi.failedToLoad)
       } finally {
@@ -285,6 +325,10 @@ export default function MerchantInfoPage() {
     { key: 'endpoint', label: mi.tabEndpoint, icon: <CreditCard className="w-4 h-4" />, activeClass: 'bg-blue-500 text-white shadow-md shadow-blue-200',    iconClass: 'text-blue-500' },
     { key: 'webhooks', label: mi.tabWebhooks, icon: <Webhook    className="w-4 h-4" />, activeClass: 'bg-violet-500 text-white shadow-md shadow-violet-200', iconClass: 'text-violet-500' },
     { key: 'wallet',   label: mi.tabWallet,   icon: <Wallet     className="w-4 h-4" />, activeClass: 'bg-amber-500 text-white shadow-md shadow-amber-200',   iconClass: 'text-amber-500' },
+    ...(currencyEnabled ? [
+      { key: 'currencyFiat' as Tab,   label: mi.tabCurrencyFiat,   icon: <Coins className="w-4 h-4" />, activeClass: 'bg-teal-500 text-white shadow-md shadow-teal-200', iconClass: 'text-teal-500' },
+      { key: 'currencyCrypto' as Tab, label: mi.tabCurrencyCrypto, icon: <Coins className="w-4 h-4" />, activeClass: 'bg-orange-500 text-white shadow-md shadow-orange-200', iconClass: 'text-orange-500' },
+    ] : []),
   ]
 
   if (loading) {
@@ -800,6 +844,59 @@ export default function MerchantInfoPage() {
                       </div>
                     </div>
                   </div>
+                </div>
+              </div>
+            )
+          })()}
+
+          {/* ── Currency tabs ── */}
+          {(activeTab === 'currencyFiat' || activeTab === 'currencyCrypto') && (() => {
+            const category = activeTab === 'currencyFiat' ? 'FIAT' : 'CRYPTO'
+            const rows = currencies.filter(item => (item.currencyCategory ?? '').toUpperCase() === category)
+            return (
+              <div className="space-y-4">
+                <div className="overflow-x-auto rounded-xl border border-gray-100">
+                  <table className="w-full text-sm border-separate border-spacing-0 min-w-[600px]">
+                    <thead>
+                      <tr className="bg-gray-50">
+                        <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">{mi.colCurrency}</th>
+                        <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">{mi.colCurrencyName}</th>
+                        <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">{mi.fieldPayIn}</th>
+                        <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">{mi.fieldPayOut}</th>
+                        <th className="px-4 py-3 pr-8 text-right text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">{mi.colBalance}</th>
+                        <th className="px-4 py-3 pl-6 text-left text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">{mi.fieldStatus}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {rows.length === 0 ? (
+                        <tr>
+                          <td colSpan={6} className="px-4 py-12 text-center text-sm text-gray-400">{mi.noCurrenciesFound}</td>
+                        </tr>
+                      ) : (
+                        rows.map((item, idx) => (
+                          <tr key={item.id ?? idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/40'}>
+                            <td className="px-4 py-3 border-b border-gray-100 whitespace-nowrap">
+                              <div className="inline-flex items-center gap-2 font-semibold text-sm text-gray-800">
+                                <CurrencyLogo code={item.currency} category={item.currencyCategory} size={22} />
+                                {item.currency ?? '—'}
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 border-b border-gray-100 text-sm text-gray-600 whitespace-nowrap">{item.currencyName ?? '—'}</td>
+                            <td className="px-4 py-3 border-b border-gray-100 text-sm text-gray-600 whitespace-nowrap">
+                              {formatCurrencyPercent(item.payinFeePct)} · {formatCurrencyRange(item.payinMinAmount, item.payinMaxAmount)}
+                            </td>
+                            <td className="px-4 py-3 border-b border-gray-100 text-sm text-gray-600 whitespace-nowrap">
+                              {formatCurrencyPercent(item.payoutFeePct)} · {formatCurrencyRange(item.payoutMinAmount, item.payoutMaxAmount)}
+                            </td>
+                            <td className="px-4 py-3 pr-8 border-b border-gray-100 text-sm text-gray-400 text-right whitespace-nowrap">—</td>
+                            <td className="px-4 py-3 pl-6 border-b border-gray-100 whitespace-nowrap">
+                              <StatusBadge status={item.status ?? undefined} />
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             )
