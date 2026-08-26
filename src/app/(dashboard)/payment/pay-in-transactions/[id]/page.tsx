@@ -244,7 +244,7 @@ export default function PayInTxDetailPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
           <InfoRow label={m.fieldCreated}>{formatDateTime(detail?.createdDate)}</InfoRow>
           <InfoRow label={m.fieldStatus}>
-            <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-start gap-2 flex-wrap">
               <StatusBadge status={detail?.status} txIsPeerToPeer={detail?.txIsPeerToPeer} />
               {(detail?.noticeCount ?? 0) > 0 && (
                 <button

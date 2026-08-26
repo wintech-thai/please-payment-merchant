@@ -391,7 +391,7 @@ export default function PayOutRequestDetailPage() {
               <InfoRow label={tr.fieldCreated}>{formatDateTime(detail?.createdDate)}</InfoRow>
 
               <InfoRow label={tr.fieldStatus}>
-                <div className="flex items-center gap-1.5 flex-wrap">
+                <div className="flex items-start gap-1.5 flex-wrap">
                   <StatusBadge status={detail?.status} isPartialyPayout={detail?.isPartialyPayout} />
                   {(loadingSlips || slips.length > 0) && (
                     <button
