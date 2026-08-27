@@ -326,7 +326,7 @@ export default function MerchantInfoPage() {
     { key: 'webhooks', label: mi.tabWebhooks, icon: <Webhook    className="w-4 h-4" />, activeClass: 'bg-violet-500 text-white shadow-md shadow-violet-200', iconClass: 'text-violet-500' },
     { key: 'wallet',   label: mi.tabWallet,   icon: <Wallet     className="w-4 h-4" />, activeClass: 'bg-amber-500 text-white shadow-md shadow-amber-200',   iconClass: 'text-amber-500' },
     ...(currencyEnabled ? [
-      { key: 'currencyFiat' as Tab,   label: mi.tabCurrencyFiat,   icon: <Coins className="w-4 h-4" />, activeClass: 'bg-teal-500 text-white shadow-md shadow-teal-200', iconClass: 'text-teal-500' },
+      // Fiat tab hidden for now
       { key: 'currencyCrypto' as Tab, label: mi.tabCurrencyCrypto, icon: <Coins className="w-4 h-4" />, activeClass: 'bg-orange-500 text-white shadow-md shadow-orange-200', iconClass: 'text-orange-500' },
     ] : []),
   ]
