@@ -257,6 +257,7 @@ export default function PayInRequestsPage() {
                 <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">{tr.colAmount}</th>
                 <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">{tr.colFee}</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">{tr.colBankAccount}</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">{tr.colPayer}</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">{tr.colStatus}</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">REF</th>
               </tr>
@@ -264,7 +265,7 @@ export default function PayInRequestsPage() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-16 text-center">
+                  <td colSpan={8} className="px-4 py-16 text-center">
                     <div className="flex items-center justify-center gap-2 text-gray-400">
                       <Loader2 className="w-5 h-5 animate-spin" />
                       <span className="text-sm">{tr.loading}</span>
@@ -273,7 +274,7 @@ export default function PayInRequestsPage() {
                 </tr>
               ) : items.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-16 text-center text-sm text-gray-400">{tr.noData}</td>
+                  <td colSpan={8} className="px-4 py-16 text-center text-sm text-gray-400">{tr.noData}</td>
                 </tr>
               ) : items.map((item, idx) => (
                 <tr
@@ -317,6 +318,9 @@ export default function PayInRequestsPage() {
                     ) : <span className="text-sm text-gray-400">—</span>}
                   </td>
                   <td className="px-4 py-3 border-b border-gray-100"><BankAccountCell item={item} /></td>
+                  <td className="px-4 py-3 border-b border-gray-100 whitespace-nowrap">
+                    <p className="text-sm text-gray-700">{item.payerName ?? '—'}</p>
+                  </td>
                   <td className="px-4 py-3 border-b border-gray-100">
                     <div className="flex items-start gap-2 flex-wrap">
                       <StatusBadge status={item.status} createdDate={item.createdDate} payinIsPeerToPeer={item.payinIsPeerToPeer} />

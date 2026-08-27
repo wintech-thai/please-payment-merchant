@@ -181,6 +181,11 @@ export const userApi = {
     return client.post(`/api/Merchant/org/${orgId}/action/GetMerchantWalletTxs/${walletId}`, payload || {})
   },
 
+  getMerchantCurrencies: () => {
+    const orgId = getOrgId()
+    return client.get(`/api/Merchant/org/${orgId}/action/GetMerchantCurrencies`)
+  },
+
   // ── Registration (signup confirm) ──────────────────────────────────────────
   confirmInvite: (orgId: string, token: string, payload: {
     username: string; email: string; password: string; firstName: string; lastName: string; orgUserId?: string
