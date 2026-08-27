@@ -7,10 +7,12 @@ import { useLang } from '@/context/LanguageContext'
 import { paymentRequestApi } from '@/lib/api/payment-request.api'
 import type { PayInRequestItem } from '@/lib/api/types'
 import { toast } from 'sonner'
-import { Loader2, ChevronLeft, ChevronRight, Search, ExternalLink, RefreshCw, Paperclip, X, TriangleAlert } from 'lucide-react'
+import { Loader2, ChevronLeft, ChevronRight, Search, ExternalLink, RefreshCw, Paperclip, X, TriangleAlert, Download } from 'lucide-react'
 import clsx from 'clsx'
 import { AdvancedTimeRangeSelector, type TimeRangeValue } from '@/components/AdvancedTimeRangeSelector'
 import AuditNoticeDrawer from '@/components/AuditNoticeDrawer'
+import ExportCsvModal from '@/components/ExportCsvModal'
+import type { CsvCell } from '@/lib/csv-export'
 
 function getTimeFilter(tr: TimeRangeValue) {
   if (tr.type === 'absolute' && tr.start && tr.end) {
@@ -113,6 +115,9 @@ export default function PayInRequestsPage() {
   const [status, setStatus] = useState<string>(() =>
     typeof window !== 'undefined' ? (JSON.parse(sessionStorage.getItem(FILTER_KEY) ?? 'null')?.status ?? '') : ''
   )
+  const [p2p, setP2p] = useState<string>(() =>
+    typeof window !== 'undefined' ? (JSON.parse(sessionStorage.getItem(FILTER_KEY) ?? 'null')?.p2p ?? '') : ''
+  )
   const [timeRange, setTimeRange] = useState<TimeRangeValue>(() =>
     typeof window !== 'undefined' ? (JSON.parse(sessionStorage.getItem(FILTER_KEY) ?? 'null')?.timeRange ?? { type: 'relative', value: '30d' }) : { type: 'relative', value: '30d' }
   )
@@ -126,14 +131,16 @@ export default function PayInRequestsPage() {
   const [slipViewerIdx, setSlipViewerIdx] = useState(0)
   const [slipViewerLoading, setSlipViewerLoading] = useState(false)
   const [noticeTarget, setNoticeTarget] = useState<string | null>(null)
+  const [exportOpen, setExportOpen] = useState(false)
 
   const load = useCallback(async () => {
-    if (typeof window !== 'undefined') sessionStorage.setItem(FILTER_KEY, JSON.stringify({ search, status, timeRange }))
+    if (typeof window !== 'undefined') sessionStorage.setItem(FILTER_KEY, JSON.stringify({ search, status, p2p, timeRange }))
     setLoading(true)
     try {
       const payload = {
         fullTextSearch: search || undefined,
         status: status || undefined,
+        isPeerToPeer: p2p ? p2p === 'true' : undefined,
         direction: 'PayIn',
         ...getTimeFilter(timeRange),
         offset: (page - 1) * pageSize,
@@ -155,7 +162,7 @@ export default function PayInRequestsPage() {
     } finally {
       setLoading(false)
     }
-  }, [search, status, timeRange, page, pageSize])
+  }, [search, status, p2p, timeRange, page, pageSize])
 
   useEffect(() => { load() }, [load])
   useOrgChange(load)
@@ -239,10 +246,26 @@ export default function PayInRequestsPage() {
           <option value="Pending">Pending</option>
           <option value="Error">Error</option>
         </select>
+        <select
+          value={p2p}
+          onChange={e => { setP2p(e.target.value); setPage(1) }}
+          className="text-sm border border-gray-200 rounded-lg px-3 py-2 text-gray-600 bg-white focus:outline-none focus:ring-1 focus:ring-primary-300"
+        >
+          <option value="">{tr.p2pAll}</option>
+          <option value="true">{tr.p2pOnly}</option>
+          <option value="false">{tr.p2pNone}</option>
+        </select>
         <AdvancedTimeRangeSelector value={timeRange} onChange={handleTimeRangeChange} disabled={loading} />
         <button onClick={() => { setPage(1); load() }} disabled={loading} title={tr.refresh}
           className="p-2 text-gray-500 hover:text-gray-700 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-60">
           <RefreshCw className={clsx('w-4 h-4', loading && 'animate-spin')} />
+        </button>
+        <button
+          onClick={() => setExportOpen(true)}
+          className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+        >
+          <Download className="w-4 h-4" />
+          {t.common.export.button}
         </button>
       </div>
 
@@ -504,6 +527,59 @@ export default function PayInRequestsPage() {
         </div>
       )}
       {noticeTarget && <AuditNoticeDrawer rowId={noticeTarget} onClose={() => setNoticeTarget(null)} />}
+
+      {exportOpen && (
+        <ExportCsvModal<PayInRequestItem>
+          onClose={() => setExportOpen(false)}
+          filenamePrefix="pay-in-requests"
+          getTimeFilter={getTimeFilter}
+          showP2pFilter
+          statusOptions={[
+            { value: 'Paid', label: 'Paid' },
+            { value: 'Pending', label: 'Pending' },
+            { value: 'Error', label: 'Error' },
+          ]}
+          headers={[
+            'Date/Time', 'Merchant Code', 'Merchant Name', 'Amount', 'Currency', 'Fee Amount', 'Fee %',
+            'Bank Code', 'Bank Account No', 'Bank Account Name', 'Account Type', 'PromptPay ID', 'Is P2P',
+            'Payer Name', 'Status', 'Status Reason', 'Payment Tx Id', 'Ref1', 'Ref2', 'Ref3',
+          ]}
+          mapRow={(item): CsvCell[] => [
+            item.createdDate ? new Date(item.createdDate).toLocaleString('th-TH') : '',
+            item.merchantCode ?? '',
+            item.merchantName ?? '',
+            item.generatedAmount ?? '',
+            item.currency ?? '',
+            item.payInFeePct != null && item.generatedAmount != null ? (item.generatedAmount * item.payInFeePct / 100).toFixed(2) : '',
+            item.payInFeePct ?? '',
+            item.payinBankCode ?? '',
+            item.payinBankAccountNo ?? '',
+            item.payinBankAccountName ?? '',
+            item.payinAccountType ?? '',
+            item.payinPromptPayId ?? '',
+            item.payinIsPeerToPeer ? 'Yes' : 'No',
+            item.payerName ?? '',
+            item.status ?? '',
+            item.statusReason ?? '',
+            item.paymentTxId ?? '',
+            item.refId1 ?? '',
+            item.refId2 ?? '',
+            item.refId3 ?? '',
+          ]}
+          fetchCount={async params => {
+            const payload = { direction: 'PayIn', ...params }
+            const res = await paymentRequestApi.getPayInRequestCount(payload)
+            const d = res.data as any
+            return typeof d === 'number' ? d : (d?.count ?? 0)
+          }}
+          fetchPage={async (params, offset, limit) => {
+            const payload = { direction: 'PayIn', ...params, offset, limit }
+            const res = await paymentRequestApi.getPayInRequests(payload)
+            const d = res.data as any
+            return Array.isArray(d) ? d : (d?.paymentRequests ?? d?.items ?? [])
+          }}
+        />
+      )}
     </div>
   )
 }
