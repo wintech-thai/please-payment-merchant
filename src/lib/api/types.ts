@@ -386,6 +386,7 @@ export interface PayInRequestItem {
   refId2?: string | null
   refId3?: string | null
   paymentTxId?: string | null
+  payerName?: string | null
   // bank account fields (API uses lowercase 'payin')
   payinBankCode?: string | null
   payinBankAccountNo?: string | null
@@ -460,6 +461,7 @@ export interface PayInTxItem {
   paymentRequestId?: string | null
   description?: string | null
   currency?: string | null
+  payerName?: string | null
   tags?: string | null
   status?: string | null
   direction?: string | null
