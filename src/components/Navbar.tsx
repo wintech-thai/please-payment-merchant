@@ -19,6 +19,26 @@ interface MerchantOption {
   merchantCode?: string
 }
 
+const LANGUAGES: { code: Lang; flag: string; label: string }[] = [
+  { code: 'th', flag: 'th', label: 'ไทย' },
+  { code: 'en', flag: 'gb', label: 'English' },
+  { code: 'zh', flag: 'cn', label: '中文' },
+  { code: 'my', flag: 'mm', label: 'မြန်မာ' },
+]
+
+function FlagIcon({ countryCode, className }: { countryCode: string; className?: string }) {
+  return (
+    <img
+      src={`https://flagcdn.com/w40/${countryCode}.png`}
+      srcSet={`https://flagcdn.com/w80/${countryCode}.png 2x`}
+      alt=""
+      loading="lazy"
+      onError={e => { e.currentTarget.style.visibility = 'hidden' }}
+      className={clsx('rounded-[2px] object-cover flex-shrink-0', className)}
+    />
+  )
+}
+
 export default function Navbar() {
   const pathname = usePathname()
   const router = useRouter()
@@ -29,6 +49,7 @@ export default function Navbar() {
   const [merchantMenuOpen, setMerchantMenuOpen] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [businessNavOpen, setBusinessNavOpen] = useState(false)
+  const [langMenuOpen, setLangMenuOpen] = useState(false)
   const [modal, setModal] = useState<'profile' | 'changePassword' | null>(null)
   const [username, setUsername] = useState('')
   const [currentOrgId, setCurrentOrgId] = useState('')
@@ -37,6 +58,8 @@ export default function Navbar() {
 
   const merchantSwitcherRef = useRef<HTMLDivElement>(null)
   const businessNavRef = useRef<HTMLDivElement>(null)
+  const langMenuRef = useRef<HTMLDivElement>(null)
+  const currentLangOption = LANGUAGES.find(l => l.code === lang) ?? LANGUAGES[0]
 
   useEffect(() => {
     setUsername(localStorage.getItem('username') || '')
@@ -54,6 +77,7 @@ export default function Navbar() {
     function handleClickOutside(e: MouseEvent) {
       if (merchantSwitcherRef.current && !merchantSwitcherRef.current.contains(e.target as Node)) setMerchantMenuOpen(false)
       if (businessNavRef.current && !businessNavRef.current.contains(e.target as Node)) setBusinessNavOpen(false)
+      if (langMenuRef.current && !langMenuRef.current.contains(e.target as Node)) setLangMenuOpen(false)
     }
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
@@ -219,14 +243,34 @@ export default function Navbar() {
             <AppVersionDisplay className="hidden lg:flex" />
 
             {/* Language switcher */}
-            <div className="hidden sm:flex items-center gap-1 bg-white/10 rounded-lg p-0.5">
-              {(['th', 'en'] as Lang[]).map((l) => (
-                <button key={l} onClick={() => setLang(l)}
-                  className={clsx('px-2.5 py-1 rounded-md text-xs font-medium transition-colors',
-                    lang === l ? 'bg-white/30 text-white' : 'text-white hover:text-white')}>
-                  {l === 'th' ? 'TH' : 'EN'}
-                </button>
-              ))}
+            <div className="hidden sm:block relative" ref={langMenuRef}>
+              <button
+                onClick={() => setLangMenuOpen(v => !v)}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-sm font-medium text-white bg-white/10 hover:bg-white/20 transition-colors"
+              >
+                <FlagIcon countryCode={currentLangOption.flag} className="w-4 h-3" />
+                <span className="text-xs">{currentLangOption.code.toUpperCase()}</span>
+                <svg className="w-3 h-3 opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              {langMenuOpen && (
+                <div className="absolute right-0 top-full mt-1.5 w-40 bg-white rounded-xl shadow-xl border border-gray-100 py-1 z-50">
+                  {LANGUAGES.map(l => (
+                    <button
+                      key={l.code}
+                      onClick={() => { setLang(l.code); setLangMenuOpen(false) }}
+                      className={clsx(
+                        'flex items-center gap-2.5 w-full px-4 py-2 text-sm transition-colors',
+                        lang === l.code ? 'bg-primary-50 text-primary-700 font-semibold' : 'text-gray-700 hover:bg-gray-50'
+                      )}
+                    >
+                      <FlagIcon countryCode={l.flag} className="w-5 h-3.5" />
+                      {l.label}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* User menu */}
@@ -261,12 +305,13 @@ export default function Navbar() {
                       {t.nav.changePassword}
                     </button>
                     <div className="sm:hidden border-t border-gray-100 mt-1 pt-1">
-                      <div className="flex items-center gap-1 px-4 py-2">
-                        {(['th', 'en'] as Lang[]).map((l) => (
-                          <button key={l} onClick={() => { setLang(l); setUserMenuOpen(false) }}
-                            className={clsx('flex-1 py-1 rounded-md text-xs font-medium transition-colors',
-                              lang === l ? 'bg-primary-100 text-primary-800' : 'text-gray-500 hover:text-gray-700')}>
-                            {l === 'th' ? 'TH' : 'EN'}
+                      <div className="grid grid-cols-2 gap-1 px-4 py-2">
+                        {LANGUAGES.map(l => (
+                          <button key={l.code} onClick={() => { setLang(l.code); setUserMenuOpen(false) }}
+                            className={clsx('flex items-center justify-center gap-1.5 py-1.5 rounded-md text-xs font-medium transition-colors',
+                              lang === l.code ? 'bg-primary-100 text-primary-800' : 'text-gray-500 hover:text-gray-700')}>
+                            <FlagIcon countryCode={l.flag} className="w-4 h-3" />
+                            {l.code.toUpperCase()}
                           </button>
                         ))}
                       </div>

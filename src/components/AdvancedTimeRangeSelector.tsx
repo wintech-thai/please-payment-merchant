@@ -18,6 +18,9 @@ interface Props {
   onChange: (value: TimeRangeValue) => void
   disabled?: boolean
   className?: string
+  /** 'end' (default) anchors the dropdown's right edge to the button, opening leftward.
+   *  'start' anchors the left edge instead, opening rightward. */
+  align?: 'start' | 'end'
 }
 
 function toLocalStr(unixSeconds: number): string {
@@ -45,7 +48,7 @@ function calcRelativeStart(value: string): number {
   return Math.floor((now - num * 86_400_000) / 1000)
 }
 
-export function AdvancedTimeRangeSelector({ value, onChange, disabled, className }: Props) {
+export function AdvancedTimeRangeSelector({ value, onChange, disabled, className, align = 'end' }: Props) {
   const { t } = useLang()
   const tAL = t.auditLog
 
@@ -68,7 +71,7 @@ export function AdvancedTimeRangeSelector({ value, onChange, disabled, className
   const [toStr, setToStr] = useState('')
   const [activeTab, setActiveTab] = useState<'quick' | 'absolute'>(value.type === 'absolute' ? 'absolute' : 'quick')
   const [search, setSearch] = useState('')
-  const [dropdownPos, setDropdownPos] = useState({ top: 0, right: 0 })
+  const [dropdownPos, setDropdownPos] = useState<{ top: number; left?: number; right?: number }>({ top: 0, right: 0 })
   const ref = useRef<HTMLDivElement>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
 
@@ -77,9 +80,13 @@ export function AdvancedTimeRangeSelector({ value, onChange, disabled, className
   const calcPos = useCallback(() => {
     if (buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect()
-      setDropdownPos({ top: rect.bottom + 8, right: window.innerWidth - rect.right })
+      setDropdownPos(
+        align === 'start'
+          ? { top: rect.bottom + 8, left: rect.left }
+          : { top: rect.bottom + 8, right: window.innerWidth - rect.right }
+      )
     }
-  }, [])
+  }, [align])
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -145,7 +152,7 @@ export function AdvancedTimeRangeSelector({ value, onChange, disabled, className
 
       {isOpen && (
         <div className="fixed z-[200] bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden w-[calc(100vw-2rem)] sm:w-[560px]"
-          style={{ top: dropdownPos.top, right: dropdownPos.right }}>
+          style={{ top: dropdownPos.top, ...(dropdownPos.left != null ? { left: dropdownPos.left } : { right: dropdownPos.right }) }}>
           <div className="flex sm:hidden border-b border-gray-100">
             <button onClick={() => setActiveTab('quick')}
               className={clsx('flex-1 py-2.5 text-xs font-medium transition-colors',
