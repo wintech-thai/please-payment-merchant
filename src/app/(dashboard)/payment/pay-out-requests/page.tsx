@@ -116,6 +116,7 @@ const PAGE_SIZE_OPTIONS = [25, 50, 100]
 const DEFAULT_PAGE_SIZE = 25
 const HIGHLIGHTED_KEY = 'payOutRequests_highlightedId'
 const FILTER_KEY = 'merchantPayOutRequests_filter'
+const SHOW_DELETE_BUTTON = false
 
 function AccountTypeBadge({ type }: { type?: string | null }) {
   if (!type) return null
@@ -363,7 +364,7 @@ export default function PayOutRequestsPage() {
               ) : items.length === 0 ? (
                 <tr><td colSpan={9} className="px-4 py-16 text-center text-sm text-gray-400">{tr.noData}</td></tr>
               ) : items.map((item, idx) => {
-                const canDelete = item.status?.toLowerCase() === 'pending' && !item.isPartialyPayout
+                const canDelete = SHOW_DELETE_BUTTON && item.status?.toLowerCase() === 'pending' && !item.isPartialyPayout
                 return (
                 <tr key={item.id}
                   onClick={() => handleRowHighlight(item.id)}
