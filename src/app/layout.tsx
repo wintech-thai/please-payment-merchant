@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import { Toaster } from 'sonner'
 import { BrandProvider } from '@/context/BrandContext'
+import { prompt } from './fonts'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -19,11 +20,8 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="th" className="font-sans">
+    <html lang="th" className={prompt.variable}>
       <head>
-        <link rel="preload" href="/fonts/Prompt-Regular.ttf" as="font" type="font/ttf" crossOrigin="anonymous" />
-        <link rel="preload" href="/fonts/Prompt-Medium.ttf" as="font" type="font/ttf" crossOrigin="anonymous" />
-        <link rel="preload" href="/fonts/Prompt-Bold.ttf" as="font" type="font/ttf" crossOrigin="anonymous" />
         <script dangerouslySetInnerHTML={{ __html: `
           try {
             var v = localStorage.getItem('brandThemeVars');
@@ -45,7 +43,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           closeButton
           toastOptions={{
             style: {
-              fontFamily: "'Prompt', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
+              fontFamily: "var(--font-prompt), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
             },
           }}
         />
