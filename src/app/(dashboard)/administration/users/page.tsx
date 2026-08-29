@@ -5,7 +5,7 @@ import { useSearchParams, usePathname, useRouter } from 'next/navigation'
 import { useOrgChange } from '@/hooks/useOrgChange'
 import { userApi } from '@/lib/api/user.api'
 import { toast } from 'sonner'
-import { Search, ChevronLeft, ChevronRight, Trash2, Key, Ban, CheckCircle, MoreHorizontal, X, Users, Check, Plus, UserPlus } from 'lucide-react'
+import { Search, ChevronLeft, ChevronRight, Trash2, Key, Link2, Ban, CheckCircle, MoreHorizontal, X, Users, Check, Plus, UserPlus } from 'lucide-react'
 import { useHighlightRow } from '@/hooks/useHighlightRow'
 import clsx from 'clsx'
 import { useLang } from '@/context/LanguageContext'
@@ -55,6 +55,7 @@ function UsersContent() {
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [deleteModal, setDeleteModal] = useState<{ open: boolean; userId?: string; userName?: string; bulk?: boolean }>({ open: false })
   const [resetLinkModal, setResetLinkModal] = useState<{ open: boolean; link?: string; loading?: boolean }>({ open: false })
+  const [registerLinkModal, setRegisterLinkModal] = useState<{ open: boolean; link?: string; loading?: boolean }>({ open: false })
   const [deleting, setDeleting] = useState(false)
 
   const fetchUsers = async (currentPage: number, keyword: string = '') => {
@@ -116,6 +117,18 @@ function UsersContent() {
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : t.users.failedToGetResetLink)
       setResetLinkModal({ open: false })
+    }
+  }
+
+  const handleGetRegisterLink = async (userId: string) => {
+    setRegisterLinkModal({ open: true, loading: true })
+    try {
+      const res = await userApi.getInviteLink(userId)
+      const raw = (res.data as any)?.registrationUrl ?? (res.data as any)?.RegistrationUrl ?? ''
+      setRegisterLinkModal({ open: true, link: raw ? processUrl(raw) : '' })
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : t.users.failedToGetInviteLink)
+      setRegisterLinkModal({ open: false })
     }
   }
 
@@ -281,6 +294,7 @@ function UsersContent() {
                         { label: t.users.disableUser, icon: <Ban className="w-4 h-4" />, danger: true, disabled: isPending || !active, onClick: () => handleDisable(user) },
                         { label: t.users.enableUser, icon: <CheckCircle className="w-4 h-4" />, disabled: isPending || active, onClick: () => handleEnable(user) },
                         { label: t.users.resetPasswordLink, icon: <Key className="w-4 h-4" />, disabled: isPending || !active, onClick: () => handleGetResetLink(user.orgUserId) },
+                        { label: t.users.createRegisterLink, icon: <Link2 className="w-4 h-4" />, disabled: !isPending, onClick: () => handleGetRegisterLink(user.orgUserId) },
                       ]} />
                     </td>
                   </tr>
@@ -349,11 +363,22 @@ function UsersContent() {
           onClose={() => setResetLinkModal({ open: false })}
         />
       )}
+
+      {/* Register Link Modal */}
+      {registerLinkModal.open && (
+        <ResetLinkModal
+          link={registerLinkModal.link}
+          loading={registerLinkModal.loading}
+          title={t.users.registerLinkTitle}
+          subtitle={t.users.registerLinkSubtitle}
+          onClose={() => setRegisterLinkModal({ open: false })}
+        />
+      )}
     </div>
   )
 }
 
-function ResetLinkModal({ link, loading, onClose }: { link?: string; loading?: boolean; onClose: () => void }) {
+function ResetLinkModal({ link, loading, onClose, title, subtitle }: { link?: string; loading?: boolean; onClose: () => void; title?: string; subtitle?: string }) {
   const { t } = useLang()
   const [copied, setCopied] = useState(false)
   const handleCopy = () => {
@@ -373,8 +398,8 @@ function ResetLinkModal({ link, loading, onClose }: { link?: string; loading?: b
               </svg>
             </div>
             <div>
-              <h2 className="text-base font-bold text-white">{t.users.resetLinkTitle}</h2>
-              <p className="text-xs text-orange-200 mt-0.5">{t.users.resetLinkSubtitle}</p>
+              <h2 className="text-base font-bold text-white">{title ?? t.users.resetLinkTitle}</h2>
+              <p className="text-xs text-orange-200 mt-0.5">{subtitle ?? t.users.resetLinkSubtitle}</p>
             </div>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-lg text-white/60 hover:text-white hover:bg-white/10 transition-colors">

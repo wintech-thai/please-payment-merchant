@@ -78,6 +78,13 @@ export const userApi = {
     )
   },
 
+  getInviteLink: (userId: string) => {
+    const orgId = getOrgId()
+    return client.get<{ registrationUrl?: string }>(
+      `/api/OrganizationUser/org/${orgId}/action/GetInviteLink/${userId}`
+    )
+  },
+
   // ── Roles ──────────────────────────────────────────────────────────────────
   getRoles: () => {
     const orgId = getOrgId()
