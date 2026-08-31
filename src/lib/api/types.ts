@@ -837,6 +837,8 @@ export interface PayOutRequestItem {
   qrCode?: string | null
   qrCodeP2P?: string | null
   noticeCount?: number | null
+  payoutPartialCountP2P?: number | null
+  payoutPartialCountLimitP2P?: number | null
 }
 
 export interface PartialPayoutItem {

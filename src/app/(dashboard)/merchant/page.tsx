@@ -40,6 +40,28 @@ function formatCurrencyRange(min?: number | null, max?: number | null) {
   return `- ${fmt(max!)}`
 }
 
+function parseCsvList(value?: string | null): string[] {
+  if (!value) return []
+  return value.split(',').map(s => s.trim()).filter(Boolean)
+}
+
+function ReadOnlyIpList({ label, ips }: { label: string; ips: string[] }) {
+  return (
+    <div>
+      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">{label}</label>
+      <div className="w-full min-h-[42px] px-3 py-2 flex flex-wrap gap-1.5 border border-gray-200 rounded-lg bg-gray-50">
+        {ips.length === 0 ? (
+          <span className="text-sm text-gray-400">—</span>
+        ) : (
+          ips.map(ip => (
+            <span key={ip} className="px-2.5 py-0.5 bg-white text-gray-700 ring-1 ring-gray-200 rounded-full text-xs font-mono">{ip}</span>
+          ))
+        )}
+      </div>
+    </div>
+  )
+}
+
 interface MerchantData {
   // from GetMerchants (admin MerchantItem field names)
   id?: string
@@ -54,6 +76,7 @@ interface MerchantData {
   payinMaxAmount?: number | null
   payoutMinAmount?: number | null
   payoutMaxAmount?: number | null
+  payoutPartialCountLimitP2P?: number | null
   payinDailyTxAmountLimit?: number | null
   payinDailyTxCountLimit?: number | null
   currentPayinDailyTxAmount?: number | null
@@ -234,6 +257,7 @@ export default function MerchantInfoPage() {
   const [walletData, setWalletData] = useState<any | null>(null)
   const [walletTxs, setWalletTxs] = useState<any[]>([])
   const [currencies, setCurrencies] = useState<MerchantCurrencyRow[]>([])
+  const [orgPolicy, setOrgPolicy] = useState<any>(null)
   const [currencyEnabled, setCurrencyEnabled] = useState(false)
   const [loading, setLoading] = useState(true)
   const [walletPage, setWalletPage] = useState(1)
@@ -249,12 +273,13 @@ export default function MerchantInfoPage() {
     const load = async () => {
       try {
         // Call all merchant endpoints in parallel — backend resolves merchantId from current user
-        const [detailRes, endpointsRes, webhooksRes, walletRes, currenciesRes] = await Promise.allSettled([
+        const [detailRes, endpointsRes, webhooksRes, walletRes, currenciesRes, policyRes] = await Promise.allSettled([
           userApi.getMyMerchantInfo(),
           userApi.getMerchantPaymentEndpoints(),
           userApi.getMerchantWebhooks(),
           userApi.getMerchantWallet(),
           userApi.getMerchantCurrencies(),
+          userApi.getOrganizationPolicy(),
         ])
 
         if (detailRes.status === 'rejected') throw detailRes.reason
@@ -293,6 +318,11 @@ export default function MerchantInfoPage() {
           const d = currenciesRes.value.data as any
           setCurrencies(Array.isArray(d) ? d : (d?.currencies ?? d?.data ?? []))
         }
+
+        if (policyRes.status === 'fulfilled') {
+          const d = policyRes.value.data as any
+          setOrgPolicy(d?.organizationPolicy ?? d?.OrganizationPolicy ?? null)
+        }
       } catch (err: unknown) {
         toast.error(err instanceof Error ? err.message : mi.failedToLoad)
       } finally {
@@ -319,6 +349,7 @@ export default function MerchantInfoPage() {
   const currentDailyCount     = data?.currentPayinDailyTxCount ?? null
   const discardCent = data?.discardCent ?? false
   const payinExpireMinute = data?.payinExpireMinute ?? null
+  const payoutPartialCountLimitP2P = data?.payoutPartialCountLimitP2P ?? null
 
   const tabs: { key: Tab; label: string; icon: React.ReactNode; activeClass: string; iconClass: string }[] = [
     { key: 'info',     label: mi.tabInfo,     icon: <Store      className="w-4 h-4" />, activeClass: 'bg-emerald-500 text-white shadow-md shadow-emerald-200', iconClass: 'text-emerald-500' },
@@ -447,6 +478,12 @@ export default function MerchantInfoPage() {
                       </div>
                     </div>
                     <LimitRow label={mi.fieldPayOut} min={payOutMin} max={payOutMax} minLabel={mi.fieldMin} maxLabel={mi.fieldMax} />
+                    <div className="rounded-xl border border-amber-100 bg-amber-50/40 px-4 py-3">
+                      <p className="text-[10px] font-bold text-amber-500 uppercase tracking-widest mb-1">{mi.fieldPayoutPartialCountLimitP2P}</p>
+                      <p className="text-sm font-semibold text-gray-800">
+                        {payoutPartialCountLimitP2P != null ? (payoutPartialCountLimitP2P === 0 ? '∞' : payoutPartialCountLimitP2P.toLocaleString()) : <span className="text-gray-300 font-normal">—</span>}
+                      </p>
+                    </div>
                   </div>
                 </div>
 
@@ -515,6 +552,18 @@ export default function MerchantInfoPage() {
                   <ExternalLink className="w-4 h-4" />
                   {mi.viewApiDocs}
                 </a>
+              </div>
+
+              <div className="border-t border-gray-100 pt-5">
+                <SectionHeader icon={<CreditCard className="w-3.5 h-3.5" />} color="blue">{mi.sectionIpAccess}</SectionHeader>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                  <ReadOnlyIpList label={mi.labelWebWhitelistIps} ips={parseCsvList(orgPolicy?.webWhitelistIps)} />
+                  <ReadOnlyIpList label={mi.labelApiWhitelistIps} ips={parseCsvList(orgPolicy?.apiWhitelistIps)} />
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <ReadOnlyIpList label={mi.labelWebBlacklistIps} ips={parseCsvList(orgPolicy?.webBlacklistIps)} />
+                  <ReadOnlyIpList label={mi.labelApiBlacklistIps} ips={parseCsvList(orgPolicy?.apiBlacklistIps)} />
+                </div>
               </div>
             </div>
           )}
