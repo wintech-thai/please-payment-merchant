@@ -158,6 +158,11 @@ export const userApi = {
     return client.get(`/api/Organization/org/${orgId}/action/GetOrganizationPolicy`)
   },
 
+  getIpPolicyStatus: (orgId?: string) => {
+    const id = orgId || getOrgId()
+    return client.get(`/api/Organization/org/${id}/action/GetIpPolicyStatus`)
+  },
+
   getMyMerchantInfo: () => {
     const orgId = getOrgId()
     return client.get(`/api/Merchant/org/${orgId}/action/GetMyMerchantInfo`)
