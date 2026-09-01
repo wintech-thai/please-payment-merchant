@@ -277,6 +277,7 @@ export default function PayOutRequestDetailPage() {
   const [loadingSlips, setLoadingSlips] = useState(true)
   const [showSlipViewer, setShowSlipViewer] = useState(false)
   const [showNoticeDrawer, setShowNoticeDrawer] = useState(false)
+  const [highlightedPartialId, setHighlightedPartialId] = useState<string | null>(null)
 
   const isRejected = detail?.status?.toLowerCase() === 'rejected'
 
@@ -625,6 +626,12 @@ export default function PayOutRequestDetailPage() {
                     <p className="text-base font-bold text-amber-700 tabular-nums">{formatAmount(detail.totalPayOutPendingPaidAmountDecimal)}</p>
                   </div>
                 )}
+                <div className="px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl">
+                  <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wide mb-0.5">{tr.labelPartialCountUsed}</p>
+                  <p className="text-base font-bold text-gray-700 tabular-nums">
+                    {detail.payoutPartialCountP2P ?? 0} <span className="text-gray-400 font-normal">/ {detail.payoutPartialCountLimitP2P ?? 0}</span>
+                  </p>
+                </div>
               </div>
             )}
 
@@ -640,8 +647,18 @@ export default function PayOutRequestDetailPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {detail.partialPayouts.map((p: PartialPayoutItem, i: number) => (
-                      <tr key={i} className="border-b border-gray-50 hover:bg-gray-50/50">
+                    {detail.partialPayouts.map((p: PartialPayoutItem, i: number) => {
+                      const rowKey = p.payinRequestId ?? String(i)
+                      const isRowHighlighted = highlightedPartialId === rowKey
+                      return (
+                      <tr
+                        key={rowKey}
+                        onClick={() => setHighlightedPartialId(prev => prev === rowKey ? null : rowKey)}
+                        className={clsx(
+                          'cursor-pointer border-b border-gray-50 transition-colors',
+                          isRowHighlighted ? '!bg-primary-100 border-l-[3px] border-l-primary-500' : 'hover:bg-gray-50/50'
+                        )}
+                      >
                         <td className="px-3 py-2.5 text-gray-600 whitespace-nowrap">
                           <div className="flex items-center gap-2">
                             <span>{formatDateTime(p.txDate)}</span>
@@ -677,7 +694,8 @@ export default function PayOutRequestDetailPage() {
                           ) : '—'}
                         </td>
                       </tr>
-                    ))}
+                      )
+                    })}
                   </tbody>
                 </table>
               </div>

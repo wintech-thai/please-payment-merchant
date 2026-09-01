@@ -392,6 +392,14 @@ export default function PayOutRequestsPage() {
                     {item.isPartialyPayout && item.totalPayOutPaidAmountDecimal != null && item.totalPayOutPaidAmountDecimal > 0 && (
                       <div className="text-xs text-emerald-600 font-semibold">+{Number(item.totalPayOutPaidAmountDecimal).toLocaleString('th-TH', { minimumFractionDigits: 2 })}</div>
                     )}
+                    {item.isPartialyPayout && (
+                      <div
+                        className="text-[10px] text-gray-400 cursor-help"
+                        title={`${tr.partialCountTooltip}: ${item.payoutPartialCountP2P ?? 0} / ${item.payoutPartialCountLimitP2P ?? 0}`}
+                      >
+                        {item.payoutPartialCountP2P ?? 0}/{item.payoutPartialCountLimitP2P ?? 0}
+                      </div>
+                    )}
                     <div className="text-[10px] text-gray-400">{item.currency || 'THB'}</div>
                   </td>
                   <td className="px-4 py-3 border-b border-gray-100 text-right">

@@ -78,6 +78,13 @@ export const userApi = {
     )
   },
 
+  getInviteLink: (userId: string) => {
+    const orgId = getOrgId()
+    return client.get<{ registrationUrl?: string }>(
+      `/api/OrganizationUser/org/${orgId}/action/GetInviteLink/${userId}`
+    )
+  },
+
   // ── Roles ──────────────────────────────────────────────────────────────────
   getRoles: () => {
     const orgId = getOrgId()
@@ -144,6 +151,16 @@ export const userApi = {
   getMerchantInfo: () => {
     const orgId = getOrgId()
     return client.get(`/api/Organization/org/${orgId}/action/GetOrganization`)
+  },
+
+  getOrganizationPolicy: () => {
+    const orgId = getOrgId()
+    return client.get(`/api/Organization/org/${orgId}/action/GetOrganizationPolicy`)
+  },
+
+  getIpPolicyStatus: (orgId?: string) => {
+    const id = orgId || getOrgId()
+    return client.get(`/api/Organization/org/${id}/action/GetIpPolicyStatus`)
   },
 
   getMyMerchantInfo: () => {
