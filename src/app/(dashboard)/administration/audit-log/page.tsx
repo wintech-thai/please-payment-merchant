@@ -59,7 +59,19 @@ function calculateInterval(tr: TimeRangeValue): string {
 }
 
 function mapItem(source: Record<string, unknown>): AuditLogDocument {
-  const data = (source.data as Record<string, unknown>) || {}
+  let data = (source.data as Record<string, unknown>) || {}
+
+  // Some documents only carry the payload inside a stringified `raw_data` field
+  // instead of a real structured `data.*` object — parse it as a fallback so
+  // display still works for those records too.
+  if (typeof source.raw_data === 'string') {
+    try {
+      const parsed = JSON.parse(source.raw_data)
+      const rawData = (parsed?.data as Record<string, unknown>) || {}
+      data = { ...rawData, ...data }
+    } catch { /* ignore malformed raw_data */ }
+  }
+
   const userInfo = (data.userInfo as Record<string, unknown>) || (data.user as Record<string, unknown>) || {}
   const api = (data.api as Record<string, unknown>) || {}
   return {
@@ -73,6 +85,7 @@ function mapItem(source: Record<string, unknown>): AuditLogDocument {
     resource: String(api.Controller ?? api.controller ?? ''),
     status_code: Number(data.StatusCode ?? data.statusCode ?? api.statusCode ?? 200),
     client_ip: String(data.ClientIp || data.CfClientIp || data.clientIp || data.cfClientIp || '-'),
+    remote_ip: String(data.RemoteIp ?? data.remoteIp ?? '-'),
     ...source,
   }
 }
@@ -120,13 +133,13 @@ export default function AuditLogPage() {
 
       if (searchTerm) {
         if (searchField === 'all') {
-          queryMust.push({ multi_match: { query: searchTerm, fields: ['data.userInfo.UserName', 'data.api.ApiName', 'data.api.Controller', 'data.userInfo.Role', 'data.userInfo.IdentityType', 'data.CfClientIp', 'data.ClientIp', 'data.Path'], type: 'phrase_prefix' } })
+          queryMust.push({ multi_match: { query: searchTerm, fields: ['data.userInfo.UserName', 'data.api.ApiName', 'data.api.Controller', 'data.userInfo.Role', 'data.userInfo.IdentityType', 'data.CfClientIp', 'data.ClientIp', 'data.RemoteIp', 'data.Path'], type: 'phrase_prefix' } })
         } else if (searchField === 'username') {
           queryMust.push({ match: { 'data.userInfo.UserName': searchTerm } })
         } else if (searchField === 'api') {
           queryMust.push({ match: { 'data.api.ApiName': searchTerm } })
         } else if (searchField === 'ip') {
-          queryMust.push({ match: { 'data.CfClientIp': searchTerm } })
+          queryMust.push({ multi_match: { query: searchTerm, fields: ['data.ClientIp', 'data.CfClientIp', 'data.RemoteIp'], type: 'phrase_prefix' } })
         }
       }
 

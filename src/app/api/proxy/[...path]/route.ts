@@ -16,13 +16,17 @@ async function handler(request: NextRequest, { params }: { params: { path: strin
     'Onix-Application-Type': 'PLEASE-PAYMENT-MERCHANT',
   }
 
-  // Forward the real visitor IP through to the backend — this proxy relay is a new
-  // "client" from the backend's point of view, so without this the backend only ever
-  // sees this Next.js pod's own internal cluster IP (breaks IP blacklist/audit logging).
-  const cfConnectingIp = request.headers.get('cf-connecting-ip')
-  const forwardedFor = request.headers.get('x-forwarded-for')
-  if (cfConnectingIp) headers['CF-Connecting-IP'] = cfConnectingIp
-  if (forwardedFor) headers['X-Original-Forwarded-For'] = forwardedFor
+  // Forward the real visitor IP/host info through to the backend, verbatim under the
+  // same header names — this proxy relay is a new "client" from the backend's point of
+  // view, so without this the backend only ever sees this Next.js pod's own internal
+  // cluster IP (breaks IP blacklist/audit logging). Do NOT forward X-Original-Forwarded-For
+  // here — that gets derived from X-Forwarded-For further along automatically, and
+  // forwarding it ourselves too results in a blank value instead.
+  const FORWARD_HEADERS = ['cf-connecting-ip', 'x-forwarded-for', 'x-forwarded-host']
+  for (const h of FORWARD_HEADERS) {
+    const v = request.headers.get(h)
+    if (v) headers[h] = v
+  }
 
   const ANONYMOUS_PATHS = ['VerifyPayInToken', 'UploadPayInSlipById']
   const isAnonymous = ANONYMOUS_PATHS.some(p => path.includes(p))
