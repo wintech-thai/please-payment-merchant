@@ -160,6 +160,13 @@ client.interceptors.response.use(
     const data = response.data
     if (!data) return response
 
+    // GetIpPolicyStatus intentionally returns statuses like IP_BLACKLISTED /
+    // IP_NOT_WHITELISTED as its actual successful payload (that IS the answer to
+    // "is this IP blocked?") — not a failure. Never reject it as an API error.
+    if (typeof response.config?.url === 'string' && response.config.url.includes('GetIpPolicyStatus')) {
+      return response
+    }
+
     const { status, description, message } = data
     if (status === undefined || status === null) return response
 
