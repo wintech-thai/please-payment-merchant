@@ -3,6 +3,28 @@ import { toast } from 'sonner'
 
 const API_URL = '/api/proxy'
 
+// Blacklist-block responses (422) carry extra fields beyond description/message —
+// surface them in the error text so support/dev can immediately see what IP the API
+// resolved and what the whitelist/blacklist config contains, without needing backend
+// log access when a merchant reports being blocked.
+function buildApiErrorMessage(errorData: unknown): string | undefined {
+  if (typeof errorData === 'string') return errorData
+  if (typeof errorData !== 'object' || errorData === null) return undefined
+
+  const d = errorData as Record<string, unknown>
+  const base = (d.description as string | undefined) || (d.message as string | undefined)
+
+  const clientIp = d.clientIp as string | undefined
+  const whitelistIps = d.whitelistIps as string | undefined
+  const blacklistIps = d.blacklistIps as string | undefined
+  if (clientIp !== undefined || whitelistIps !== undefined || blacklistIps !== undefined) {
+    const details = `Client IP: ${clientIp || '-'} | Whitelist: ${whitelistIps || '-'} | Blacklist: ${blacklistIps || '-'}`
+    return base ? `${base} (${details})` : details
+  }
+
+  return base
+}
+
 export const client = axios.create({
   baseURL: API_URL,
   headers: { 'Content-Type': 'application/json' },
@@ -220,11 +242,7 @@ client.interceptors.response.use(
       rawStr.includes('expired')
 
     if (!isTokenExpired || !originalRequest || originalRequest._retry) {
-      const apiMessage =
-        typeof errorData === 'object' && errorData !== null
-          ? ((errorData as Record<string, unknown>).description as string | undefined) ||
-            ((errorData as Record<string, unknown>).message as string | undefined)
-          : typeof errorData === 'string' ? errorData : undefined
+      const apiMessage = buildApiErrorMessage(errorData)
       if (apiMessage) {
         return Promise.reject(new AxiosError(apiMessage, String(status ?? ''), originalRequest, error.request, errorResponse))
       }
