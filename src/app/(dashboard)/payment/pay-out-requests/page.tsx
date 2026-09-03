@@ -292,10 +292,6 @@ export default function PayOutRequestsPage() {
           <h1 className="text-xl font-bold text-gray-900">{tr.title}</h1>
           <p className="text-sm text-gray-500 mt-0.5">{tr.subtitle}</p>
         </div>
-        <button onClick={() => router.push('/payment/pay-out-requests/add')}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary-600 text-white text-sm font-medium hover:bg-primary-700 transition">
-          <Plus className="w-4 h-4" />{tr.addBtn}
-        </button>
       </div>
 
       {/* Filters */}

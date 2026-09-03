@@ -464,16 +464,20 @@ export default function PayInRequestDetailPage() {
         setData(raw)
 
         const jobId = raw?.jobId ?? raw?.JobId
-        if (jobId) {
-          setLoadingJob(true)
-          paymentRequestApi.getPaymentRequestJobById(id, jobId)
-            .then(jobRes => {
-              const jobData = jobRes.data as any
-              setJob(jobData?.job ?? jobData?.Job ?? jobData)
-            })
-            .catch(() => {})
-            .finally(() => setLoadingJob(false))
-        }
+        setLoadingJob(true)
+        const jobPromise = jobId
+          ? paymentRequestApi.getPaymentRequestJobById(id, jobId)
+          : paymentRequestApi.getPaymentRequestJobByRefId(id)
+        jobPromise
+          .then(jobRes => {
+            const jobData = jobRes.data as any
+            const foundJob = jobData?.job ?? jobData?.Job ?? jobData
+            if (foundJob && (foundJob.id ?? foundJob.Id)) {
+              setJob(foundJob)
+            }
+          })
+          .catch(() => {})
+          .finally(() => setLoadingJob(false))
 
         setLoadingSlips(true)
         paymentRequestApi.getPayInSlipUploads(id)
@@ -647,9 +651,9 @@ export default function PayInRequestDetailPage() {
               ? <span className="font-semibold tabular-nums">{formatAmount(data.generatedAmount)}</span>
               : '—'}
           </InfoRow>
-          <InfoRow label={tr.fieldBank}>{data?.payinBankCode ?? '—'}</InfoRow>
-          <InfoRow label={tr.fieldAccountNo}>{data?.payinBankAccountNo ?? '—'}</InfoRow>
-          <InfoRow label={tr.fieldAccountName}>{data?.payinBankAccountName ?? '—'}</InfoRow>
+          <InfoRow label={tr.fieldBank}>{data?.payinBankCode || '—'}</InfoRow>
+          <InfoRow label={tr.fieldAccountNo}>{data?.payinBankAccountNo || '—'}</InfoRow>
+          <InfoRow label={tr.fieldAccountName}>{data?.payinBankAccountName || '—'}</InfoRow>
           <InfoRow label={tr.fieldAccountType}>
             {data?.payinAccountType ? (
               <div className="flex items-center gap-2 flex-wrap">
@@ -706,7 +710,7 @@ export default function PayInRequestDetailPage() {
       )}
 
       {/* Job */}
-      {(data?.jobId || loadingJob) && (
+      {(data?.jobId || loadingJob || job) && (
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 px-7 py-6">
           <SectionHeader>{tr.sectionJob}</SectionHeader>
           {loadingJob ? (
