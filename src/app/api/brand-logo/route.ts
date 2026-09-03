@@ -1,15 +1,32 @@
 import { NextResponse } from 'next/server'
+import { headers } from 'next/headers'
 
 const BACKEND_URL = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || ''
 const STORAGE_BASE = process.env.NEXT_PUBLIC_STORAGE_API_BASE || 'https://storage-api.please-payment.com'
+
+// Same header-forwarding contract as src/app/api/proxy/[...path]/route.ts —
+// this fetch talks to the backend directly (bypassing that proxy), so it has
+// to forward the visitor IP/mutual-key headers itself or the backend only
+// sees this pod's own IP (breaks audit logging for GetBrandConfig).
+const FORWARD_HEADERS = ['cf-connecting-ip', 'x-forwarded-for', 'x-forwarded-host']
 
 export const dynamic = 'force-dynamic'
 
 export async function GET() {
   try {
+    const incomingHeaders = await headers()
+    const forwardHeaders: Record<string, string> = {}
+    for (const h of FORWARD_HEADERS) {
+      const v = incomingHeaders.get(h)
+      if (v) forwardHeaders[h] = v
+    }
+    if (process.env.MUTUAL_KEY) {
+      forwardHeaders['X-Forward-Mutual-Key'] = process.env.MUTUAL_KEY
+    }
+
     const cfgRes = await fetch(
       `${BACKEND_URL}/admin-api/AdminConfiguration/org/global/action/GetBrandConfig`,
-      { cache: 'no-store' }
+      { headers: forwardHeaders, cache: 'no-store' }
     )
     if (!cfgRes.ok) return new NextResponse(null, { status: 404 })
 

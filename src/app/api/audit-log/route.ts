@@ -110,13 +110,26 @@ async function handlePostgres(req: NextRequest): Promise<Response> {
     GroupBy: 'api',
   }
 
+  // Same header-forwarding contract as src/app/api/proxy/[...path]/route.ts —
+  // this fetch talks to the backend directly (bypassing that proxy), so it has
+  // to forward the visitor IP/mutual-key headers itself or the backend only
+  // sees this pod's own IP (breaks audit logging for QueryAuditLogs itself).
+  const forwardHeaders: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'Onix-Application-Type': 'PLEASE-PAYMENT',
+    ...(authHeader ? { Authorization: authHeader } : {}),
+  }
+  for (const h of ['cf-connecting-ip', 'x-forwarded-for', 'x-forwarded-host']) {
+    const v = req.headers.get(h)
+    if (v) forwardHeaders[h] = v
+  }
+  if (process.env.MUTUAL_KEY) {
+    forwardHeaders['X-Forward-Mutual-Key'] = process.env.MUTUAL_KEY
+  }
+
   const apiRes = await fetch(`${apiBase}/api/AuditLog/org/${orgId}/action/QueryAuditLogs`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Onix-Application-Type': 'PLEASE-PAYMENT',
-      ...(authHeader ? { Authorization: authHeader } : {}),
-    },
+    headers: forwardHeaders,
     body: JSON.stringify(payload),
   })
 
