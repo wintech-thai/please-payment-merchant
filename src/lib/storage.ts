@@ -10,7 +10,14 @@ function getStorageBase(): string {
   return replaced !== origin ? replaced : 'https://storage-api.please-payment.com'
 }
 
+function getApiBase(): string {
+  return process.env.NEXT_PUBLIC_API_URL || 'https://api-dev.please-payment.com'
+}
+
 export function resolveStorageUrl(url: string): string {
   if (!url) return ''
+  if (url.includes('<API-BASE>')) {
+    return url.replace('<API-BASE>', getApiBase())
+  }
   return url.replace('<STORAGE-API-BASE>', getStorageBase())
 }

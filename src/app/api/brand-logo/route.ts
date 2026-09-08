@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server'
 import { headers } from 'next/headers'
 
 const BACKEND_URL = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || ''
-const STORAGE_BASE = process.env.NEXT_PUBLIC_STORAGE_API_BASE || 'https://storage-api.please-payment.com'
 
 // Same header-forwarding contract as src/app/api/proxy/[...path]/route.ts —
 // this fetch talks to the backend directly (bypassing that proxy), so it has
@@ -39,7 +38,7 @@ export async function GET() {
       return new NextResponse(null, { status: 404 })
     }
 
-    const logoUrl = config.brandConfig.logoImageUrl.replace('<STORAGE-API-BASE>', STORAGE_BASE)
+    const logoUrl = config.brandConfig.logoImageUrl.replace('<API-BASE>', BACKEND_URL)
     const imgRes = await fetch(logoUrl, { cache: 'no-store' })
     if (!imgRes.ok) return new NextResponse(null, { status: 404 })
 

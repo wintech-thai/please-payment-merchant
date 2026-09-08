@@ -52,6 +52,12 @@ async function fetchBrandConfig(): Promise<Config | null> {
   }
 }
 
+// logoImageUrl ตอนนี้เป็น static path เดิมตลอด (ไม่มี signature กันซ้ำแบบ presigned URL เก่า)
+// ต้องแปะ cache-buster เอง ไม่งั้น browser จะแคชรูปเก่า/404 ค้างหลังอัปโหลดโลโก้ใหม่
+function withCacheBust(url: string): string {
+  return url ? `${url}?_t=${Date.now()}` : ''
+}
+
 function isConfigActive(config: Config | null): boolean {
   const s = config?.status?.toLowerCase() ?? ''
   return s === 'active' || s.startsWith('enable')
@@ -187,7 +193,7 @@ export function BrandProvider({ children }: { children: React.ReactNode }) {
     const active = isConfigActive(data) && !!data?.brandConfig
     if (active) {
       const n = data!.brandConfig!.brandName || ''
-      const l = data!.brandConfig!.logoImageUrl ? resolveStorageUrl(data!.brandConfig!.logoImageUrl) : ''
+      const l = data!.brandConfig!.logoImageUrl ? withCacheBust(resolveStorageUrl(data!.brandConfig!.logoImageUrl)) : ''
       const t = data!.brandConfig!.themeName || ''
       setCachedName(n)
       setCachedLogo(l)
@@ -205,7 +211,7 @@ export function BrandProvider({ children }: { children: React.ReactNode }) {
 
   const active = isConfigActive(config)
   const resolvedLogoUrl = active && config?.brandConfig?.logoImageUrl
-    ? resolveStorageUrl(config.brandConfig.logoImageUrl)
+    ? withCacheBust(resolveStorageUrl(config.brandConfig.logoImageUrl))
     : ''
   const resolvedBrandName = active && config?.brandConfig?.brandName
     ? config.brandConfig.brandName
