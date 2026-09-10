@@ -553,6 +553,7 @@ export interface PayOutTxItem {
   rawInputObj?: unknown | null
   jobId?: string | null
   noticeCount?: number | null
+  payoutIsWithdrawal?: boolean | null
 }
 
 export interface PayOutTxDetail extends PayOutTxItem {
@@ -591,6 +592,7 @@ export interface PointTxItem {
   merchantId?: string | null
   createdDate?: string | null
   tags?: string | null
+  tags2?: string | null
   description?: string | null
   txAmount?: number | null
   txAmountDecimal?: number | null
@@ -839,6 +841,7 @@ export interface PayOutRequestItem {
   noticeCount?: number | null
   payoutPartialCountP2P?: number | null
   payoutPartialCountLimitP2P?: number | null
+  payoutIsWithdrawal?: boolean | null
 }
 
 export interface PartialPayoutItem {

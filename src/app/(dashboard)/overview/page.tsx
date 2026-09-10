@@ -44,12 +44,13 @@ function fmtDate(d?: string | null) {
 }
 
 function KpiCard({ label, value, sub, accent = 'neutral' }: {
-  label: string; value: string; sub?: string; accent?: 'green' | 'red' | 'orange' | 'neutral'
+  label: string; value: string; sub?: string; accent?: 'green' | 'red' | 'orange' | 'purple' | 'neutral'
 }) {
   const s = {
     green:   { card: 'bg-gradient-to-br from-emerald-500 to-emerald-600 border-emerald-600', dot: 'bg-white/40', label: 'text-emerald-100',  value: 'text-white', sub: 'text-emerald-200' },
     red:     { card: 'bg-gradient-to-br from-rose-500 to-rose-600 border-rose-600',           dot: 'bg-white/40', label: 'text-rose-100',     value: 'text-white', sub: 'text-rose-200' },
     orange:  { card: 'bg-gradient-to-br from-orange-500 to-orange-600 border-orange-600',     dot: 'bg-white/40', label: 'text-orange-100',   value: 'text-white', sub: 'text-orange-200' },
+    purple:  { card: 'bg-gradient-to-br from-fuchsia-500 to-fuchsia-600 border-fuchsia-600',  dot: 'bg-white/40', label: 'text-fuchsia-100',  value: 'text-white', sub: 'text-fuchsia-200' },
     neutral: { card: 'bg-gradient-to-br from-gray-600 to-gray-700 border-gray-700',           dot: 'bg-white/40', label: 'text-gray-300',     value: 'text-white', sub: 'text-gray-300' },
   }[accent]
   return (
@@ -137,6 +138,8 @@ export default function OverviewPage() {
     : payInFee ?? payOutFee ?? null
   const payInCount   = summary?.totalPayInCount  ?? null
   const payOutCount  = summary?.totalPayOutCount ?? null
+  const withdrawalAmount = summary?.totalWithdrawalAmount ?? null
+  const withdrawalCount  = summary?.totalWithdrawalCount  ?? null
   const netFlow      = payInAmount != null && payOutAmount != null ? payInAmount - payOutAmount : null
 
   const dailyItems: MerchantDailySummaryItem[] = summary?.dailyMerchantRevenue ?? []
@@ -145,6 +148,7 @@ export default function OverviewPage() {
     date: fmtDate(item.date),
     [ov.labelPayIn]:  item.payInAmount  ?? 0,
     [ov.labelPayOut]: item.payOutAmount ?? 0,
+    [ov.labelWithdrawal]: item.withdrawalAmount ?? 0,
   }))
 
   return (
@@ -171,7 +175,7 @@ export default function OverviewPage() {
       <div className="flex-1 overflow-y-auto flex flex-col gap-4 pb-2 custom-scrollbar">
 
         {/* KPI Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
           <KpiCard
             label={ov.totalPayIn}
             value={fmtMoney(payInAmount)}
@@ -183,6 +187,12 @@ export default function OverviewPage() {
             value={fmtMoney(payOutAmount)}
             sub={payOutCount != null ? `${payOutCount.toLocaleString()} ${ov.transactions}` : undefined}
             accent="red"
+          />
+          <KpiCard
+            label={ov.totalWithdrawal}
+            value={fmtMoney(withdrawalAmount)}
+            sub={withdrawalCount != null ? `${withdrawalCount.toLocaleString()} ${ov.transactions}` : undefined}
+            accent="purple"
           />
           <KpiCard label={ov.totalFee} value={fmtMoney(totalFee)} accent="orange" />
           <KpiCard
@@ -221,6 +231,7 @@ export default function OverviewPage() {
                 />
                 <Bar dataKey={ov.labelPayIn}  fill="#10b981" radius={[3, 3, 0, 0]} maxBarSize={28} />
                 <Bar dataKey={ov.labelPayOut} fill="#f43f5e" radius={[3, 3, 0, 0]} maxBarSize={28} />
+                <Bar dataKey={ov.labelWithdrawal} fill="#d946ef" radius={[3, 3, 0, 0]} maxBarSize={28} />
               </BarChart>
             </ResponsiveContainer>
           ) : (

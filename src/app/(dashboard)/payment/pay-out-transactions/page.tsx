@@ -287,7 +287,14 @@ export default function PayOutTransactionsPage() {
                     className="px-4 py-3 border-b border-gray-100 whitespace-nowrap cursor-pointer group"
                     onClick={e => { e.stopPropagation(); handleRowHighlight(item.id); router.push(`/payment/pay-out-transactions/${item.id}`) }}
                   >
-                    <span className="text-sm text-gray-600 group-hover:text-primary-600 group-hover:underline">{formatDateTime(item.createdDate)}</span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-sm text-gray-600 group-hover:text-primary-600 group-hover:underline">{formatDateTime(item.createdDate)}</span>
+                      {item.payoutIsWithdrawal && (
+                        <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold ring-1 bg-blue-50 text-blue-700 ring-blue-200">
+                          {t.payOutRequest.withdrawalBadge}
+                        </span>
+                      )}
+                    </div>
                     {item.refId1 && <p className="text-xs text-gray-400 mt-0.5">{item.refId1}</p>}
                   </td>
                   {/* Amount */}

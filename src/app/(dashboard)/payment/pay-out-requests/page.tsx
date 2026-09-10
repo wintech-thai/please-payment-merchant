@@ -378,7 +378,14 @@ export default function PayOutRequestsPage() {
                     <div className="text-xs text-gray-400 truncate max-w-[160px]">{item.refId1 || '—'}</div>
                   </td>
                   <td className="px-4 py-3 border-b border-gray-100 whitespace-nowrap">
-                    <div className="text-sm font-semibold text-gray-800">{item.merchantCode || '—'}</div>
+                    <div className="flex items-center gap-1.5">
+                      <div className="text-sm font-semibold text-gray-800">{item.merchantCode || '—'}</div>
+                      {item.payoutIsWithdrawal && (
+                        <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold ring-1 bg-blue-50 text-blue-700 ring-blue-200">
+                          {tr.withdrawalBadge}
+                        </span>
+                      )}
+                    </div>
                     <div className="text-xs text-gray-400">{item.merchantName || ''}</div>
                   </td>
                   <td className="px-4 py-3 border-b border-gray-100 text-right">
