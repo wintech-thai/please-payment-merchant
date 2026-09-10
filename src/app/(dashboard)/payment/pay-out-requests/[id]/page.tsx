@@ -356,7 +356,14 @@ export default function PayOutRequestDetailPage() {
           <ChevronLeft className="w-5 h-5" />
         </button>
         <div className="flex-1">
-          <h1 className="text-2xl font-bold text-gray-900">{tr.detailTitle}</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-bold text-gray-900">{tr.detailTitle}</h1>
+            {detail?.payoutIsWithdrawal && (
+              <span className="px-2 py-0.5 rounded-full text-xs font-bold ring-1 bg-blue-50 text-blue-700 ring-blue-200">
+                {tr.withdrawalBadge}
+              </span>
+            )}
+          </div>
           <p className="text-sm text-gray-500 mt-0.5">{id}</p>
         </div>
         {detail && (

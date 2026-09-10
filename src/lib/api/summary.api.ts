@@ -20,6 +20,9 @@ export interface MerchantDailySummaryItem {
   // will be available after backend adds count to query
   payInCount?: number | null
   payOutCount?: number | null
+  withdrawalAmount?: number | null
+  withdrawalFee?: number | null
+  withdrawalCount?: number | null
 }
 
 export interface MerchantOverviewSummary {
@@ -28,6 +31,9 @@ export interface MerchantOverviewSummary {
   totalPayOutAmount?: number | null
   totalPayInFee?: number | null
   totalPayOutFee?: number | null
+  totalWithdrawalAmount?: number | null
+  totalWithdrawalFee?: number | null
+  totalWithdrawalCount?: number | null
   // daily breakdown embedded in response
   dailyMerchantRevenue?: MerchantDailySummaryItem[]
   totalPayInCount?: number | null

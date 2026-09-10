@@ -756,6 +756,7 @@ export default function MerchantInfoPage() {
                       <tbody>
                         {pagedTxs.length > 0 ? pagedTxs.map((tx: any, idx) => {
                           const isPayIn = tx.txType === 1
+                          const isWithdrawal = /IsWithdrawal=\[true\]/i.test(tx.tags2 ?? '')
                           const amount = tx.txAmountDecimal ?? tx.txAmount
                           const tags = typeof tx.tags === 'string' ? tx.tags : Array.isArray(tx.tags) ? tx.tags.join(', ') : ''
                           const payOutMatch = tags.match(/PayOutRequestId=\[([^\]]+)\]/)
@@ -802,7 +803,10 @@ export default function MerchantInfoPage() {
                                               toast.error(mi.crossMerchantTitle, { description: mi.crossMerchantDesc })
                                             }
                                           }}
-                                          className="inline-block px-2 py-0.5 rounded text-xs font-semibold hover:opacity-80 transition-opacity bg-red-100 text-red-700 cursor-pointer"
+                                          className={clsx(
+                                            'inline-block px-2 py-0.5 rounded text-xs font-semibold hover:opacity-80 transition-opacity cursor-pointer',
+                                            isWithdrawal ? 'bg-blue-100 text-blue-700' : 'bg-red-100 text-red-700'
+                                          )}
                                         >
                                           {tagLabel}
                                         </button>
@@ -832,9 +836,9 @@ export default function MerchantInfoPage() {
                               <td className="px-4 py-3">
                                 <span className={clsx(
                                   'inline-block px-2 py-0.5 rounded text-xs font-semibold',
-                                  isPayIn ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                                  isPayIn ? 'bg-green-100 text-green-700' : isWithdrawal ? 'bg-blue-100 text-blue-700' : 'bg-red-100 text-red-700'
                                 )}>
-                                  {isPayIn ? 'Pay-In' : 'Pay-Out'}
+                                  {isPayIn ? 'Pay-In' : (isWithdrawal ? 'Withdraw' : 'Pay-Out')}
                                 </span>
                               </td>
                               <td className="px-4 py-3 text-right text-sm text-gray-700">

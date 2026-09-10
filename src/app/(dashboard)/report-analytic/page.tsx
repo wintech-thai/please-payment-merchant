@@ -44,12 +44,13 @@ function fmtDate(d?: string | null) {
 }
 
 function SummaryCard({ label, value, sub, accent = 'neutral' }: {
-  label: string; value: string; sub?: string; accent?: 'green' | 'red' | 'orange' | 'neutral'
+  label: string; value: string; sub?: string; accent?: 'green' | 'red' | 'orange' | 'purple' | 'neutral'
 }) {
   const s = {
     green:   { card: 'bg-gradient-to-br from-emerald-500 to-emerald-600 border-emerald-600', dot: 'bg-white/40', label: 'text-emerald-100',  value: 'text-white', sub: 'text-emerald-200' },
     red:     { card: 'bg-gradient-to-br from-rose-500 to-rose-600 border-rose-600',           dot: 'bg-white/40', label: 'text-rose-100',     value: 'text-white', sub: 'text-rose-200' },
     orange:  { card: 'bg-gradient-to-br from-orange-500 to-orange-600 border-orange-600',     dot: 'bg-white/40', label: 'text-orange-100',   value: 'text-white', sub: 'text-orange-200' },
+    purple:  { card: 'bg-gradient-to-br from-fuchsia-500 to-fuchsia-600 border-fuchsia-600',  dot: 'bg-white/40', label: 'text-fuchsia-100',  value: 'text-white', sub: 'text-fuchsia-200' },
     neutral: { card: 'bg-gradient-to-br from-gray-600 to-gray-700 border-gray-700',           dot: 'bg-white/40', label: 'text-gray-300',     value: 'text-white', sub: 'text-gray-300' },
   }[accent]
   return (
@@ -131,7 +132,11 @@ export default function ReportAnalyticPage() {
   const payOutAmount = summary?.totalPayOutAmount ?? null
   const payInFee     = summary?.totalPayInFee     ?? null
   const payOutFee    = summary?.totalPayOutFee    ?? null
-  const totalFee     = payInFee != null && payOutFee != null ? payInFee + payOutFee : payInFee ?? payOutFee ?? null
+  const withdrawalAmount = summary?.totalWithdrawalAmount ?? null
+  const withdrawalFee    = summary?.totalWithdrawalFee    ?? null
+  const withdrawalCount  = summary?.totalWithdrawalCount  ?? null
+  const totalFee     = [payInFee, payOutFee, withdrawalFee].reduce<number | null>(
+    (acc, v) => v != null ? (acc ?? 0) + v : acc, null)
   const payInCount   = summary?.totalPayInCount  ?? null
   const payOutCount  = summary?.totalPayOutCount ?? null
   const netFlow      = payInAmount != null && payOutAmount != null ? payInAmount - payOutAmount : null
@@ -142,15 +147,18 @@ export default function ReportAnalyticPage() {
     date: fmtDate(item.date),
     [ov.labelPayIn]:  item.payInAmount  ?? 0,
     [ov.labelPayOut]: item.payOutAmount ?? 0,
+    [ov.labelWithdrawal]: item.withdrawalAmount ?? 0,
   }))
 
   const FEE_PAYIN  = `${ov.labelPayIn} Fee`
   const FEE_PAYOUT = `${ov.labelPayOut} Fee`
+  const FEE_WITHDRAWAL = `${ov.labelWithdrawal} Fee`
 
   const chartFeeData = dailyItems.map(item => ({
     date: fmtDate(item.date),
     [FEE_PAYIN]:  item.payInFee  ?? 0,
     [FEE_PAYOUT]: item.payOutFee ?? 0,
+    [FEE_WITHDRAWAL]: item.withdrawalFee ?? 0,
   }))
 
   const noDataEl = (
@@ -187,16 +195,19 @@ export default function ReportAnalyticPage() {
       <div className="flex-1 overflow-y-auto flex flex-col gap-4 pb-2 custom-scrollbar">
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <SummaryCard label={ov.totalPayIn}  value={fmtMoney(payInAmount)}
             sub={payInCount != null ? `${payInCount.toLocaleString()} ${ov.transactions}` : undefined} accent="green" />
           <SummaryCard label={ov.totalPayOut} value={fmtMoney(payOutAmount)}
             sub={payOutCount != null ? `${payOutCount.toLocaleString()} ${ov.transactions}` : undefined} accent="red" />
+          <SummaryCard label={ov.totalWithdrawal} value={fmtMoney(withdrawalAmount)}
+            sub={withdrawalCount != null ? `${withdrawalCount.toLocaleString()} ${ov.transactions}` : undefined} accent="purple" />
           <SummaryCard label={ov.totalFee}    value={fmtMoney(totalFee)}    accent="orange" />
           <SummaryCard label={ov.netFlow}     value={fmtMoney(netFlow)}
             accent={netFlow == null ? 'neutral' : netFlow >= 0 ? 'green' : 'red'} />
           <SummaryCard label={ov.payInCount}  value={payInCount != null ? payInCount.toLocaleString() : '—'} />
           <SummaryCard label={ov.payOutCount} value={payOutCount != null ? payOutCount.toLocaleString() : '—'} />
+          <SummaryCard label={ov.withdrawalCount} value={withdrawalCount != null ? withdrawalCount.toLocaleString() : '—'} />
         </div>
 
         {/* Chart 1: Daily Pay-In vs Pay-Out Amount */}
@@ -212,6 +223,7 @@ export default function ReportAnalyticPage() {
                   formatter={(v) => <span className="text-gray-600 font-medium">{v}</span>} />
                 <Bar dataKey={ov.labelPayIn}  fill="#10b981" radius={[3, 3, 0, 0]} maxBarSize={28} />
                 <Bar dataKey={ov.labelPayOut} fill="#f43f5e" radius={[3, 3, 0, 0]} maxBarSize={28} />
+                <Bar dataKey={ov.labelWithdrawal} fill="#d946ef" radius={[3, 3, 0, 0]} maxBarSize={28} />
               </BarChart>
             </ResponsiveContainer>
           ) : noDataEl}
@@ -229,7 +241,8 @@ export default function ReportAnalyticPage() {
                 <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }}
                   formatter={(v) => <span className="text-gray-600 font-medium">{v}</span>} />
                 <Bar dataKey={FEE_PAYIN}  stackId="fee" fill="#10b981" maxBarSize={28} />
-                <Bar dataKey={FEE_PAYOUT} stackId="fee" fill="#f97316" radius={[3, 3, 0, 0]} maxBarSize={28} />
+                <Bar dataKey={FEE_PAYOUT} stackId="fee" fill="#f97316" maxBarSize={28} />
+                <Bar dataKey={FEE_WITHDRAWAL} stackId="fee" fill="#d946ef" radius={[3, 3, 0, 0]} maxBarSize={28} />
               </BarChart>
             </ResponsiveContainer>
           ) : noDataEl}
