@@ -185,7 +185,7 @@ function LoginForm() {
                 <text x="60" y="89" textAnchor="middle" fill="white" fontSize="42" fontWeight="bold" fontFamily="Arial, sans-serif">฿</text>
               </g>
             </svg>
-            <span className="font-bold text-gray-900 text-sm">PLEASE-PAYMENT Merchant</span>
+            <span className="font-bold text-gray-900 text-sm">{brandName || 'PLEASE-PAYMENT'} Merchant</span>
           </div>
 
           <h2 className="text-2xl font-bold text-gray-900 mb-1">{t.login.welcome}</h2>
@@ -290,7 +290,7 @@ function LoginForm() {
             </button>
           </form>
 
-          <p className="text-center text-xs text-gray-400 mt-8">{t.login.footer}</p>
+          <p className="text-center text-xs text-gray-400 mt-8">{t.login.footer.replace('{brand}', brandName || 'PLEASE-PAYMENT')}</p>
           <p className="text-center text-xs text-gray-400">Secure &bull; Reliable &bull; Fast</p>
         </div>
       </div>
