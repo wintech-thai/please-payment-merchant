@@ -166,25 +166,30 @@ function LoginForm() {
         <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-8 sm:p-10">
           {/* Mobile logo */}
           <div className="flex lg:hidden items-center gap-2 mb-6">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none" className="w-8 h-8 flex-shrink-0">
-              <defs>
-                <linearGradient id="lp2MbGrad" x1="20%" y1="0%" x2="80%" y2="100%">
-                  <stop offset="0%" stopColor="#fb923c" />
-                  <stop offset="60%" stopColor="#d97706" />
-                  <stop offset="100%" stopColor="#92400e" />
-                </linearGradient>
-                <filter id="lp2MbGlow" x="-20%" y="-20%" width="140%" height="140%">
-                  <feDropShadow dx="0" dy="2" stdDeviation="5" floodColor="#d97706" floodOpacity="0.5" />
-                </filter>
-              </defs>
-              <g filter="url(#lp2MbGlow)">
-                <ellipse cx="60" cy="20" rx="11" ry="7" fill="url(#lp2MbGrad)" />
-                <rect x="49" y="24" width="22" height="16" rx="5" fill="url(#lp2MbGrad)" />
-                <ellipse cx="60" cy="76" rx="40" ry="36" fill="url(#lp2MbGrad)" />
-                <ellipse cx="45" cy="60" rx="9" ry="6" fill="white" fillOpacity="0.2" transform="rotate(-35 45 60)" />
-                <text x="60" y="89" textAnchor="middle" fill="white" fontSize="42" fontWeight="bold" fontFamily="Arial, sans-serif">฿</text>
-              </g>
-            </svg>
+            {logoUrl
+              ? <img src={logoUrl} alt={brandName || 'Please Payment'} className="h-8 w-auto object-contain flex-shrink-0" />
+              : (
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none" className="w-8 h-8 flex-shrink-0">
+                  <defs>
+                    <linearGradient id="lp2MbGrad" x1="20%" y1="0%" x2="80%" y2="100%">
+                      <stop offset="0%" stopColor="#fb923c" />
+                      <stop offset="60%" stopColor="#d97706" />
+                      <stop offset="100%" stopColor="#92400e" />
+                    </linearGradient>
+                    <filter id="lp2MbGlow" x="-20%" y="-20%" width="140%" height="140%">
+                      <feDropShadow dx="0" dy="2" stdDeviation="5" floodColor="#d97706" floodOpacity="0.5" />
+                    </filter>
+                  </defs>
+                  <g filter="url(#lp2MbGlow)">
+                    <ellipse cx="60" cy="20" rx="11" ry="7" fill="url(#lp2MbGrad)" />
+                    <rect x="49" y="24" width="22" height="16" rx="5" fill="url(#lp2MbGrad)" />
+                    <ellipse cx="60" cy="76" rx="40" ry="36" fill="url(#lp2MbGrad)" />
+                    <ellipse cx="45" cy="60" rx="9" ry="6" fill="white" fillOpacity="0.2" transform="rotate(-35 45 60)" />
+                    <text x="60" y="89" textAnchor="middle" fill="white" fontSize="42" fontWeight="bold" fontFamily="Arial, sans-serif">฿</text>
+                  </g>
+                </svg>
+              )
+            }
             <span className="font-bold text-gray-900 text-sm">{brandName || 'PLEASE-PAYMENT'} Merchant</span>
           </div>
 
