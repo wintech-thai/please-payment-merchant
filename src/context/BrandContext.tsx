@@ -38,7 +38,7 @@ export function useBrand() {
 
 async function fetchBrandConfig(): Promise<Config | null> {
   try {
-    const res = await fetch('/api/proxy/admin-api/AdminConfiguration/org/global/action/GetBrandConfig', {
+    const res = await fetch('/api/proxy/public-api/PublicBranding/action/GetBrandConfig', {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' },
       cache: 'no-store',
