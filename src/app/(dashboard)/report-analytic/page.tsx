@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useLang } from '@/context/LanguageContext'
-import { summaryApi, type MerchantOverviewSummary, type MerchantDailySummaryItem } from '@/lib/api/summary.api'
+import { summaryApi, type MerchantOverviewSummary, type MerchantDailySummaryItem, type PayerSummaryResponse } from '@/lib/api/summary.api'
 import { AdvancedTimeRangeSelector, type TimeRangeValue } from '@/components/AdvancedTimeRangeSelector'
 import { useOrgChange } from '@/hooks/useOrgChange'
 import clsx from 'clsx'
@@ -10,8 +10,10 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Legend,
 } from 'recharts'
-import { RefreshCw } from 'lucide-react'
+import { RefreshCw, Download, ChevronLeft, ChevronRight } from 'lucide-react'
 import { toast } from 'sonner'
+
+const ITEMS_PER_PAGE_OPTIONS = [10, 25, 50, 100]
 
 function getDateRange(tr: TimeRangeValue) {
   if (tr.type === 'absolute' && tr.start && tr.end) {
@@ -100,23 +102,34 @@ function ChartSection({ title, children }: { title: string; children: React.Reac
 export default function ReportAnalyticPage() {
   const { t } = useLang()
   const ov = t.overview
+  const rs = t.revenueSummary
 
   const [timeRange, setTimeRange] = useState<TimeRangeValue>({ type: 'relative', value: '30d' })
   const [summary, setSummary] = useState<MerchantOverviewSummary | null>(null)
   const [loading, setLoading] = useState(true)
   const [refreshKey, setRefreshKey] = useState(0)
+  const [page, setPage] = useState(1)
+  const [itemsPerPage, setItemsPerPage] = useState(25)
+  const [payerSummary, setPayerSummary] = useState<PayerSummaryResponse | null>(null)
+  const [payerSearch, setPayerSearch] = useState('')
 
   const load = useCallback(async () => {
     setLoading(true)
     try {
       const range = getDateRange(timeRange)
-      const [summaryRes] = await Promise.allSettled([
+      const [summaryRes, payerRes] = await Promise.allSettled([
         summaryApi.getMerchantSummary(range),
+        summaryApi.getPayerSummary(range),
       ])
 
       if (summaryRes.status === 'rejected') throw summaryRes.reason
       const d = summaryRes.value.data as any
       setSummary(d ?? null)
+
+      if (payerRes.status === 'fulfilled') {
+        const pd = payerRes.value.data as any
+        setPayerSummary(pd?.payerSummary ?? pd?.PayerSummary ?? pd ?? null)
+      }
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : ov.failedToLoad)
     } finally {
@@ -142,6 +155,65 @@ export default function ReportAnalyticPage() {
   const netFlow      = payInAmount != null && payOutAmount != null ? payInAmount - payOutAmount : null
 
   const dailyItems: MerchantDailySummaryItem[] = summary?.dailyMerchantRevenue ?? []
+
+  const tableRows = dailyItems
+    .filter((x): x is MerchantDailySummaryItem & { date: string } => !!x.date)
+    .slice()
+    .sort((a, b) => (a.date as string).localeCompare(b.date as string) || (a.merchantCode ?? '').localeCompare(b.merchantCode ?? ''))
+    .map(x => ({
+      date: new Date(x.date as string).toLocaleDateString('th-TH', { day: '2-digit', month: '2-digit', year: 'numeric' }),
+      merchant: x.merchantCode ?? '-',
+      payInAmt: x.payInAmount ?? 0,
+      payOutAmt: x.payOutAmount ?? 0,
+      payInFee: x.payInFee ?? 0,
+      payOutFee: x.payOutFee ?? 0,
+      withdrawalFee: x.withdrawalFee ?? 0,
+      totalFee: (x.payInFee ?? 0) + (x.payOutFee ?? 0) + (x.withdrawalFee ?? 0),
+    }))
+
+  useEffect(() => { setPage(1) }, [tableRows.length])
+
+  const totalPages = Math.max(1, Math.ceil(tableRows.length / itemsPerPage))
+  const startRow = tableRows.length === 0 ? 0 : (page - 1) * itemsPerPage + 1
+  const endRow = Math.min(page * itemsPerPage, tableRows.length)
+  const pagedRows = tableRows.slice((page - 1) * itemsPerPage, page * itemsPerPage)
+
+  const handleExportCsv = () => {
+    const headers = [rs.colDate, rs.colMerchant, rs.colPayInAmount, rs.colPayOutAmount, rs.colPayInFee, rs.colPayOutFee, rs.colWithdrawalFee, rs.colTotalFee]
+    const rows = pagedRows.map(r => [
+      r.date, r.merchant,
+      r.payInAmt.toFixed(2), r.payOutAmt.toFixed(2),
+      r.payInFee.toFixed(2), r.payOutFee.toFixed(2), r.withdrawalFee.toFixed(2), r.totalFee.toFixed(2),
+    ])
+    const csv = [headers, ...rows].map(r => r.join(',')).join('\n')
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url; a.download = 'transaction-summary.csv'; a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  const ps = t.payerSummary
+  const payerRows = (payerSummary?.payers ?? [])
+    .map(x => ({
+      payerName: x.payerName ?? '-',
+      txCount: x.transactionCount ?? 0,
+      totalAmount: x.totalAmount ?? 0,
+      firstSeen: x.firstSeenDate ? new Date(x.firstSeenDate).toLocaleDateString('th-TH', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '-',
+      lastSeen: x.lastSeenDate ? new Date(x.lastSeenDate).toLocaleDateString('th-TH', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '-',
+    }))
+    .filter(r => !payerSearch.trim() || r.payerName.toLowerCase().includes(payerSearch.trim().toLowerCase()))
+
+  const handleExportPayerCsv = () => {
+    const headers = [ps.colPayerName, ps.colTxCount, ps.colTotalAmount, ps.colFirstSeen, ps.colLastSeen]
+    const rows = payerRows.map(r => [r.payerName, String(r.txCount), r.totalAmount.toFixed(2), r.firstSeen, r.lastSeen])
+    const csv = [headers, ...rows].map(r => r.join(',')).join('\n')
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url; a.download = 'payer-summary.csv'; a.click()
+    URL.revokeObjectURL(url)
+  }
 
   const chartAmountData = dailyItems.map(item => ({
     date: fmtDate(item.date),
@@ -173,10 +245,10 @@ export default function ReportAnalyticPage() {
   )
 
   return (
-    <div className="flex flex-col overflow-hidden h-[calc(100dvh-5rem)] sm:h-[calc(100dvh-6.5rem)] px-4 sm:px-6 py-4 sm:py-5">
+      <div className="flex flex-col gap-4 px-4 sm:px-6 py-4 sm:py-5">
 
       {/* Header */}
-      <div className="flex-none flex items-center justify-between mb-5 gap-3 flex-wrap">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
           <h1 className="text-xl font-bold text-gray-900">{t.revenueSummary.title}</h1>
           <p className="text-sm text-gray-500 mt-0.5">{t.revenueSummary.subtitle}</p>
@@ -191,8 +263,6 @@ export default function ReportAnalyticPage() {
           </button>
         </div>
       </div>
-
-      <div className="flex-1 overflow-y-auto flex flex-col gap-4 pb-2 custom-scrollbar">
 
         {/* Summary Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -248,7 +318,163 @@ export default function ReportAnalyticPage() {
           ) : noDataEl}
         </ChartSection>
 
+        {/* Detail table */}
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-100 flex flex-wrap items-center justify-between gap-3">
+            <h2 className="flex items-center gap-2.5 text-sm font-bold text-gray-900">
+              <span className="w-1 h-5 bg-primary-500 rounded-full flex-shrink-0" />
+              {rs.tableTitle}
+            </h2>
+            <button onClick={handleExportCsv}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 bg-white hover:bg-gray-100 rounded-lg border border-gray-200 transition-colors">
+              <Download className="w-3.5 h-3.5" />
+              {rs.exportExcel}
+            </button>
+          </div>
+
+          <div className="overflow-auto custom-scrollbar">
+            <table className="w-full text-sm table-fixed min-w-[760px]">
+              <colgroup>
+                <col className="w-[11%]" /><col className="w-[15%]" /><col className="w-[12%]" /><col className="w-[12%]" /><col className="w-[12%]" /><col className="w-[12%]" /><col className="w-[13%]" /><col className="w-[13%]" />
+              </colgroup>
+              <thead>
+                <tr className="border-b border-gray-100">
+                  <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wide px-5 py-3">{rs.colDate}</th>
+                  <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wide px-3 py-3">{rs.colMerchant}</th>
+                  <th className="text-right text-xs font-semibold text-gray-500 uppercase tracking-wide px-3 py-3">{rs.colPayInAmount}</th>
+                  <th className="text-right text-xs font-semibold text-gray-500 uppercase tracking-wide px-3 py-3">{rs.colPayOutAmount}</th>
+                  <th className="text-right text-xs font-semibold text-gray-500 uppercase tracking-wide px-3 py-3">{rs.colPayInFee}</th>
+                  <th className="text-right text-xs font-semibold text-gray-500 uppercase tracking-wide px-3 py-3">{rs.colPayOutFee}</th>
+                  <th className="text-right text-xs font-semibold text-gray-500 uppercase tracking-wide px-3 py-3">{rs.colWithdrawalFee}</th>
+                  <th className="text-right text-xs font-semibold text-gray-500 uppercase tracking-wide px-5 py-3">{rs.colTotalFee}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pagedRows.length === 0 ? (
+                  <tr><td colSpan={8} className="py-12 text-center text-sm text-gray-400">{rs.noData}</td></tr>
+                ) : pagedRows.map((r, i) => (
+                  <tr key={`${r.date}-${r.merchant}-${i}`} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50/40'}>
+                    <td className="py-3 px-5 text-xs text-gray-500 whitespace-nowrap border-b border-gray-100">{r.date}</td>
+                    <td className="py-3 px-3 text-sm font-medium text-gray-800 truncate border-b border-gray-100">{r.merchant}</td>
+                    <td className="py-3 px-3 text-sm tabular-nums text-right text-blue-700 border-b border-gray-100">{fmtMoney(r.payInAmt)}</td>
+                    <td className="py-3 px-3 text-sm tabular-nums text-right text-orange-600 border-b border-gray-100">{fmtMoney(r.payOutAmt)}</td>
+                    <td className="py-3 px-3 text-sm tabular-nums text-right text-emerald-700 border-b border-gray-100">{fmtMoney(r.payInFee)}</td>
+                    <td className="py-3 px-3 text-sm tabular-nums text-right text-amber-600 border-b border-gray-100">{fmtMoney(r.payOutFee)}</td>
+                    <td className="py-3 px-3 text-sm tabular-nums text-right text-fuchsia-600 border-b border-gray-100">{fmtMoney(r.withdrawalFee)}</td>
+                    <td className="py-3 px-5 text-sm tabular-nums text-right font-semibold text-gray-900 border-b border-gray-100">{fmtMoney(r.totalFee)}</td>
+                  </tr>
+                ))}
+              </tbody>
+              {pagedRows.length > 0 && (
+                <tfoot className="bg-white border-t-2 border-gray-200">
+                  <tr>
+                    <td colSpan={2} className="py-3 px-5 text-xs font-bold text-gray-600 uppercase tracking-wide">{rs.colTotal}</td>
+                    <td className="py-3 px-3 text-sm tabular-nums text-right font-bold text-blue-700">{fmtMoney(pagedRows.reduce((s, r) => s + r.payInAmt, 0))}</td>
+                    <td className="py-3 px-3 text-sm tabular-nums text-right font-bold text-orange-600">{fmtMoney(pagedRows.reduce((s, r) => s + r.payOutAmt, 0))}</td>
+                    <td className="py-3 px-3 text-sm tabular-nums text-right font-bold text-emerald-700">{fmtMoney(pagedRows.reduce((s, r) => s + r.payInFee, 0))}</td>
+                    <td className="py-3 px-3 text-sm tabular-nums text-right font-bold text-amber-600">{fmtMoney(pagedRows.reduce((s, r) => s + r.payOutFee, 0))}</td>
+                    <td className="py-3 px-3 text-sm tabular-nums text-right font-bold text-fuchsia-600">{fmtMoney(pagedRows.reduce((s, r) => s + r.withdrawalFee, 0))}</td>
+                    <td className="py-3 px-5 text-sm tabular-nums text-right font-bold text-gray-900">{fmtMoney(pagedRows.reduce((s, r) => s + r.totalFee, 0))}</td>
+                  </tr>
+                </tfoot>
+              )}
+            </table>
+          </div>
+
+          {/* Pagination */}
+          <div className="px-5 py-3 border-t border-gray-100 flex flex-wrap items-center justify-between gap-3 text-sm text-gray-500">
+            <span>
+              <span className="font-semibold text-gray-800">{tableRows.length}</span> {rs.totalItems}
+            </span>
+            <div className="flex items-center gap-4 sm:gap-6">
+              <div className="flex items-center gap-2">
+                <span className="text-xs">{rs.rowsPerPage}</span>
+                <select
+                  value={itemsPerPage}
+                  onChange={e => { setItemsPerPage(Number(e.target.value)); setPage(1) }}
+                  className="bg-transparent border-none text-gray-700 focus:ring-0 cursor-pointer font-medium outline-none text-sm"
+                >
+                  {ITEMS_PER_PAGE_OPTIONS.map(n => <option key={n} value={n}>{n}</option>)}
+                </select>
+              </div>
+              <div className="flex items-center gap-4">
+                <span className="text-xs text-gray-400">
+                  {tableRows.length === 0 ? '0-0' : `${startRow}-${endRow}`} of {tableRows.length}
+                </span>
+                <div className="flex items-center gap-1">
+                  <button onClick={() => setPage(p => p - 1)} disabled={page <= 1}
+                    className="p-1.5 rounded hover:bg-gray-100 text-gray-400 disabled:opacity-30 transition-colors">
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
+                  <button onClick={() => setPage(p => p + 1)} disabled={page >= totalPages}
+                    className="p-1.5 rounded hover:bg-gray-100 text-gray-400 disabled:opacity-30 transition-colors">
+                    <ChevronRight className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Payer Summary */}
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-100 flex flex-wrap items-center justify-between gap-3">
+            <h2 className="flex items-center gap-2.5 text-sm font-bold text-gray-900">
+              <span className="w-1 h-5 bg-primary-500 rounded-full flex-shrink-0" />
+              {ps.tableTitle}
+            </h2>
+            <div className="flex items-center gap-2">
+              <input
+                value={payerSearch}
+                onChange={e => setPayerSearch(e.target.value)}
+                placeholder={ps.searchPlaceholder}
+                className="text-xs border border-gray-200 rounded-lg px-3 py-1.5 text-gray-600 bg-white focus:outline-none focus:ring-2 focus:ring-primary-400 w-44"
+              />
+              <button onClick={handleExportPayerCsv}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 bg-white hover:bg-gray-100 rounded-lg border border-gray-200 transition-colors">
+                <Download className="w-3.5 h-3.5" />
+                {ps.exportExcel}
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 px-6 py-4 border-b border-gray-100">
+            <SummaryCard label={ps.cardTotalPayers} value={(payerSummary?.totalPayers ?? 0).toLocaleString()} />
+            <SummaryCard label={ps.cardTotalAmount} value={fmtMoney(payerSummary?.totalAmount)} accent="green" />
+            <SummaryCard label={ps.cardTotalTx} value={(payerSummary?.totalTransactionCount ?? 0).toLocaleString()} />
+          </div>
+
+          <div className="overflow-auto custom-scrollbar">
+            <table className="w-full text-sm table-fixed min-w-[640px]">
+              <colgroup>
+                <col className="w-[30%]" /><col className="w-[15%]" /><col className="w-[20%]" /><col className="w-[17%]" /><col className="w-[18%]" />
+              </colgroup>
+              <thead>
+                <tr className="border-b border-gray-100">
+                  <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wide px-5 py-3">{ps.colPayerName}</th>
+                  <th className="text-right text-xs font-semibold text-gray-500 uppercase tracking-wide px-3 py-3">{ps.colTxCount}</th>
+                  <th className="text-right text-xs font-semibold text-gray-500 uppercase tracking-wide px-3 py-3">{ps.colTotalAmount}</th>
+                  <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wide px-3 py-3">{ps.colFirstSeen}</th>
+                  <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wide px-5 py-3">{ps.colLastSeen}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {payerRows.length === 0 ? (
+                  <tr><td colSpan={5} className="py-12 text-center text-sm text-gray-400">{ps.noData}</td></tr>
+                ) : payerRows.map((r, i) => (
+                  <tr key={`${r.payerName}-${i}`} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50/40'}>
+                    <td className="py-3 px-5 text-sm font-medium text-gray-800 truncate border-b border-gray-100">{r.payerName}</td>
+                    <td className="py-3 px-3 text-sm tabular-nums text-right text-gray-700 border-b border-gray-100">{r.txCount.toLocaleString()}</td>
+                    <td className="py-3 px-3 text-sm tabular-nums text-right font-semibold text-gray-900 border-b border-gray-100">{fmtMoney(r.totalAmount)}</td>
+                    <td className="py-3 px-3 text-xs text-gray-500 whitespace-nowrap border-b border-gray-100">{r.firstSeen}</td>
+                    <td className="py-3 px-5 text-xs text-gray-500 whitespace-nowrap border-b border-gray-100">{r.lastSeen}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
       </div>
-    </div>
   )
 }
