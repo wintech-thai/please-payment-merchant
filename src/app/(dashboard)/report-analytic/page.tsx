@@ -14,6 +14,8 @@ import { RefreshCw, Download, ChevronLeft, ChevronRight } from 'lucide-react'
 import { toast } from 'sonner'
 
 const ITEMS_PER_PAGE_OPTIONS = [10, 25, 50, 100]
+const DETAIL_HIGHLIGHTED_KEY = 'reportAnalytic_detailHighlightedKey'
+const PAYER_HIGHLIGHTED_KEY = 'reportAnalytic_payerHighlightedKey'
 
 function getDateRange(tr: TimeRangeValue) {
   if (tr.type === 'absolute' && tr.start && tr.end) {
@@ -112,6 +114,12 @@ export default function ReportAnalyticPage() {
   const [itemsPerPage, setItemsPerPage] = useState(25)
   const [payerSummary, setPayerSummary] = useState<PayerSummaryResponse | null>(null)
   const [payerSearch, setPayerSearch] = useState('')
+  const [detailHighlightedKey, setDetailHighlightedKey] = useState<string>(() => {
+    try { return sessionStorage.getItem(DETAIL_HIGHLIGHTED_KEY) ?? '' } catch { return '' }
+  })
+  const [payerHighlightedKey, setPayerHighlightedKey] = useState<string>(() => {
+    try { return sessionStorage.getItem(PAYER_HIGHLIGHTED_KEY) ?? '' } catch { return '' }
+  })
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -165,6 +173,7 @@ export default function ReportAnalyticPage() {
       merchant: x.merchantCode ?? '-',
       payInAmt: x.payInAmount ?? 0,
       payOutAmt: x.payOutAmount ?? 0,
+      withdrawalAmt: x.withdrawalAmount ?? 0,
       payInFee: x.payInFee ?? 0,
       payOutFee: x.payOutFee ?? 0,
       withdrawalFee: x.withdrawalFee ?? 0,
@@ -179,10 +188,10 @@ export default function ReportAnalyticPage() {
   const pagedRows = tableRows.slice((page - 1) * itemsPerPage, page * itemsPerPage)
 
   const handleExportCsv = () => {
-    const headers = [rs.colDate, rs.colMerchant, rs.colPayInAmount, rs.colPayOutAmount, rs.colPayInFee, rs.colPayOutFee, rs.colWithdrawalFee, rs.colTotalFee]
+    const headers = [rs.colDate, rs.colMerchant, rs.colPayInAmount, rs.colPayOutAmount, rs.colWithdrawalAmount, rs.colPayInFee, rs.colPayOutFee, rs.colWithdrawalFee, rs.colTotalFee]
     const rows = pagedRows.map(r => [
       r.date, r.merchant,
-      r.payInAmt.toFixed(2), r.payOutAmt.toFixed(2),
+      r.payInAmt.toFixed(2), r.payOutAmt.toFixed(2), r.withdrawalAmt.toFixed(2),
       r.payInFee.toFixed(2), r.payOutFee.toFixed(2), r.withdrawalFee.toFixed(2), r.totalFee.toFixed(2),
     ])
     const csv = [headers, ...rows].map(r => r.join(',')).join('\n')
@@ -335,7 +344,7 @@ export default function ReportAnalyticPage() {
           <div className="overflow-auto custom-scrollbar">
             <table className="w-full text-sm table-fixed min-w-[760px]">
               <colgroup>
-                <col className="w-[11%]" /><col className="w-[15%]" /><col className="w-[12%]" /><col className="w-[12%]" /><col className="w-[12%]" /><col className="w-[12%]" /><col className="w-[13%]" /><col className="w-[13%]" />
+                <col className="w-[10%]" /><col className="w-[13%]" /><col className="w-[11%]" /><col className="w-[11%]" /><col className="w-[11%]" /><col className="w-[11%]" /><col className="w-[11%]" /><col className="w-[11%]" /><col className="w-[11%]" />
               </colgroup>
               <thead>
                 <tr className="border-b border-gray-100">
@@ -343,6 +352,7 @@ export default function ReportAnalyticPage() {
                   <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wide px-3 py-3">{rs.colMerchant}</th>
                   <th className="text-right text-xs font-semibold text-gray-500 uppercase tracking-wide px-3 py-3">{rs.colPayInAmount}</th>
                   <th className="text-right text-xs font-semibold text-gray-500 uppercase tracking-wide px-3 py-3">{rs.colPayOutAmount}</th>
+                  <th className="text-right text-xs font-semibold text-gray-500 uppercase tracking-wide px-3 py-3">{rs.colWithdrawalAmount}</th>
                   <th className="text-right text-xs font-semibold text-gray-500 uppercase tracking-wide px-3 py-3">{rs.colPayInFee}</th>
                   <th className="text-right text-xs font-semibold text-gray-500 uppercase tracking-wide px-3 py-3">{rs.colPayOutFee}</th>
                   <th className="text-right text-xs font-semibold text-gray-500 uppercase tracking-wide px-3 py-3">{rs.colWithdrawalFee}</th>
@@ -351,19 +361,37 @@ export default function ReportAnalyticPage() {
               </thead>
               <tbody>
                 {pagedRows.length === 0 ? (
-                  <tr><td colSpan={8} className="py-12 text-center text-sm text-gray-400">{rs.noData}</td></tr>
-                ) : pagedRows.map((r, i) => (
-                  <tr key={`${r.date}-${r.merchant}-${i}`} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50/40'}>
-                    <td className="py-3 px-5 text-xs text-gray-500 whitespace-nowrap border-b border-gray-100">{r.date}</td>
-                    <td className="py-3 px-3 text-sm font-medium text-gray-800 truncate border-b border-gray-100">{r.merchant}</td>
-                    <td className="py-3 px-3 text-sm tabular-nums text-right text-blue-700 border-b border-gray-100">{fmtMoney(r.payInAmt)}</td>
-                    <td className="py-3 px-3 text-sm tabular-nums text-right text-orange-600 border-b border-gray-100">{fmtMoney(r.payOutAmt)}</td>
-                    <td className="py-3 px-3 text-sm tabular-nums text-right text-emerald-700 border-b border-gray-100">{fmtMoney(r.payInFee)}</td>
-                    <td className="py-3 px-3 text-sm tabular-nums text-right text-amber-600 border-b border-gray-100">{fmtMoney(r.payOutFee)}</td>
-                    <td className="py-3 px-3 text-sm tabular-nums text-right text-fuchsia-600 border-b border-gray-100">{fmtMoney(r.withdrawalFee)}</td>
-                    <td className="py-3 px-5 text-sm tabular-nums text-right font-semibold text-gray-900 border-b border-gray-100">{fmtMoney(r.totalFee)}</td>
-                  </tr>
-                ))}
+                  <tr><td colSpan={9} className="py-12 text-center text-sm text-gray-400">{rs.noData}</td></tr>
+                ) : pagedRows.map((r, i) => {
+                  const rowKey = `${r.date}-${r.merchant}-${i}`
+                  const isHighlighted = detailHighlightedKey === rowKey
+                  return (
+                    <tr
+                      key={rowKey}
+                      onClick={() => {
+                        const next = isHighlighted ? '' : rowKey
+                        setDetailHighlightedKey(next)
+                        try { sessionStorage.setItem(DETAIL_HIGHLIGHTED_KEY, next) } catch {}
+                      }}
+                      className={clsx(
+                        'cursor-pointer transition-colors',
+                        isHighlighted
+                          ? '!bg-primary-100 border-l-[3px] border-l-primary-500'
+                          : i % 2 === 0 ? 'bg-white' : 'bg-gray-50/40'
+                      )}
+                    >
+                      <td className="py-3 px-5 text-xs text-gray-500 whitespace-nowrap border-b border-gray-100">{r.date}</td>
+                      <td className="py-3 px-3 text-sm font-medium text-gray-800 truncate border-b border-gray-100">{r.merchant}</td>
+                      <td className="py-3 px-3 text-sm tabular-nums text-right text-blue-700 border-b border-gray-100">{fmtMoney(r.payInAmt)}</td>
+                      <td className="py-3 px-3 text-sm tabular-nums text-right text-orange-600 border-b border-gray-100">{fmtMoney(r.payOutAmt)}</td>
+                      <td className="py-3 px-3 text-sm tabular-nums text-right text-purple-600 border-b border-gray-100">{fmtMoney(r.withdrawalAmt)}</td>
+                      <td className="py-3 px-3 text-sm tabular-nums text-right text-emerald-700 border-b border-gray-100">{fmtMoney(r.payInFee)}</td>
+                      <td className="py-3 px-3 text-sm tabular-nums text-right text-amber-600 border-b border-gray-100">{fmtMoney(r.payOutFee)}</td>
+                      <td className="py-3 px-3 text-sm tabular-nums text-right text-fuchsia-600 border-b border-gray-100">{fmtMoney(r.withdrawalFee)}</td>
+                      <td className="py-3 px-5 text-sm tabular-nums text-right font-semibold text-gray-900 border-b border-gray-100">{fmtMoney(r.totalFee)}</td>
+                    </tr>
+                  )
+                })}
               </tbody>
               {pagedRows.length > 0 && (
                 <tfoot className="bg-white border-t-2 border-gray-200">
@@ -371,6 +399,7 @@ export default function ReportAnalyticPage() {
                     <td colSpan={2} className="py-3 px-5 text-xs font-bold text-gray-600 uppercase tracking-wide">{rs.colTotal}</td>
                     <td className="py-3 px-3 text-sm tabular-nums text-right font-bold text-blue-700">{fmtMoney(pagedRows.reduce((s, r) => s + r.payInAmt, 0))}</td>
                     <td className="py-3 px-3 text-sm tabular-nums text-right font-bold text-orange-600">{fmtMoney(pagedRows.reduce((s, r) => s + r.payOutAmt, 0))}</td>
+                    <td className="py-3 px-3 text-sm tabular-nums text-right font-bold text-purple-600">{fmtMoney(pagedRows.reduce((s, r) => s + r.withdrawalAmt, 0))}</td>
                     <td className="py-3 px-3 text-sm tabular-nums text-right font-bold text-emerald-700">{fmtMoney(pagedRows.reduce((s, r) => s + r.payInFee, 0))}</td>
                     <td className="py-3 px-3 text-sm tabular-nums text-right font-bold text-amber-600">{fmtMoney(pagedRows.reduce((s, r) => s + r.payOutFee, 0))}</td>
                     <td className="py-3 px-3 text-sm tabular-nums text-right font-bold text-fuchsia-600">{fmtMoney(pagedRows.reduce((s, r) => s + r.withdrawalFee, 0))}</td>
@@ -461,15 +490,32 @@ export default function ReportAnalyticPage() {
               <tbody>
                 {payerRows.length === 0 ? (
                   <tr><td colSpan={5} className="py-12 text-center text-sm text-gray-400">{ps.noData}</td></tr>
-                ) : payerRows.map((r, i) => (
-                  <tr key={`${r.payerName}-${i}`} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50/40'}>
-                    <td className="py-3 px-5 text-sm font-medium text-gray-800 truncate border-b border-gray-100">{r.payerName}</td>
-                    <td className="py-3 px-3 text-sm tabular-nums text-right text-gray-700 border-b border-gray-100">{r.txCount.toLocaleString()}</td>
-                    <td className="py-3 px-3 text-sm tabular-nums text-right font-semibold text-gray-900 border-b border-gray-100">{fmtMoney(r.totalAmount)}</td>
-                    <td className="py-3 px-3 text-xs text-gray-500 whitespace-nowrap border-b border-gray-100">{r.firstSeen}</td>
-                    <td className="py-3 px-5 text-xs text-gray-500 whitespace-nowrap border-b border-gray-100">{r.lastSeen}</td>
-                  </tr>
-                ))}
+                ) : payerRows.map((r, i) => {
+                  const rowKey = `${r.payerName}-${i}`
+                  const isHighlighted = payerHighlightedKey === rowKey
+                  return (
+                    <tr
+                      key={rowKey}
+                      onClick={() => {
+                        const next = isHighlighted ? '' : rowKey
+                        setPayerHighlightedKey(next)
+                        try { sessionStorage.setItem(PAYER_HIGHLIGHTED_KEY, next) } catch {}
+                      }}
+                      className={clsx(
+                        'cursor-pointer transition-colors',
+                        isHighlighted
+                          ? '!bg-primary-100 border-l-[3px] border-l-primary-500'
+                          : i % 2 === 0 ? 'bg-white' : 'bg-gray-50/40'
+                      )}
+                    >
+                      <td className="py-3 px-5 text-sm font-medium text-gray-800 truncate border-b border-gray-100">{r.payerName}</td>
+                      <td className="py-3 px-3 text-sm tabular-nums text-right text-gray-700 border-b border-gray-100">{r.txCount.toLocaleString()}</td>
+                      <td className="py-3 px-3 text-sm tabular-nums text-right font-semibold text-gray-900 border-b border-gray-100">{fmtMoney(r.totalAmount)}</td>
+                      <td className="py-3 px-3 text-xs text-gray-500 whitespace-nowrap border-b border-gray-100">{r.firstSeen}</td>
+                      <td className="py-3 px-5 text-xs text-gray-500 whitespace-nowrap border-b border-gray-100">{r.lastSeen}</td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           </div>

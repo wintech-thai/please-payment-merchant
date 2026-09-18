@@ -6,7 +6,10 @@ const BACKEND_URL = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_API_URL |
 // Same header-forwarding contract as src/app/api/proxy/[...path]/route.ts —
 // this fetch talks to the backend directly (bypassing that proxy), so it has
 // to forward the visitor IP/mutual-key headers itself or the backend only
-// sees this pod's own IP (breaks audit logging for GetBrandConfig).
+// sees this pod's own IP (breaks audit logging). Note: both backend calls below
+// hit /public-api/* routes, which are exempt from the admin's own IP blacklist
+// policy regardless of these headers — they're forwarded only for accurate
+// visitor-IP audit logging, not to get past a block.
 const FORWARD_HEADERS = ['cf-connecting-ip', 'x-forwarded-for', 'x-forwarded-host']
 
 export const dynamic = 'force-dynamic'
@@ -24,7 +27,7 @@ export async function GET() {
     }
 
     const cfgRes = await fetch(
-      `${BACKEND_URL}/admin-api/AdminConfiguration/org/global/action/GetBrandConfig`,
+      `${BACKEND_URL}/public-api/PublicBranding/action/GetBrandConfig`,
       { headers: forwardHeaders, cache: 'no-store' }
     )
     if (!cfgRes.ok) return new NextResponse(null, { status: 404 })
@@ -39,7 +42,7 @@ export async function GET() {
     }
 
     const logoUrl = config.brandConfig.logoImageUrl.replace('<API-BASE>', BACKEND_URL)
-    const imgRes = await fetch(logoUrl, { cache: 'no-store' })
+    const imgRes = await fetch(logoUrl, { headers: forwardHeaders, cache: 'no-store' })
     if (!imgRes.ok) return new NextResponse(null, { status: 404 })
 
     const buffer = await imgRes.arrayBuffer()
