@@ -249,7 +249,7 @@ export default function Navbar() {
                 className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-sm font-medium text-white bg-white/10 hover:bg-white/20 transition-colors"
               >
                 <FlagIcon countryCode={currentLangOption.flag} className="w-4 h-3" />
-                <span className="text-xs">{currentLangOption.code.toUpperCase()}</span>
+                <span className="text-xs leading-none">{currentLangOption.code.toUpperCase()}</span>
                 <svg className="w-3 h-3 opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
                 </svg>
@@ -266,7 +266,7 @@ export default function Navbar() {
                       )}
                     >
                       <FlagIcon countryCode={l.flag} className="w-5 h-3.5" />
-                      {l.label}
+                      <span className="leading-none">{l.label}</span>
                     </button>
                   ))}
                 </div>

@@ -232,11 +232,11 @@ function EndpointRow({ ep, copyLabel, copiedLabel, isLast, isSelected, onClick }
         <button
           onClick={handleCopy}
           className={clsx(
-            'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors',
+            'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors',
             copied ? 'bg-green-100 text-green-700' : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
           )}
         >
-          {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+          {copied ? <Check className="w-3.5 h-3.5 flex-shrink-0" /> : <Copy className="w-3.5 h-3.5 flex-shrink-0" />}
           {copied ? copiedLabel : copyLabel}
         </button>
       </td>
@@ -531,7 +531,7 @@ export default function MerchantInfoPage() {
                       <tr className="bg-gray-50">
                         <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200 w-48">Type</th>
                         <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">Endpoint</th>
-                        <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200 w-24">{mi.copy}</th>
+                        <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200 w-28">{mi.copy}</th>
                       </tr>
                     </thead>
                     <tbody>

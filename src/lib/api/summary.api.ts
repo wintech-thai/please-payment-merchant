@@ -40,11 +40,35 @@ export interface MerchantOverviewSummary {
   totalPayOutCount?: number | null
 }
 
+export interface PayerSummaryItem {
+  payerName?: string | null
+  merchantCode?: string | null
+  transactionCount?: number | null
+  totalAmount?: number | null
+  firstSeenDate?: string | null
+  lastSeenDate?: string | null
+}
+
+export interface PayerSummaryResponse {
+  totalPayers?: number | null
+  totalAmount?: number | null
+  totalTransactionCount?: number | null
+  payers?: PayerSummaryItem[] | null
+}
+
 export const summaryApi = {
   getMerchantSummary: (payload: GetSummaryPayload = {}) => {
     const orgId = getOrgId()
     return client.post<MerchantOverviewSummary>(
       `/api/Summary/org/${orgId}/action/GetMerchantSummary`,
+      payload
+    )
+  },
+
+  getPayerSummary: (payload: GetSummaryPayload = {}) => {
+    const orgId = getOrgId()
+    return client.post<PayerSummaryResponse>(
+      `/api/Summary/org/${orgId}/action/GetPayerSummary`,
       payload
     )
   },
