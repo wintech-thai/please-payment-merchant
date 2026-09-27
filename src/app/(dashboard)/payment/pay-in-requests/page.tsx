@@ -380,6 +380,25 @@ export default function PayInRequestsPage() {
                         <ExternalLink className="w-3 h-3 flex-shrink-0" />
                       </a>
                     )}
+                    {(item.status?.toLowerCase() === 'pending' || item.status?.toLowerCase() === 'approved') && item.payinPeer2PeerPayoutId && (
+                      <button
+                        type="button"
+                        title="Payout Request (P2P)"
+                        onClick={async e => {
+                          e.stopPropagation()
+                          try {
+                            await paymentRequestApi.getPayOutRequestById(item.payinPeer2PeerPayoutId!)
+                            window.open(`/payment/pay-out-requests/${item.payinPeer2PeerPayoutId}`, '_blank', 'noopener,noreferrer')
+                          } catch {
+                            toast.error(t.merchantInfo.crossMerchantTitle, { description: t.merchantInfo.crossMerchantDesc })
+                          }
+                        }}
+                        className="flex items-center gap-1 text-xs text-violet-600 hover:text-violet-800 hover:underline mt-1"
+                      >
+                        <span className="truncate max-w-[130px]">{item.payinPeer2PeerPayoutId}</span>
+                        <ExternalLink className="w-3 h-3 flex-shrink-0" />
+                      </button>
+                    )}
                     {item.status?.toLowerCase() === 'approved' && item.statusReason && (
                       <span className="text-[10px] text-emerald-600 mt-0.5 max-w-[160px] truncate block" title={item.statusReason}>
                         {item.statusReason}

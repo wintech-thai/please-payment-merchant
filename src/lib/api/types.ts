@@ -395,6 +395,7 @@ export interface PayInRequestItem {
   payinAccountType?: string | null
   payinAccountLevel?: string | null
   payinIsPeerToPeer?: boolean | null
+  payinPeer2PeerPayoutId?: string | null
   payInFeePct?: number | null
   payInFeeDecimal?: number | null
   payInSlipUploadCount?: number | null
