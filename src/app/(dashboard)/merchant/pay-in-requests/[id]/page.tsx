@@ -5,6 +5,8 @@ import { useRouter, useParams } from 'next/navigation'
 import { paymentRequestApi } from '@/lib/api/payment-request.api'
 import type { PayInRequestDetail } from '@/lib/api/types'
 import { useLang } from '@/context/LanguageContext'
+import { useFormatDate } from '@/hooks/useFormatDate'
+import { formatDateTime } from '@/lib/datetime'
 import { toast } from 'sonner'
 import { ChevronLeft, CheckCircle, AlertCircle, Clock } from 'lucide-react'
 
@@ -13,9 +15,9 @@ function fmt(n?: number | null) {
   return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
-function fmtDate(d?: string | null) {
+function fmtDate(d: string | null | undefined, timezone: string) {
   if (!d) return '—'
-  try { return new Date(d).toLocaleString('th-TH', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' }) }
+  try { return formatDateTime(d, timezone) }
   catch { return d }
 }
 
@@ -77,6 +79,7 @@ function JsonView({ json }: { json: string }) {
 export default function PayInRequestDetailPage() {
   const { t } = useLang()
   const m = t.payInRequest
+  const { timezone } = useFormatDate()
   const router = useRouter()
   const params = useParams()
   const id = params.id as string
@@ -141,7 +144,7 @@ export default function PayInRequestDetailPage() {
 
         <Section title={m.sectionGeneral}>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-            <Field label={m.fieldCreated}>{fmtDate(detail?.createdDate)}</Field>
+            <Field label={m.fieldCreated}>{fmtDate(detail?.createdDate, timezone)}</Field>
             <Field label={m.fieldStatus}><StatusBadge status={detail?.status} createdDate={detail?.createdDate} /></Field>
             <Field label={m.fieldCurrency}>{detail?.currency ?? '—'}</Field>
             <Field label={m.fieldRequested}>{detail?.requestedAmount != null ? <span className="font-semibold tabular-nums">{fmt(detail.requestedAmount)}</span> : '—'}</Field>

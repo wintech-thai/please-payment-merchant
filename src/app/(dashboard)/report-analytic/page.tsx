@@ -5,6 +5,7 @@ import { useLang } from '@/context/LanguageContext'
 import { summaryApi, type MerchantOverviewSummary, type MerchantDailySummaryItem, type PayerSummaryResponse } from '@/lib/api/summary.api'
 import { AdvancedTimeRangeSelector, type TimeRangeValue } from '@/components/AdvancedTimeRangeSelector'
 import { useOrgChange } from '@/hooks/useOrgChange'
+import { useFormatDate } from '@/hooks/useFormatDate'
 import clsx from 'clsx'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -105,6 +106,7 @@ export default function ReportAnalyticPage() {
   const { t } = useLang()
   const ov = t.overview
   const rs = t.revenueSummary
+  const { fmtDate: fmtDateTz } = useFormatDate()
 
   const [timeRange, setTimeRange] = useState<TimeRangeValue>({ type: 'relative', value: '30d' })
   const [summary, setSummary] = useState<MerchantOverviewSummary | null>(null)
@@ -169,7 +171,7 @@ export default function ReportAnalyticPage() {
     .slice()
     .sort((a, b) => (a.date as string).localeCompare(b.date as string) || (a.merchantCode ?? '').localeCompare(b.merchantCode ?? ''))
     .map(x => ({
-      date: new Date(x.date as string).toLocaleDateString('th-TH', { day: '2-digit', month: '2-digit', year: 'numeric' }),
+      date: fmtDateTz(x.date as string),
       merchant: x.merchantCode ?? '-',
       payInAmt: x.payInAmount ?? 0,
       payOutAmt: x.payOutAmount ?? 0,
@@ -208,8 +210,8 @@ export default function ReportAnalyticPage() {
       payerName: x.payerName ?? '-',
       txCount: x.transactionCount ?? 0,
       totalAmount: x.totalAmount ?? 0,
-      firstSeen: x.firstSeenDate ? new Date(x.firstSeenDate).toLocaleDateString('th-TH', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '-',
-      lastSeen: x.lastSeenDate ? new Date(x.lastSeenDate).toLocaleDateString('th-TH', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '-',
+      firstSeen: x.firstSeenDate ? fmtDateTz(x.firstSeenDate) : '-',
+      lastSeen: x.lastSeenDate ? fmtDateTz(x.lastSeenDate) : '-',
     }))
     .filter(r => !payerSearch.trim() || r.payerName.toLowerCase().includes(payerSearch.trim().toLowerCase()))
 

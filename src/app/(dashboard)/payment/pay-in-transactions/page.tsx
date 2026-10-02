@@ -3,6 +3,8 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useOrgChange } from '@/hooks/useOrgChange'
+import { useFormatDate } from '@/hooks/useFormatDate'
+import { formatDateTime as fmtDateTimeTz } from '@/lib/datetime'
 import { useLang } from '@/context/LanguageContext'
 import { paymentTxApi } from '@/lib/api/payment-tx.api'
 import type { PayInTxItem } from '@/lib/api/types'
@@ -44,14 +46,8 @@ function formatAge(createdDate?: string | null): string {
   return `${hours}h ${mins}min`
 }
 
-function formatDateTime(d?: string | null) {
-  if (!d) return '—'
-  try {
-    return new Date(d).toLocaleString('th-TH', {
-      day: '2-digit', month: '2-digit', year: 'numeric',
-      hour: '2-digit', minute: '2-digit', second: '2-digit',
-    })
-  } catch { return d }
+function formatDateTime(d: string | null | undefined, timezone: string) {
+  return fmtDateTimeTz(d, timezone)
 }
 
 function StatusBadge({ status, createdDate, paymentRequestId, statusReason, txIsPeerToPeer }: {
@@ -124,6 +120,7 @@ export default function PayInTransactionsPage() {
   const { t } = useLang()
   const m = t.payInTx
   const router = useRouter()
+  const { timezone } = useFormatDate()
 
   const [inputSearch, setInputSearch] = useState<string>(() =>
     typeof window !== 'undefined' ? (JSON.parse(sessionStorage.getItem(FILTER_KEY) ?? 'null')?.search ?? '') : ''
@@ -315,7 +312,7 @@ export default function PayInTransactionsPage() {
                   <td className="px-4 py-3 border-b border-gray-100 whitespace-nowrap cursor-pointer group"
                     onClick={e => { e.stopPropagation(); handleRowHighlight(item.id); router.push(`/payment/pay-in-transactions/${item.id}`) }}>
                     <span className="text-sm text-gray-600 group-hover:text-primary-600 group-hover:underline">
-                      {formatDateTime(item.createdDate)}
+                      {formatDateTime(item.createdDate, timezone)}
                     </span>
                     {item.refId1 && <p className="text-xs text-gray-400 mt-0.5">{item.refId1}</p>}
                   </td>
@@ -449,7 +446,7 @@ export default function PayInTransactionsPage() {
             'Payer Name', 'Status', 'Status Reason', 'Payment Request Id', 'Ref1', 'Ref2', 'Ref3',
           ]}
           mapRow={(item): CsvCell[] => [
-            formatDateTime(item.createdDate),
+            formatDateTime(item.createdDate, timezone),
             item.merchantCode ?? '',
             item.merchantName ?? '',
             item.payInTotalAmountDecimal ?? item.payInTotalAmount ?? '',

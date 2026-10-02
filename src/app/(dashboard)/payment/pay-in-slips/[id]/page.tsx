@@ -10,6 +10,8 @@ import { toast } from 'sonner'
 import { client } from '@/lib/axios'
 import { ChevronLeft, CheckCircle, XCircle, Clock, ImageIcon, Save, ShieldCheck, X, Copy, Check } from 'lucide-react'
 import clsx from 'clsx'
+import { useFormatDate } from '@/hooks/useFormatDate'
+import { formatDateTime as formatDateTimeTz } from '@/lib/datetime'
 
 function buildStorageUrl(url: string): string {
   if (!url.includes('<STORAGE-API-BASE>')) return url
@@ -20,13 +22,10 @@ function buildStorageUrl(url: string): string {
   return url.replace('<STORAGE-API-BASE>', storageBase)
 }
 
-function formatDateTime(d?: string | null) {
+function formatDateTime(d: string | null | undefined, timezone: string) {
   if (!d) return '—'
   try {
-    return new Date(d).toLocaleString('th-TH', {
-      day: '2-digit', month: '2-digit', year: 'numeric',
-      hour: '2-digit', minute: '2-digit', second: '2-digit',
-    })
+    return formatDateTimeTz(d, timezone)
   } catch { return d }
 }
 
@@ -120,6 +119,7 @@ function RawJsonModal({ data, onClose }: { data: unknown; onClose: () => void })
 export default function PayInSlipDetailPage() {
   const { t } = useLang()
   const tr = t.payInSlip
+  const { timezone } = useFormatDate()
   const router = useRouter()
   const params = useParams()
   const id = params.id as string
@@ -317,7 +317,7 @@ export default function PayInSlipDetailPage() {
                   {detail?.merchantName && <p className="text-xs text-gray-400 mt-0.5">{detail.merchantName}</p>}
                 </InfoRow>
                 <InfoRow label={tr.colCreatedDate}>
-                  {formatDateTime(detail?.createdDate)}
+                  {formatDateTime(detail?.createdDate, timezone)}
                 </InfoRow>
                 {detail?.rejectReason && (
                   <InfoRow label={tr.labelRejectReason}>

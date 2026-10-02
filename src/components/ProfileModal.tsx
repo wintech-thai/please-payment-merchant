@@ -1,10 +1,12 @@
 'use client'
 
-import { useState, useEffect, FormEvent } from 'react'
+import { useState, useEffect, useRef, FormEvent } from 'react'
 import { useLang } from '@/context/LanguageContext'
+import { useTimezone } from '@/context/TimezoneContext'
 import { client } from '@/lib/axios'
 import { toast } from 'sonner'
 import LeaveConfirmModal from '@/components/LeaveConfirmModal'
+import { DEFAULT_TIMEZONE, listTimezones } from '@/lib/datetime'
 
 interface Props {
   onClose: () => void
@@ -17,6 +19,8 @@ interface Profile {
   lastName: string
   phoneNumber: string
   secondaryEmail: string
+  timezoneMode: 'browser' | 'custom'
+  customTimezone: string
 }
 
 function DarkInput({
@@ -52,8 +56,84 @@ function DarkInput({
   )
 }
 
+const TIMEZONES = listTimezones()
+
+// Native <select> renders hundreds of <option>s as one giant unscrollable
+// browser popup — this app's convention for any large dropdown is a
+// search-as-you-type combobox instead (see feedback_searchable_dropdown).
+function TimezoneSelect({ value, onChange }: { value: string; onChange: (tz: string) => void }) {
+  const [open, setOpen] = useState(false)
+  const [search, setSearch] = useState('')
+  const containerRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  const filtered = search.trim()
+    ? TIMEZONES.filter((tz) => tz.toLowerCase().includes(search.trim().toLowerCase())).slice(0, 100)
+    : TIMEZONES
+
+  return (
+    <div className="relative flex-1" ref={containerRef}>
+      <button
+        type="button"
+        onClick={() => {
+          setOpen((v) => !v)
+          setSearch('')
+          requestAnimationFrame(() => inputRef.current?.focus())
+        }}
+        className="w-full px-4 py-2.5 rounded-lg text-sm text-left bg-white/5 border border-white/10 text-white focus:outline-none focus:border-primary-400 focus:bg-white/10 transition-colors"
+      >
+        {value}
+      </button>
+
+      {open && (
+        <div className="absolute z-10 bottom-full mb-1 w-full rounded-lg border border-white/10 bg-slate-800 shadow-2xl overflow-hidden">
+          <input
+            ref={inputRef}
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search timezone..."
+            className="w-full px-3 py-2 text-sm bg-white/5 border-b border-white/10 text-white placeholder-white/30 focus:outline-none"
+          />
+          <div className="max-h-32 overflow-y-auto">
+            {filtered.length === 0 && (
+              <div className="px-3 py-2 text-xs text-white/40">No match</div>
+            )}
+            {filtered.map((tz) => (
+              <div
+                key={tz}
+                onClick={() => {
+                  onChange(tz)
+                  setOpen(false)
+                }}
+                className={[
+                  'px-3 py-2 text-sm cursor-pointer transition-colors',
+                  tz === value ? 'bg-primary-600 text-white' : 'text-white/80 hover:bg-white/10',
+                ].join(' ')}
+              >
+                {tz}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function ProfileModal({ onClose }: Props) {
   const { t } = useLang()
+  const { refresh: refreshTimezone } = useTimezone()
   const [profile, setProfile] = useState<Profile>({
     username: '',
     email: '',
@@ -61,6 +141,8 @@ export default function ProfileModal({ onClose }: Props) {
     lastName: '',
     phoneNumber: '',
     secondaryEmail: '',
+    timezoneMode: 'browser',
+    customTimezone: DEFAULT_TIMEZONE,
   })
   const [original, setOriginal] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
@@ -79,6 +161,7 @@ export default function ProfileModal({ onClose }: Props) {
         const displayPhone = rawPhone.startsWith('+66')
           ? '0' + rawPhone.slice(3)
           : rawPhone
+        const savedTz: string = d.timezone || ''
         const loaded: Profile = {
           username: d.userName || '',
           email: d.userEmail || '',
@@ -86,6 +169,8 @@ export default function ProfileModal({ onClose }: Props) {
           lastName: d.lastName || '',
           phoneNumber: displayPhone,
           secondaryEmail: d.secondaryEmail || '',
+          timezoneMode: savedTz ? 'custom' : 'browser',
+          customTimezone: savedTz || DEFAULT_TIMEZONE,
         }
         setProfile(loaded)
         setOriginal(loaded)
@@ -102,7 +187,9 @@ export default function ProfileModal({ onClose }: Props) {
       profile.firstName === original.firstName &&
       profile.lastName === original.lastName &&
       profile.phoneNumber === original.phoneNumber &&
-      profile.secondaryEmail === original.secondaryEmail
+      profile.secondaryEmail === original.secondaryEmail &&
+      profile.timezoneMode === original.timezoneMode &&
+      profile.customTimezone === original.customTimezone
     ) {
       onClose()
       return
@@ -123,7 +210,9 @@ export default function ProfileModal({ onClose }: Props) {
         lastName: profile.lastName,
         phoneNumber: phone,
         secondaryEmail: profile.secondaryEmail,
+        timezone: profile.timezoneMode === 'custom' ? profile.customTimezone : '',
       })
+      refreshTimezone()
       toast.success(t.profile.saveSuccess)
       onClose()
     } catch {
@@ -137,7 +226,9 @@ export default function ProfileModal({ onClose }: Props) {
     profile.firstName !== original.firstName ||
     profile.lastName !== original.lastName ||
     profile.phoneNumber !== original.phoneNumber ||
-    profile.secondaryEmail !== original.secondaryEmail
+    profile.secondaryEmail !== original.secondaryEmail ||
+    profile.timezoneMode !== original.timezoneMode ||
+    profile.customTimezone !== original.customTimezone
   )
 
   const handleClose = () => {
@@ -249,6 +340,43 @@ export default function ProfileModal({ onClose }: Props) {
                     placeholder="example@gmail.com"
                     type="email"
                   />
+                </div>
+
+                {/* Row 4 — timezone */}
+                <div className="sm:col-span-2">
+                  <label className="block text-xs font-semibold text-white/50 tracking-wider mb-2">
+                    {t.profile.timezone}
+                  </label>
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <div className="flex items-center gap-1 bg-white/5 border border-white/10 rounded-lg p-1 flex-none">
+                      <button
+                        type="button"
+                        onClick={() => setProfile((p) => ({ ...p, timezoneMode: 'browser' }))}
+                        className={[
+                          'px-3 py-1.5 text-xs font-semibold rounded-md transition-colors',
+                          profile.timezoneMode === 'browser' ? 'bg-primary-600 text-white' : 'text-white/50 hover:text-white',
+                        ].join(' ')}
+                      >
+                        {t.profile.timezoneFollowBrowser}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setProfile((p) => ({ ...p, timezoneMode: 'custom' }))}
+                        className={[
+                          'px-3 py-1.5 text-xs font-semibold rounded-md transition-colors',
+                          profile.timezoneMode === 'custom' ? 'bg-primary-600 text-white' : 'text-white/50 hover:text-white',
+                        ].join(' ')}
+                      >
+                        {t.profile.timezoneCustom}
+                      </button>
+                    </div>
+                    {profile.timezoneMode === 'custom' && (
+                      <TimezoneSelect
+                        value={profile.customTimezone}
+                        onChange={(tz) => setProfile((p) => ({ ...p, customTimezone: tz }))}
+                      />
+                    )}
+                  </div>
                 </div>
               </div>
             </form>

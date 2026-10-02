@@ -1,6 +1,7 @@
 'use client'
 
 import { LanguageProvider } from '@/context/LanguageContext'
+import { TimezoneProvider } from '@/context/TimezoneContext'
 import { BlacklistProvider, useBlacklist } from '@/context/BlacklistContext'
 import { BlacklistBanner } from '@/components/BlacklistBanner'
 import Navbar from '@/components/Navbar'
@@ -23,9 +24,11 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
     <LanguageProvider>
-      <BlacklistProvider>
-        <DashboardShell>{children}</DashboardShell>
-      </BlacklistProvider>
+      <TimezoneProvider>
+        <BlacklistProvider>
+          <DashboardShell>{children}</DashboardShell>
+        </BlacklistProvider>
+      </TimezoneProvider>
     </LanguageProvider>
   )
 }

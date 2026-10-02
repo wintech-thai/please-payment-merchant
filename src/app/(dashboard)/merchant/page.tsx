@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useOrgChange } from '@/hooks/useOrgChange'
+import { useFormatDate } from '@/hooks/useFormatDate'
 import { userApi } from '@/lib/api/user.api'
 import { paymentRequestApi } from '@/lib/api/payment-request.api'
 import { useLang } from '@/context/LanguageContext'
@@ -249,6 +250,7 @@ type Tab = 'info' | 'endpoint' | 'webhooks' | 'wallet' | 'currencyFiat' | 'curre
 export default function MerchantInfoPage() {
   const { t } = useLang()
   const mi = t.merchantInfo
+  const { fmtDateTime } = useFormatDate()
   const [activeTab, setActiveTab] = useState<Tab>('info')
   const [data, setData] = useState<MerchantData | null>(null)
   const [paymentEndpoints, setPaymentEndpoints] = useState<Array<{ name: string; value: string }>>([])
@@ -622,7 +624,7 @@ export default function MerchantInfoPage() {
                             {wh.isActive ? 'Active' : 'Inactive'}
                           </span>
                           {wh.lastCalledDate && (
-                            <div className="text-[10px] text-gray-400 mt-1">{new Date(wh.lastCalledDate).toLocaleString('th-TH')}</div>
+                            <div className="text-[10px] text-gray-400 mt-1">{fmtDateTime(wh.lastCalledDate)}</div>
                           )}
                           {wh.lastStatus && (
                             <div className="text-[10px] text-gray-500 mt-0.5 font-mono">{wh.lastStatus}</div>
@@ -785,7 +787,7 @@ export default function MerchantInfoPage() {
                               )}>
                               <td className="px-4 py-3 text-gray-700 text-sm whitespace-nowrap">
                                 {(tx.createdDate ?? tx.createdAt)
-                                  ? new Date(tx.createdDate ?? tx.createdAt).toLocaleString('th-TH')
+                                  ? fmtDateTime(tx.createdDate ?? tx.createdAt)
                                   : '—'}
                               </td>
                               <td className="px-4 py-3 text-gray-500 text-sm max-w-[200px] truncate">

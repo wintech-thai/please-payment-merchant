@@ -3,6 +3,8 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useOrgChange } from '@/hooks/useOrgChange'
+import { useFormatDate } from '@/hooks/useFormatDate'
+import { formatDateTime as formatDateTimeTz } from '@/lib/datetime'
 import { useLang } from '@/context/LanguageContext'
 import { paymentTxApi } from '@/lib/api/payment-tx.api'
 import type { PayOutTxItem } from '@/lib/api/types'
@@ -33,14 +35,9 @@ function formatAmount(n?: number | null): string {
   return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
-function formatDateTime(d?: string | null) {
+function formatDateTime(d: string | null | undefined, timezone: string): string {
   if (!d) return '—'
-  try {
-    return new Date(d).toLocaleString('th-TH', {
-      day: '2-digit', month: '2-digit', year: 'numeric',
-      hour: '2-digit', minute: '2-digit', second: '2-digit',
-    })
-  } catch { return d }
+  return formatDateTimeTz(d, timezone)
 }
 
 function formatAge(createdDate?: string | null): string {
@@ -94,6 +91,7 @@ export default function PayOutTransactionsPage() {
   const { t } = useLang()
   const m = t.payOutTx
   const router = useRouter()
+  const { timezone } = useFormatDate()
 
   const [inputSearch, setInputSearch] = useState<string>(() =>
     typeof window !== 'undefined' ? (JSON.parse(sessionStorage.getItem(FILTER_KEY) ?? 'null')?.search ?? '') : ''
@@ -288,7 +286,7 @@ export default function PayOutTransactionsPage() {
                     onClick={e => { e.stopPropagation(); handleRowHighlight(item.id); router.push(`/payment/pay-out-transactions/${item.id}`) }}
                   >
                     <div className="flex items-center gap-1.5">
-                      <span className="text-sm text-gray-600 group-hover:text-primary-600 group-hover:underline">{formatDateTime(item.createdDate)}</span>
+                      <span className="text-sm text-gray-600 group-hover:text-primary-600 group-hover:underline">{formatDateTime(item.createdDate, timezone)}</span>
                       {item.payoutIsWithdrawal && (
                         <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold ring-1 bg-blue-50 text-blue-700 ring-blue-200">
                           {t.payOutRequest.withdrawalBadge}
@@ -452,7 +450,7 @@ export default function PayOutTransactionsPage() {
           mapRow={(item): CsvCell[] => {
             const isKnown = (v?: string | null) => (v && v.toUpperCase() !== 'UNKNOWN' ? v : null)
             return [
-              formatDateTime(item.createdDate),
+              formatDateTime(item.createdDate, timezone),
               item.txAmountDecimal ?? item.txAmount ?? '',
               item.currency ?? '',
               item.payoutFeeDecimal ?? '',

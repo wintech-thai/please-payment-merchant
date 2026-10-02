@@ -1,6 +1,7 @@
 'use client'
 
 import clsx from 'clsx'
+import { useFormatDate } from '@/hooks/useFormatDate'
 
 interface AuditLogHistogramProps {
   data: any[]
@@ -19,15 +20,15 @@ function getApiColor(name: string): string {
   return PALETTE[Math.abs(h) % PALETTE.length]
 }
 
-function fmtHHmm(ts: number): string {
-  return new Date(ts).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })
+function fmtHHmm(ts: number, timezone: string): string {
+  return new Intl.DateTimeFormat('en-US', { timeZone: timezone, hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(ts))
 }
 
-function fmtFull(ts: number): string {
-  return new Date(ts).toLocaleString('en-US', {
-    day: 'numeric', month: 'short', year: 'numeric',
+function fmtFull(ts: number, timezone: string): string {
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone: timezone, day: 'numeric', month: 'short', year: 'numeric',
     hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
-  })
+  }).format(new Date(ts))
 }
 
 function addInterval(ts: number, val: number, unit: string): number {
@@ -36,6 +37,7 @@ function addInterval(ts: number, val: number, unit: string): number {
 }
 
 export function AuditLogHistogram({ data, totalHits, interval, maxDocCount, dict }: AuditLogHistogramProps) {
+  const { timezone } = useFormatDate()
   const axisLabelStep = Math.max(Math.floor(data.length / 10), 1)
   const match = interval.match(/(\d+)([smhd])/)
   const intervalVal = match ? parseInt(match[1]) : 1
@@ -94,7 +96,7 @@ export function AuditLogHistogram({ data, totalHits, interval, maxDocCount, dict
                 {showLabel && (
                   <div className="absolute top-full mt-1.5 left-0 flex flex-col items-start whitespace-nowrap z-20 pointer-events-none">
                     <div className="w-[1px] h-1.5 bg-gray-300" />
-                    <span className="text-[10px] font-mono text-gray-400 mt-0.5">{fmtHHmm(startTs)}</span>
+                    <span className="text-[10px] font-mono text-gray-400 mt-0.5">{fmtHHmm(startTs, timezone)}</span>
                   </div>
                 )}
 
@@ -103,7 +105,7 @@ export function AuditLogHistogram({ data, totalHits, interval, maxDocCount, dict
                   <div className={clsx('bg-white border border-primary-100 rounded-xl shadow-[0_8px_30px_rgba(37,99,235,0.15)] p-3',
                     sortedBuckets.length > 6 ? 'min-w-[300px]' : 'min-w-[200px]')}>
                     <div className="text-[10px] text-primary-600 font-mono text-center border-b border-primary-100 pb-2 mb-2 bg-primary-50 -mx-3 -mt-3 px-3 pt-2 rounded-t-xl">
-                      {fmtFull(startTs)} – {fmtHHmm(endTs)}
+                      {fmtFull(startTs, timezone)} – {fmtHHmm(endTs, timezone)}
                     </div>
                     <div className={clsx('max-h-[200px] overflow-y-auto pr-1', sortedBuckets.length > 6 ? 'grid grid-cols-2 gap-x-4 gap-y-1.5' : 'space-y-1.5')}>
                       {sortedBuckets.map((sub: any) => (

@@ -5,6 +5,8 @@ import { useRouter, useParams } from 'next/navigation'
 import { paymentRequestApi } from '@/lib/api/payment-request.api'
 import type { PayOutRequestDetail } from '@/lib/api/types'
 import { useLang } from '@/context/LanguageContext'
+import { useFormatDate } from '@/hooks/useFormatDate'
+import { formatDateTime } from '@/lib/datetime'
 import { toast } from 'sonner'
 import { ChevronLeft } from 'lucide-react'
 import clsx from 'clsx'
@@ -14,9 +16,9 @@ function fmt(n?: number | null) {
   return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
-function fmtDate(d?: string | null) {
+function fmtDate(d: string | null | undefined, timezone: string) {
   if (!d) return '—'
-  try { return new Date(d).toLocaleString('th-TH', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' }) }
+  try { return formatDateTime(d, timezone) }
   catch { return d }
 }
 
@@ -61,6 +63,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 
 export default function PayOutRequestDetailPage() {
   const { t } = useLang()
+  const { timezone } = useFormatDate()
   const router = useRouter()
   const params = useParams()
   const id = params.id as string
@@ -117,7 +120,7 @@ export default function PayOutRequestDetailPage() {
 
         <Section title="Request Info">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-            <Field label="Date">{fmtDate(detail?.createdDate)}</Field>
+            <Field label="Date">{fmtDate(detail?.createdDate, timezone)}</Field>
             <Field label="Status"><StatusBadge status={detail?.status} /></Field>
             <Field label="Requested Amount">
               <span className="font-semibold tabular-nums text-base">{fmt(detail?.requestedAmount)}</span>
