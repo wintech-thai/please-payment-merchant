@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { useLang } from '@/context/LanguageContext'
+import { useFormatDate } from '@/hooks/useFormatDate'
+import { formatDateTime as fmtDateTimeTz } from '@/lib/datetime'
 import { paymentTxApi } from '@/lib/api/payment-tx.api'
 import type { PayOutTxDetail, PaymentTxJob, PaymentTxJobParameter } from '@/lib/api/types'
 import { toast } from 'sonner'
@@ -14,14 +16,8 @@ function formatAmount(n?: number | null): string {
   return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
-function formatDateTime(d?: string | null) {
-  if (!d) return '—'
-  try {
-    return new Date(d).toLocaleString('th-TH', {
-      day: '2-digit', month: '2-digit', year: 'numeric',
-      hour: '2-digit', minute: '2-digit', second: '2-digit',
-    })
-  } catch { return d }
+function formatDateTime(d: string | null | undefined, timezone: string) {
+  return fmtDateTimeTz(d, timezone)
 }
 
 function StatusBadge({ status, isPeerToPeer }: { status?: string | null; isPeerToPeer?: boolean | null }) {
@@ -127,6 +123,7 @@ export default function PayOutTxDetailPage() {
   const router = useRouter()
   const params = useParams()
   const id = params.id as string
+  const { timezone } = useFormatDate()
 
   const [detail, setDetail] = useState<PayOutTxDetail | null>(null)
   const [loading, setLoading] = useState(true)
@@ -226,7 +223,7 @@ export default function PayOutTxDetailPage() {
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-6 py-5">
         <SectionHeader>{m.sectionGeneral}</SectionHeader>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <InfoRow label={m.fieldCreated}>{formatDateTime(detail?.createdDate)}</InfoRow>
+          <InfoRow label={m.fieldCreated}>{formatDateTime(detail?.createdDate, timezone)}</InfoRow>
           <InfoRow label={m.fieldStatus}>
             <div className="flex items-start gap-2 flex-wrap">
               <StatusBadge status={detail?.status} isPeerToPeer={detail?.txIsPeerToPeer} />

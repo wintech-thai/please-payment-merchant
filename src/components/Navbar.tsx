@@ -11,6 +11,7 @@ import { toast } from 'sonner'
 import ProfileModal from '@/components/ProfileModal'
 import ChangePasswordModal from '@/components/ChangePasswordModal'
 import { AppVersionDisplay } from '@/components/AppVersionDisplay'
+import { TimezoneIndicator } from '@/components/TimezoneIndicator'
 import { useBrand } from '@/context/BrandContext'
 
 interface MerchantOption {
@@ -289,7 +290,10 @@ export default function Navbar() {
               {userMenuOpen && (
                 <>
                   <div className="fixed inset-0 z-40" onClick={() => setUserMenuOpen(false)} />
-                  <div className="absolute right-0 top-full mt-1.5 w-48 bg-white rounded-xl shadow-xl border border-gray-100 py-1 z-50">
+                  <div className="absolute right-0 top-full mt-1.5 w-56 bg-white rounded-xl shadow-xl border border-gray-100 py-1 z-50">
+                    <div className="px-4 py-2 border-b border-gray-100">
+                      <TimezoneIndicator variant="light" />
+                    </div>
                     <button onClick={() => { setUserMenuOpen(false); setModal('profile') }}
                       className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
                       <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>

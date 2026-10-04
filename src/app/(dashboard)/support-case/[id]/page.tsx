@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { useLang } from '@/context/LanguageContext'
+import { useFormatDate } from '@/hooks/useFormatDate'
+import { formatDateTime } from '@/lib/datetime'
 import { supportCaseApi } from '@/lib/api/support-case.api'
 import type { SupportCaseItem, SupportCaseCommentItem } from '@/lib/api/support-case.api'
 import { toast } from 'sonner'
@@ -54,10 +56,9 @@ function normalizeComment(raw: any): SupportCaseCommentItem {
 }
 
 
-function formatDate(d?: string | null) {
+function formatDate(d: string | null | undefined, timezone: string): string {
   if (!d) return '—'
-  try { return new Date(d).toLocaleDateString('th-TH', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) }
-  catch { return d }
+  return formatDateTime(d, timezone, false)
 }
 
 export default function SupportCaseDetailPage() {
@@ -66,6 +67,7 @@ export default function SupportCaseDetailPage() {
   const params = useParams()
   const caseId = params?.id as string
   const isth = lang === 'th'
+  const { timezone } = useFormatDate()
 
   const [caseData, setCaseData] = useState<SupportCaseItem | null>(null)
   const [comments, setComments] = useState<SupportCaseCommentItem[]>([])
@@ -238,16 +240,16 @@ export default function SupportCaseDetailPage() {
               </div>
               <div>
                 <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">{isth ? 'วันที่สร้าง' : 'Created'}</p>
-                <p className="text-sm text-gray-800">{formatDate(caseData.createdDate)}</p>
+                <p className="text-sm text-gray-800">{formatDate(caseData.createdDate, timezone)}</p>
               </div>
               <div>
                 <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">{isth ? 'อัปเดตล่าสุด' : 'Last Updated'}</p>
-                <p className="text-sm text-gray-800">{formatDate(caseData.updatedDate)}</p>
+                <p className="text-sm text-gray-800">{formatDate(caseData.updatedDate, timezone)}</p>
               </div>
               {isClosed && caseData.closedDate && (
                 <div>
                   <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">{isth ? 'วันที่ปิด' : 'Closed'}</p>
-                  <p className="text-sm text-gray-800">{formatDate(caseData.closedDate)}</p>
+                  <p className="text-sm text-gray-800">{formatDate(caseData.closedDate, timezone)}</p>
                 </div>
               )}
             </div>
@@ -335,7 +337,7 @@ export default function SupportCaseDetailPage() {
                         <span className={clsx('px-1.5 py-0.5 rounded text-[10px] font-bold uppercase', isMerchant ? 'bg-primary-50 text-primary-600' : 'bg-gray-100 text-gray-500')}>
                           {c.authorType}
                         </span>
-                        <span>{formatDate(c.createdDate)}</span>
+                        <span>{formatDate(c.createdDate, timezone)}</span>
                         {!isClosed && (
                           <button
                             onClick={() => setReplyTo({ id: c.id ?? '', author: authorLabel, content: c.content ?? '' })}

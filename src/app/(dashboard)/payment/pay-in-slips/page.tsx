@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useOrgChange } from '@/hooks/useOrgChange'
+import { useFormatDate } from '@/hooks/useFormatDate'
 import { useLang } from '@/context/LanguageContext'
 import { paymentSlipApi } from '@/lib/api/payment-slip.api'
 import type { PayInSlipItem } from '@/lib/api/types'
@@ -56,6 +57,7 @@ export default function PayInSlipsPage() {
   const { t } = useLang()
   const tr = t.payInSlip
   const router = useRouter()
+  const { fmtDateTime } = useFormatDate()
 
   const [items, setItems] = useState<PayInSlipItem[]>([])
   const [total, setTotal] = useState(0)
@@ -303,7 +305,7 @@ export default function PayInSlipsPage() {
                     {/* Created Date */}
                     <td className="px-4 py-3 border-b border-gray-100 whitespace-nowrap">
                       <span className="text-sm text-gray-500">
-                        {item.createdDate ? new Date(item.createdDate).toLocaleString('th-TH') : '—'}
+                        {fmtDateTime(item.createdDate)}
                       </span>
                     </td>
                   </tr>

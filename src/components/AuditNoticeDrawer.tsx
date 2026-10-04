@@ -3,15 +3,12 @@
 import { useState, useEffect } from 'react'
 import { X, TriangleAlert } from 'lucide-react'
 import { auditNoticeApi, type AuditNotice } from '@/lib/api/audit-notice.api'
+import { useFormatDate } from '@/hooks/useFormatDate'
+import { formatDateTime as formatDateTimeTz } from '@/lib/datetime'
 
-function formatDateTime(d?: string | null) {
+function formatDateTime(d: string | null | undefined, timezone: string): string {
   if (!d) return '—'
-  try {
-    return new Date(d).toLocaleString('th-TH', {
-      day: '2-digit', month: '2-digit', year: 'numeric',
-      hour: '2-digit', minute: '2-digit', second: '2-digit',
-    })
-  } catch { return d }
+  return formatDateTimeTz(d, timezone)
 }
 
 interface Props {
@@ -20,6 +17,7 @@ interface Props {
 }
 
 export default function AuditNoticeDrawer({ rowId, onClose }: Props) {
+  const { timezone } = useFormatDate()
   const [notices, setNotices] = useState<AuditNotice[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -80,7 +78,7 @@ export default function AuditNoticeDrawer({ rowId, onClose }: Props) {
               <tbody className="divide-y divide-gray-100">
                 {notices.map((n, i) => (
                   <tr key={n.id ?? i} className="hover:bg-amber-50/40 transition-colors">
-                    <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{formatDateTime(n.createdDate)}</td>
+                    <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{formatDateTime(n.createdDate, timezone)}</td>
                     <td className="px-4 py-3">
                       <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 ring-1 ring-amber-200">
                         {n.trackModel ?? '—'}

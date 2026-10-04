@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useOrgChange } from '@/hooks/useOrgChange'
+import { useFormatDate } from '@/hooks/useFormatDate'
 import { useLang } from '@/context/LanguageContext'
 import { paymentRequestApi } from '@/lib/api/payment-request.api'
 import type { PayOutRequestItem } from '@/lib/api/types'
@@ -19,6 +20,7 @@ type SlipItem = { imageBase64: string; uploadedAt: string; note?: string | null;
 function SlipViewerModal({ slips, item, onClose }: { slips: SlipItem[]; item: PayOutRequestItem; onClose: () => void }) {
   const { t } = useLang()
   const m = t.payOutRequest
+  const { fmtDateTime } = useFormatDate()
   const [idx, setIdx] = useState(0)
   const slip = slips[idx]
   const destBankCode = item.isPayInBankAccountOverride ? item.payinBankCodeOverride : item.payinBankCode
@@ -32,7 +34,7 @@ function SlipViewerModal({ slips, item, onClose }: { slips: SlipItem[]; item: Pa
         <div className="flex items-center gap-3">
           <span className="text-white text-sm font-semibold">{m.slipViewerTitle} ({idx + 1} / {slips.length})</span>
           {slip?.uploadedAt && (
-            <span className="text-white/60 text-xs">{new Date(slip.uploadedAt).toLocaleString('th-TH')}</span>
+            <span className="text-white/60 text-xs">{fmtDateTime(slip.uploadedAt)}</span>
           )}
         </div>
         <button onClick={onClose} className="w-9 h-9 rounded-full bg-white/20 hover:bg-white/40 flex items-center justify-center text-white transition-colors">
@@ -181,6 +183,7 @@ export default function PayOutRequestsPage() {
   const { t } = useLang()
   const tr = t.payOutRequest
   const router = useRouter()
+  const { fmtDateTime } = useFormatDate()
 
   const [items, setItems] = useState<PayOutRequestItem[]>([])
   const [total, setTotal] = useState(0)
@@ -374,7 +377,7 @@ export default function PayOutRequestsPage() {
                     className="px-4 py-3 border-b border-gray-100 whitespace-nowrap cursor-pointer group"
                     onClick={e => { e.stopPropagation(); handleRowHighlight(item.id); router.push(`/payment/pay-out-requests/${item.id}`) }}
                   >
-                    <div className="text-sm font-medium text-gray-700 group-hover:text-primary-600 group-hover:underline">{item.createdDate ? new Date(item.createdDate).toLocaleString('th-TH') : '—'}</div>
+                    <div className="text-sm font-medium text-gray-700 group-hover:text-primary-600 group-hover:underline">{fmtDateTime(item.createdDate)}</div>
                     <div className="text-xs text-gray-400 truncate max-w-[160px]">{item.refId1 || '—'}</div>
                   </td>
                   <td className="px-4 py-3 border-b border-gray-100 whitespace-nowrap">
@@ -614,7 +617,7 @@ export default function PayOutRequestsPage() {
             const accountType = isOverride ? item.payinAccountTypeOverride : item.payinAccountType
             const promptPayId = isOverride ? item.payinPromptPayIdOverride : item.payinPromptPayId
             return [
-              item.createdDate ? new Date(item.createdDate).toLocaleString('th-TH') : '',
+              item.createdDate ? fmtDateTime(item.createdDate) : '',
               item.merchantCode ?? '',
               item.merchantName ?? '',
               item.requestedAmount ?? '',

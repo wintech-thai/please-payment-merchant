@@ -13,6 +13,7 @@ import { AdvancedTimeRangeSelector, type TimeRangeValue } from '@/components/Adv
 import AuditNoticeDrawer from '@/components/AuditNoticeDrawer'
 import ExportCsvModal from '@/components/ExportCsvModal'
 import type { CsvCell } from '@/lib/csv-export'
+import { useFormatDate } from '@/hooks/useFormatDate'
 
 function getTimeFilter(tr: TimeRangeValue) {
   if (tr.type === 'absolute' && tr.start && tr.end) {
@@ -101,6 +102,7 @@ function BankAccountCell({ item }: { item: PayInRequestItem }) {
 export default function PayInRequestsPage() {
   const { t } = useLang()
   const tr = t.payInRequest
+  const { fmtDateTime } = useFormatDate()
   const router = useRouter()
 
   const [items, setItems] = useState<PayInRequestItem[]>([])
@@ -314,7 +316,7 @@ export default function PayInRequestsPage() {
                     className="px-4 py-3 border-b border-gray-100 whitespace-nowrap cursor-pointer group"
                     onClick={e => { e.stopPropagation(); handleRowHighlight(item.id); router.push(`/payment/pay-in-requests/${item.id}`) }}
                   >
-                    <div className="text-sm font-medium text-gray-700 group-hover:text-primary-600 group-hover:underline">{item.createdDate ? new Date(item.createdDate).toLocaleString('th-TH') : '—'}</div>
+                    <div className="text-sm font-medium text-gray-700 group-hover:text-primary-600 group-hover:underline">{item.createdDate ? fmtDateTime(item.createdDate) : '—'}</div>
                     <div className="text-xs text-gray-400 truncate max-w-[160px]">{item.refId1 || '—'}</div>
                   </td>
                   <td className="px-4 py-3 border-b border-gray-100">
@@ -564,7 +566,7 @@ export default function PayInRequestsPage() {
             'Payer Name', 'Status', 'Status Reason', 'Payment Tx Id', 'Ref1', 'Ref2', 'Ref3',
           ]}
           mapRow={(item): CsvCell[] => [
-            item.createdDate ? new Date(item.createdDate).toLocaleString('th-TH') : '',
+            item.createdDate ? fmtDateTime(item.createdDate) : '',
             item.merchantCode ?? '',
             item.merchantName ?? '',
             item.generatedAmount ?? '',
