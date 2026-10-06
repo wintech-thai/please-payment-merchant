@@ -78,6 +78,7 @@ interface MerchantData {
   payoutMinAmount?: number | null
   payoutMaxAmount?: number | null
   payoutPartialCountLimitP2P?: number | null
+  payoutSelectionTypeP2P?: string | null
   payinDailyTxAmountLimit?: number | null
   payinDailyTxCountLimit?: number | null
   currentPayinDailyTxAmount?: number | null
@@ -168,6 +169,26 @@ function StatusBadge({ status }: { status?: string }) {
     <span className={clsx('inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border', styles)}>
       <span className={clsx('w-1.5 h-1.5 rounded-full', s === 'active' ? 'bg-green-500' : s === 'disabled' ? 'bg-gray-400' : 'bg-amber-500')} />
       {status || '-'}
+    </span>
+  )
+}
+
+function PayoutSelectionTypeBadge({ type, mi }: { type: string; mi: any }) {
+  const styles = type === 'NotAllow'
+    ? 'bg-red-50 text-red-700 border-red-200'
+    : type === 'AllowForSameMerchant'
+    ? 'bg-blue-50 text-blue-700 border-blue-200'
+    : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+  const dot = type === 'NotAllow' ? 'bg-red-500' : type === 'AllowForSameMerchant' ? 'bg-blue-500' : 'bg-emerald-500'
+  const label = type === 'NotAllow'
+    ? mi.payoutSelectionTypeNotAllow
+    : type === 'AllowForSameMerchant'
+    ? mi.payoutSelectionTypeAllowForSameMerchant
+    : mi.payoutSelectionTypeAllowAll
+  return (
+    <span className={clsx('inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border', styles)}>
+      <span className={clsx('w-1.5 h-1.5 rounded-full', dot)} />
+      {label}
     </span>
   )
 }
@@ -352,6 +373,7 @@ export default function MerchantInfoPage() {
   const discardCent = data?.discardCent ?? false
   const payinExpireMinute = data?.payinExpireMinute ?? null
   const payoutPartialCountLimitP2P = data?.payoutPartialCountLimitP2P ?? null
+  const payoutSelectionTypeP2P = data?.payoutSelectionTypeP2P || 'AllowAll'
 
   const tabs: { key: Tab; label: string; icon: React.ReactNode; activeClass: string; iconClass: string }[] = [
     { key: 'info',     label: mi.tabInfo,     icon: <Store      className="w-4 h-4" />, activeClass: 'bg-emerald-500 text-white shadow-md shadow-emerald-200', iconClass: 'text-emerald-500' },
@@ -485,6 +507,10 @@ export default function MerchantInfoPage() {
                       <p className="text-sm font-semibold text-gray-800">
                         {payoutPartialCountLimitP2P != null ? (payoutPartialCountLimitP2P === 0 ? '∞' : payoutPartialCountLimitP2P.toLocaleString()) : <span className="text-gray-300 font-normal">—</span>}
                       </p>
+                    </div>
+                    <div className="rounded-xl border border-amber-100 bg-amber-50/40 px-4 py-3">
+                      <p className="text-[10px] font-bold text-amber-500 uppercase tracking-widest mb-1">{mi.fieldPayoutSelectionTypeP2P}</p>
+                      <PayoutSelectionTypeBadge type={payoutSelectionTypeP2P} mi={mi} />
                     </div>
                   </div>
                 </div>
