@@ -414,6 +414,7 @@ export interface PayInRequestDetail extends PayInRequestItem {
   direction?: string | null
   jobId?: string | null
   slipUploadUrl?: string | null
+  paymentStatusUrl?: string | null
   expireDate?: string | null
 }
 
