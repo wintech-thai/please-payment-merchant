@@ -35,7 +35,7 @@ async function handler(request: NextRequest, { params }: { params: { path: strin
     headers['X-Forward-Mutual-Key'] = process.env.MUTUAL_KEY
   }
 
-  const ANONYMOUS_PATHS = ['VerifyPayInToken', 'UploadPayInSlipById']
+  const ANONYMOUS_PATHS = ['VerifyPayInToken', 'UploadPayInSlipById', 'GetPayInStatusByToken', 'GetPayInInfoBySlipToken']
   const isAnonymous = ANONYMOUS_PATHS.some(p => path.includes(p))
 
   const incomingAuth = request.headers.get('Authorization')

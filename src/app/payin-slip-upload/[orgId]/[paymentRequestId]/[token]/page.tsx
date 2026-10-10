@@ -43,6 +43,21 @@ interface DupRecord {
   createdAt?: string | null
 }
 
+interface SlipPaymentInfo {
+  merchantName?: string | null
+  amount?: number | null
+  currency?: string | null
+  payInBankAccountName?: string | null
+  payInBankAccountNo?: string | null
+  payInBankCode?: string | null
+  payInPromptPayId?: string | null
+  payerName?: string | null
+}
+
+function pick<T>(d: any, camel: string, pascal: string): T | undefined {
+  return d?.[camel] ?? d?.[pascal]
+}
+
 type PageState = 'verifying' | 'invalid' | 'ready' | 'checking_dup' | 'dup_warning' | 'uploading' | 'success' | 'error'
 
 function SlipUploadContent() {
@@ -61,6 +76,7 @@ function SlipUploadContent() {
   const [last4, setLast4] = useState('')
   const [note, setNote] = useState('')
   const [dupRecords, setDupRecords] = useState<DupRecord[]>([])
+  const [paymentInfo, setPaymentInfo] = useState<SlipPaymentInfo | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -68,10 +84,20 @@ function SlipUploadContent() {
       setPageState('invalid')
       return
     }
-    fetch(`/api/proxy/api/PaymentRequest/org/${orgId}/action/VerifyPayInToken/${paymentRequestId}/${token}`)
+    fetch(`/api/proxy/api/PaymentRequest/org/${orgId}/action/GetPayInInfoBySlipToken/${paymentRequestId}/${token}`)
       .then(r => r.json())
       .then(data => {
-        if (data?.status === 'OK' || data?.Status === 'OK') {
+        if (pick(data, 'status', 'Status') === 'OK') {
+          setPaymentInfo({
+            merchantName: pick(data, 'merchantName', 'MerchantName'),
+            amount: pick(data, 'amount', 'Amount'),
+            currency: pick(data, 'currency', 'Currency'),
+            payInBankAccountName: pick(data, 'payInBankAccountName', 'PayInBankAccountName'),
+            payInBankAccountNo: pick(data, 'payInBankAccountNo', 'PayInBankAccountNo'),
+            payInBankCode: pick(data, 'payInBankCode', 'PayInBankCode'),
+            payInPromptPayId: pick(data, 'payInPromptPayId', 'PayInPromptPayId'),
+            payerName: pick(data, 'payerName', 'PayerName'),
+          })
           setPageState('ready')
         } else {
           setPageState('invalid')
@@ -204,6 +230,38 @@ function SlipUploadContent() {
 
               {(isReady || pageState === 'uploading') && (
                 <div className="space-y-5">
+                  {paymentInfo && (
+                    <div className="rounded-xl border border-gray-100 bg-gray-50 px-4 py-3 space-y-1.5 text-sm">
+                      {paymentInfo.merchantName && (
+                        <div className="flex justify-between gap-3">
+                          <span className="text-gray-400 text-xs">{m.infoMerchantLabel}</span>
+                          <span className="font-medium text-gray-700 text-right truncate">{paymentInfo.merchantName}</span>
+                        </div>
+                      )}
+                      {paymentInfo.amount != null && (
+                        <div className="flex justify-between gap-3">
+                          <span className="text-gray-400 text-xs">{m.infoAmountLabel}</span>
+                          <span className="font-semibold text-gray-800">
+                            {paymentInfo.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {paymentInfo.currency}
+                          </span>
+                        </div>
+                      )}
+                      {(paymentInfo.payInBankAccountNo || paymentInfo.payInPromptPayId) && (
+                        <div className="flex justify-between gap-3">
+                          <span className="text-gray-400 text-xs">{m.infoBankLabel}</span>
+                          <span className="font-medium text-gray-700 text-right truncate">
+                            {paymentInfo.payInBankAccountName} {paymentInfo.payInBankAccountNo || paymentInfo.payInPromptPayId}
+                          </span>
+                        </div>
+                      )}
+                      {paymentInfo.payerName && (
+                        <div className="flex justify-between gap-3">
+                          <span className="text-gray-400 text-xs">{m.infoPayerLabel}</span>
+                          <span className="font-medium text-gray-700 text-right truncate">{paymentInfo.payerName}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
                   <p className="text-sm text-gray-600 text-center">{m.selectPrompt}</p>
 
                   {!selectedFile ? (
