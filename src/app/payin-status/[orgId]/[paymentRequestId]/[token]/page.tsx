@@ -245,15 +245,13 @@ function PaymentStatusContent() {
                         <span className="font-medium text-gray-700 truncate">{data.payerName}</span>
                       </div>
                     )}
-                    {[data.refId1, data.refId2, data.refId3].some(Boolean) && (
-                      <div className="flex items-start gap-2 text-gray-600">
-                        <Hash className="w-3.5 h-3.5 text-gray-400 flex-shrink-0 mt-0.5" />
-                        <span className="text-gray-400">{m.refLabel}:</span>
-                        <span className="text-gray-700 break-all">
-                          {[data.refId1, data.refId2, data.refId3].filter(Boolean).join(' / ')}
-                        </span>
+                    {[data.refId1, data.refId2, data.refId3].map((ref, i) => ref && (
+                      <div key={i} className="flex items-center gap-2 text-gray-600">
+                        <Hash className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                        <span className="text-gray-400">{m.refLabel} {i + 1}:</span>
+                        <span className="text-gray-700 break-all">{ref}</span>
                       </div>
-                    )}
+                    ))}
                     {data.merchantName && (
                       <div className="flex items-center gap-2 text-gray-600">
                         <Building2 className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
