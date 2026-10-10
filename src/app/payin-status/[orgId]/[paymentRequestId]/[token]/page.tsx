@@ -249,7 +249,7 @@ function PaymentStatusContent() {
                       <div className="flex items-start gap-2 text-gray-600">
                         <Hash className="w-3.5 h-3.5 text-gray-400 flex-shrink-0 mt-0.5" />
                         <span className="text-gray-400">{m.refLabel}:</span>
-                        <span className="font-mono text-gray-700 break-all">
+                        <span className="text-gray-700 break-all">
                           {[data.refId1, data.refId2, data.refId3].filter(Boolean).join(' / ')}
                         </span>
                       </div>
