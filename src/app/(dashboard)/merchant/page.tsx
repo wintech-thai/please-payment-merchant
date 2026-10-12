@@ -85,6 +85,7 @@ interface MerchantData {
   currentPayinDailyTxCount?: number | null
   status?: string
   discardCent?: boolean | null
+  payInBankCustodyType?: string | null
   payinExpireMinute?: number | null
   currentBalance?: number | null
   currentBalanceDecimal?: number | null
@@ -371,6 +372,7 @@ export default function MerchantInfoPage() {
   const currentDailyAmount    = data?.currentPayinDailyTxAmount ?? null
   const currentDailyCount     = data?.currentPayinDailyTxCount ?? null
   const discardCent = data?.discardCent ?? false
+  const payInBankCustodyType = data?.payInBankCustodyType === 'MerchantOwn' ? 'MerchantOwn' : 'PlatformOwn'
   const payinExpireMinute = data?.payinExpireMinute ?? null
   const payoutPartialCountLimitP2P = data?.payoutPartialCountLimitP2P ?? null
   const payoutSelectionTypeP2P = data?.payoutSelectionTypeP2P || 'AllowAll'
@@ -538,6 +540,11 @@ export default function MerchantInfoPage() {
                     label={mi.fieldPayinExpireMinute}
                     value={payinExpireMinute != null ? payinExpireMinute : '—'}
                     suffix={payinExpireMinute != null ? mi.minuteSuffix : undefined}
+                    icon={<Zap className="w-3 h-3" />}
+                  />
+                  <ReadonlyField
+                    label={mi.fieldPayInBankCustodyType}
+                    value={payInBankCustodyType === 'MerchantOwn' ? mi.custodyTypeMerchantOwn : mi.custodyTypePlatformOwn}
                     icon={<Zap className="w-3 h-3" />}
                   />
                 </div>

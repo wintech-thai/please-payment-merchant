@@ -2,14 +2,15 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import clsx from 'clsx'
 import { useLang } from '@/context/LanguageContext'
 import type { Translations } from '@/context/LanguageContext'
+import { userApi } from '@/lib/api/user.api'
 
 type MenuItem = { href: string; label: string; icon: React.ReactNode } | { divider: true }
 
-function getMenuItems(t: Translations): MenuItem[] {
+function getMenuItems(t: Translations, showAgents: boolean): MenuItem[] {
   return [
     {
       href: '/payment/pay-in-requests',
@@ -48,14 +49,38 @@ function getMenuItems(t: Translations): MenuItem[] {
         </svg>
       ),
     },
+    ...(showAgents ? [
+      { divider: true } as const,
+      {
+        href: '/agent',
+        label: t.nav.agents,
+        icon: (
+          <svg style={{ width: '18px', height: '18px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+            <rect x="4" y="8" width="16" height="12" rx="2" strokeLinecap="round" strokeLinejoin="round" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 8V6a3 3 0 016 0v2M9 13h.01M15 13h.01" />
+          </svg>
+        ),
+      },
+    ] : []),
   ]
 }
 
 export default function PaymentSidebar() {
   const pathname = usePathname()
   const { t } = useLang()
-  const menuItems = getMenuItems(t)
+  const [showAgents, setShowAgents] = useState(false)
+  const menuItems = getMenuItems(t, showAgents)
   const [collapsed, setCollapsed] = useState(false)
+
+  useEffect(() => {
+    userApi.getMyMerchantInfo()
+      .then(res => {
+        const data = res.data as any
+        const custodyType = data?.payInBankCustodyType ?? data?.PayInBankCustodyType ?? data?.merchant?.payInBankCustodyType
+        setShowAgents(custodyType === 'MerchantOwn')
+      })
+      .catch(() => {})
+  }, [])
 
   return (
     <aside
