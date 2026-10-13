@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useLayoutEffect } from 'react'
 import clsx from 'clsx'
 import { useLang } from '@/context/LanguageContext'
 import type { Translations } from '@/context/LanguageContext'
@@ -65,21 +65,47 @@ function getMenuItems(t: Translations, showAgents: boolean): MenuItem[] {
   ]
 }
 
+function custodyCacheKey(orgId: string) {
+  return `showAgentsMenu_${orgId}`
+}
+
 export default function PaymentSidebar() {
   const pathname = usePathname()
   const { t } = useLang()
+  // Must start false to match the server-rendered HTML (no localStorage there) —
+  // the cached value is applied in a layout effect below, before the browser paints,
+  // so it never causes a hydration mismatch but still avoids a visible flash.
   const [showAgents, setShowAgents] = useState(false)
   const menuItems = getMenuItems(t, showAgents)
   const [collapsed, setCollapsed] = useState(false)
 
+  useLayoutEffect(() => {
+    const orgId = localStorage.getItem('orgId')
+    if (!orgId) return
+    const cached = localStorage.getItem(custodyCacheKey(orgId))
+    if (cached !== null) setShowAgents(cached === 'true')
+  }, [])
+
   useEffect(() => {
-    userApi.getMyMerchantInfo()
-      .then(res => {
-        const data = res.data as any
-        const custodyType = data?.payInBankCustodyType ?? data?.PayInBankCustodyType ?? data?.merchant?.payInBankCustodyType
-        setShowAgents(custodyType === 'MerchantOwn')
-      })
-      .catch(() => {})
+    const loadCustodyType = () => {
+      const orgId = localStorage.getItem('orgId')
+      if (orgId) {
+        const cached = localStorage.getItem(custodyCacheKey(orgId))
+        if (cached !== null) setShowAgents(cached === 'true')
+      }
+      userApi.getMyMerchantInfo()
+        .then(res => {
+          const data = res.data as any
+          const custodyType = data?.payInBankCustodyType ?? data?.PayInBankCustodyType ?? data?.merchant?.payInBankCustodyType
+          const show = custodyType === 'MerchantOwn'
+          setShowAgents(show)
+          if (orgId) localStorage.setItem(custodyCacheKey(orgId), String(show))
+        })
+        .catch(() => {})
+    }
+    loadCustodyType()
+    window.addEventListener('orgchange', loadCustodyType)
+    return () => window.removeEventListener('orgchange', loadCustodyType)
   }, [])
 
   return (
