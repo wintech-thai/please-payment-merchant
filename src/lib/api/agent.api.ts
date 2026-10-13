@@ -1,6 +1,20 @@
 import { client } from '@/lib/axios'
 import type { AgentItem, GetAgentsPayload, AgentEventItem, GetAgentEventsPayload } from './types'
 
+export interface AgentEventTimeSeriesPayload {
+  FromDate?: string
+  ToDate?: string
+  Channel?: string
+  EventType?: string
+  FullTextSearch?: string
+}
+
+export interface AgentEventTimeSeriesItem {
+  time: string
+  eventType: string
+  count: number
+}
+
 function getBase() {
   if (typeof window === 'undefined') return '/api/Agent/org/temp/action'
   const orgId = localStorage.getItem('orgId') || 'temp'
@@ -37,4 +51,10 @@ export const agentApi = {
 
   getAgentEventCount: (agentId: string, payload: GetAgentEventsPayload = {}) =>
     client.post<number>(`${getBase()}/GetAgentEventCount/${agentId}`, payload),
+
+  getAgentEventById: (eventId: string) =>
+    client.get(`${getBase()}/GetAgentEventById/${eventId}`),
+
+  getAgentEventTimeSeries: (agentId: string, payload: AgentEventTimeSeriesPayload = {}) =>
+    client.post<AgentEventTimeSeriesItem[]>(`${getBase()}/GetAgentEventTimeSeries/${agentId}`, payload),
 }

@@ -938,6 +938,7 @@ export interface GetAgentsPayload {
 }
 
 export interface AgentEventItem {
+  eventId?: string | null
   id?: string
   agentId?: string | null
   eventType?: string | null
@@ -945,6 +946,7 @@ export interface AgentEventItem {
   tags?: string | null
   status?: string | null
   statusDesc?: string | null
+  errorCount?: number | null
   createdDate?: string | null
 }
 

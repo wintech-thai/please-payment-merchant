@@ -5,7 +5,7 @@ import { useRouter, useParams } from 'next/navigation'
 import { agentApi } from '@/lib/api/agent.api'
 import type { AgentItem } from '@/lib/api/types'
 import { toast } from 'sonner'
-import { ChevronLeft, Copy, Check, X, Eye } from 'lucide-react'
+import { ChevronLeft, Copy, Check, X } from 'lucide-react'
 import clsx from 'clsx'
 import { useLang } from '@/context/LanguageContext'
 import { useFormatDate } from '@/hooks/useFormatDate'
@@ -37,7 +37,7 @@ function RawJsonModal({ data, onClose }: { data: unknown; onClose: () => void })
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[80vh] flex flex-col mx-4" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100 flex-none">
-          <span className="text-sm font-semibold text-gray-700 font-mono">Status JSON</span>
+          <span className="text-sm font-semibold text-gray-700 font-mono">Raw JSON</span>
           <div className="flex items-center gap-2">
             <button onClick={copy} className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100 rounded-lg border border-gray-200 transition-colors">
               {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
@@ -78,9 +78,7 @@ export default function AgentDetailPage() {
 
   const [agent, setAgent] = useState<AgentItem | null>(null)
   const [loading, setLoading] = useState(true)
-  const [statusData, setStatusData] = useState<unknown>(null)
-  const [showStatusJson, setShowStatusJson] = useState(false)
-  const [statusLoading, setStatusLoading] = useState(false)
+  const [showRawJson, setShowRawJson] = useState(false)
 
   useEffect(() => {
     agentApi.getAgentById(agentId)
@@ -96,19 +94,6 @@ export default function AgentDetailPage() {
   }, [agentId])
 
   const isLineApi = (agent?.agentType ?? '').toLowerCase() === 'line api'
-
-  const handleViewStatus = async () => {
-    setStatusLoading(true)
-    try {
-      const res = await agentApi.getLineApiAgentStatus(agentId)
-      setStatusData(res.data)
-      setShowStatusJson(true)
-    } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : m.loadAgentFailed)
-    } finally {
-      setStatusLoading(false)
-    }
-  }
 
   if (loading) {
     return (
@@ -126,7 +111,7 @@ export default function AgentDetailPage() {
 
   return (
     <div className="flex flex-col overflow-hidden h-[calc(100dvh-5rem)] sm:h-[calc(100dvh-6.5rem)]">
-      {showStatusJson && statusData != null && <RawJsonModal data={statusData} onClose={() => setShowStatusJson(false)} />}
+      {showRawJson && agent != null && <RawJsonModal data={agent} onClose={() => setShowRawJson(false)} />}
 
       {/* Header */}
       <div className="flex-none flex items-center gap-3 mb-4">
@@ -141,14 +126,13 @@ export default function AgentDetailPage() {
           </div>
           <p className="text-sm text-gray-500 mt-0.5">{m.detailSubtitle}</p>
         </div>
-        {isLineApi && (
+        {agent != null && (
           <button
-            onClick={handleViewStatus}
-            disabled={statusLoading}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-primary-700 bg-primary-50 hover:bg-primary-100 border border-primary-200 rounded-lg transition-colors disabled:opacity-50"
+            type="button"
+            onClick={() => setShowRawJson(true)}
+            className="px-2 py-1 text-[11px] font-mono font-semibold text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-md border border-gray-200 transition-colors"
           >
-            <Eye className="w-3.5 h-3.5" />
-            {m.viewStatusJson}
+            {'{ }'}
           </button>
         )}
       </div>

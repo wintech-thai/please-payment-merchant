@@ -5,7 +5,7 @@ import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import { agentApi } from '@/lib/api/agent.api'
 import type { AgentItem } from '@/lib/api/types'
 import { toast } from 'sonner'
-import { Search, MoreHorizontal, ChevronLeft, ChevronRight, QrCode, X, CheckCircle2, AlertCircle } from 'lucide-react'
+import { Search, MoreHorizontal, ChevronLeft, ChevronRight, ChevronDown, QrCode, X, CheckCircle2, AlertCircle } from 'lucide-react'
 import clsx from 'clsx'
 import { useLang } from '@/context/LanguageContext'
 import QRCode from 'react-qr-code'
@@ -28,7 +28,33 @@ function StatusBadge({ status }: { status?: string | null }) {
   )
 }
 
+function syntaxHighlight(json: string): string {
+  const escaped = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  return escaped.replace(
+    /("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+-]?\d+)?)/g,
+    (match) => {
+      if (/^"/.test(match)) {
+        if (/:$/.test(match)) return `<span style="color:#7dd3fc">${match}</span>` // key → sky
+        return `<span style="color:#86efac">${match}</span>` // string → green
+      }
+      if (/true|false/.test(match)) return `<span style="color:#c084fc">${match}</span>` // boolean → purple
+      if (/null/.test(match)) return `<span style="color:#f87171">${match}</span>` // null → red
+      return `<span style="color:#fbbf24">${match}</span>` // number → amber
+    }
+  )
+}
+
 function LineApiStatusBadge({ status, labels }: { status?: LineApiStatus | null; labels: { running: string; offline: string; unknown: string } }) {
+  const { t } = useLang()
+  const [showRaw, setShowRaw] = useState(false)
+  const [copied, setCopied] = useState(false)
+  const translateLoginState = (state: string) => {
+    switch (state.toLowerCase()) {
+      case 'ready': return t.agent.loginStateReady
+      case 'pin_pending': return t.agent.loginStatePinPending
+      default: return state
+    }
+  }
   if (!status) return (
     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-400 ring-1 ring-gray-200">
       <span className="w-1.5 h-1.5 rounded-full bg-gray-300 animate-pulse flex-shrink-0" />
@@ -42,11 +68,86 @@ function LineApiStatusBadge({ status, labels }: { status?: LineApiStatus | null;
     : isOffline
       ? { bg: 'bg-red-50 text-red-600 ring-red-200', dot: 'bg-red-400' }
       : { bg: 'bg-gray-100 text-gray-400 ring-gray-200', dot: 'bg-gray-300' }
+  const label = isRunning ? labels.running : isOffline ? labels.offline : labels.unknown
+  const handleCopy = () => {
+    const combined = { ok: status.ok, podStatus: status.podStatus, login: status.login, ...(status.raw ? JSON.parse(status.raw) : {}) }
+    navigator.clipboard.writeText(JSON.stringify(combined, null, 2))
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
   return (
-    <span className={clsx('inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ring-1', cfg.bg)}>
-      <span className={clsx('w-1.5 h-1.5 rounded-full flex-shrink-0', cfg.dot)} />
-      {isRunning ? labels.running : isOffline ? labels.offline : labels.unknown}
-    </span>
+    <div className="flex flex-col gap-0.5">
+      <span className={clsx('inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ring-1', cfg.bg)}>
+        <span className={clsx('w-1.5 h-1.5 rounded-full flex-shrink-0', cfg.dot)} />
+        {label}
+      </span>
+      {status.login != null && (
+        <button
+          onClick={e => { e.stopPropagation(); setShowRaw(v => !v) }}
+          className={clsx(
+            'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ring-1 transition-opacity hover:opacity-70',
+            status.login.toLowerCase() === 'ready'
+              ? 'bg-emerald-50 text-emerald-700 ring-emerald-200'
+              : 'bg-red-50 text-red-700 ring-red-200'
+          )}
+        >
+          <span className={clsx(
+            'w-1.5 h-1.5 rounded-full flex-shrink-0',
+            status.login.toLowerCase() === 'ready' ? 'bg-emerald-500' : 'bg-red-500'
+          )} />
+          {translateLoginState(status.login)}
+          <ChevronDown className="w-3 h-3 opacity-60" />
+        </button>
+      )}
+      {showRaw && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setShowRaw(false)}>
+          <div className="w-full max-w-3xl flex flex-col max-h-[85vh] rounded-2xl overflow-hidden shadow-2xl bg-primary-950 border border-primary-800" onClick={e => e.stopPropagation()}>
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 py-4 bg-primary-900 border-b border-primary-800">
+              <div className="flex items-center gap-3">
+                <div className="flex gap-1.5">
+                  <span className="w-3 h-3 rounded-full bg-red-500/80" />
+                  <span className="w-3 h-3 rounded-full bg-yellow-500/80" />
+                  <span className="w-3 h-3 rounded-full bg-green-500/80" />
+                </div>
+                <span className="text-sm font-semibold text-primary-100">Agent Status</span>
+                <span className="text-xs text-primary-400 font-mono">{status.agentId}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleCopy}
+                  className={clsx(
+                    'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all',
+                    copied ? 'bg-emerald-900/30 text-emerald-400' : 'bg-primary-800 text-primary-300 hover:bg-primary-700 hover:text-primary-100'
+                  )}
+                >
+                  {copied ? (
+                    <><svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>Copied</>
+                  ) : (
+                    <><svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>Copy</>
+                  )}
+                </button>
+                <button
+                  onClick={() => setShowRaw(false)}
+                  className="w-7 h-7 flex items-center justify-center rounded-lg transition-colors text-primary-400 hover:text-primary-100 hover:bg-primary-800"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+              </div>
+            </div>
+            {/* Body */}
+            <div className="overflow-auto p-5 custom-scrollbar">
+              <pre className="text-xs font-mono leading-relaxed text-primary-200" dangerouslySetInnerHTML={{ __html: syntaxHighlight(JSON.stringify({
+                ok: status.ok,
+                podStatus: status.podStatus,
+                login: status.login,
+                ...(status.raw ? JSON.parse(status.raw) : {}),
+              }, null, 2)) }} />
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -281,7 +382,7 @@ function AgentListContent() {
   const totalPages = Math.ceil(total / itemsPerPage)
   const startRow = total === 0 ? 0 : (page - 1) * itemsPerPage + 1
   const endRow = Math.min(page * itemsPerPage, total)
-  const cols = ['', m.colCode, m.colAgentType, m.colDescription, m.colTags, m.colCreatedDate, m.colLastSeen, m.colLastErrorSeen, m.colStatus, m.colEnabled, m.colAction]
+  const cols = [m.colCode, m.colAgentType, m.colDescription, m.colTags, m.colCreatedDate, m.colLastSeen, m.colLastErrorSeen, m.colStatus, m.colEnabled, m.colAction]
 
   return (
     <div className="flex flex-col overflow-hidden h-[calc(100dvh-5rem)] sm:h-[calc(100dvh-6.5rem)]">
@@ -442,15 +543,24 @@ function AgentListContent() {
                     id={`agent-row-${agent.agentId}`}
                     key={agent.agentId}
                     onClick={() => {
-                      sessionStorage.setItem('agent_highlight', agent.agentId)
-                      router.push(`/agent/${agent.agentId}`)
+                      const next = selectedRowId === agent.agentId ? null : agent.agentId
+                      setSelectedRowId(next)
+                      if (next) sessionStorage.setItem('agent_highlight', next)
+                      else sessionStorage.removeItem('agent_highlight')
                     }}
                     className={clsx('cursor-pointer transition-colors', highlighted ? 'bg-primary-50' : 'hover:bg-gray-50')}
                   >
                     <td className="px-4 py-3 border-b border-gray-100 whitespace-nowrap">
-                      <span className={clsx('text-sm font-semibold', highlighted ? 'text-primary-700' : 'text-primary-600')}>
+                      <button
+                        onClick={e => {
+                          e.stopPropagation()
+                          sessionStorage.setItem('agent_highlight', agent.agentId)
+                          router.push(`/agent/${agent.agentId}`)
+                        }}
+                        className={clsx('text-sm font-semibold hover:underline', highlighted ? 'text-primary-700' : 'text-primary-600')}
+                      >
                         {agent.code ?? '—'}
-                      </span>
+                      </button>
                       <p className="text-[10px] text-gray-400 mt-0.5 leading-tight">{agent.agentId}</p>
                     </td>
                     <td className="px-4 py-3 border-b border-gray-100 whitespace-nowrap">
@@ -526,6 +636,9 @@ function AgentListContent() {
                               onClick={() => { setOpenActionId(null); router.push(`/agent/${agent.agentId}/messages`) }}
                               className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                             >
+                              <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                              </svg>
                               {m.menuEvents}
                             </button>
                             {isLineApi && (
@@ -533,7 +646,7 @@ function AgentListContent() {
                                 onClick={() => { setOpenActionId(null); handleOpenQrModal(agent) }}
                                 className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                               >
-                                <QrCode className="w-3.5 h-3.5 text-gray-400" />
+                                <QrCode className="w-4 h-4 flex-shrink-0" />
                                 {m.menuLoginQr}
                               </button>
                             )}
