@@ -27,4 +27,19 @@ export const bankAccountApi = {
     const res = await client.get<any>(`${getBase(orgId)}/GetPayOutBankAccountsForMerchant`)
     return { ...res, data: normalize(res.data) }
   },
+
+  // Bank accounts actually linked to the current merchant (richer shape incl. balance), for the Bank Accounts menu
+  getMyBankAccounts: async (orgId?: string) => {
+    const res = await client.get<any>(`${getBase(orgId)}/GetMyBankAccounts`)
+    return { ...res, data: normalize(res.data) }
+  },
+
+  getMyBankAccountWallet: (bankAccountId: string, orgId?: string) =>
+    client.get(`${getBase(orgId)}/GetMyBankAccountWallet/${bankAccountId}`),
+
+  getMyBankAccountWalletTxs: (bankAccountId: string, payload: { FromDate?: string; ToDate?: string; Offset?: number; Limit?: number } = {}, orgId?: string) =>
+    client.post(`${getBase(orgId)}/GetMyBankAccountWalletTxs/${bankAccountId}`, payload),
+
+  getMyBankAccountWalletTxsCount: (bankAccountId: string, payload: { FromDate?: string; ToDate?: string } = {}, orgId?: string) =>
+    client.post(`${getBase(orgId)}/GetMyBankAccountWalletTxsCount/${bankAccountId}`, payload),
 }

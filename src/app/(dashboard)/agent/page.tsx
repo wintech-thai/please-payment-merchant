@@ -188,7 +188,11 @@ function AgentListContent() {
   const [itemsPerPage] = useState(25)
   const [searchTerm, setSearchTerm] = useState('')
   const [loading, setLoading] = useState(true)
-  const [selectedRowId, setSelectedRowId] = useState<string | null>(highlightIdParam)
+  const [selectedRowId, setSelectedRowId] = useState<string | null>(() => {
+    if (highlightIdParam) return highlightIdParam
+    if (typeof window !== 'undefined') return sessionStorage.getItem('agent_highlight')
+    return null
+  })
   const [openActionId, setOpenActionId] = useState<string | null>(null)
   const [confirmModal, setConfirmModal] = useState<{ open: boolean; type?: 'enable' | 'disable'; agentId?: string; agentCode?: string }>({ open: false })
   const [togglingAgentId, setTogglingAgentId] = useState<string | null>(null)
@@ -584,12 +588,15 @@ function AgentListContent() {
                     <td className="px-4 py-3 border-b border-gray-100 whitespace-nowrap text-sm text-gray-500">
                       {agent.createdDate ? fmtDateTime(agent.createdDate) : '—'}
                     </td>
-                    <td className="px-4 py-3 border-b border-gray-100 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-4 py-3 border-b border-gray-100 whitespace-nowrap text-sm text-gray-500" onClick={e => e.stopPropagation()}>
                       {agent.lastSeenDate ? (
-                        <div className="flex flex-col gap-0.5">
-                          <span>{fmtDateTime(agent.lastSeenDate)}</span>
+                        <button
+                          onClick={() => router.push(`/agent/${agent.agentId}/messages`)}
+                          className="flex flex-col gap-0.5 text-left hover:text-primary-600 group"
+                        >
+                          <span className="group-hover:underline">{fmtDateTime(agent.lastSeenDate)}</span>
                           {formatAge(agent.lastSeenDate) && <span className="text-xs text-gray-400">{formatAge(agent.lastSeenDate)}</span>}
-                        </div>
+                        </button>
                       ) : '—'}
                     </td>
                     <td className="px-4 py-3 border-b border-gray-100 whitespace-nowrap text-sm text-gray-500">

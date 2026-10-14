@@ -61,6 +61,15 @@ function getMenuItems(t: Translations, showAgents: boolean): MenuItem[] {
           </svg>
         ),
       },
+      {
+        href: '/bank-accounts',
+        label: t.nav.bankAccounts,
+        icon: (
+          <svg style={{ width: '18px', height: '18px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3 21h18M4 10h16M5 6l7-3 7 3M6 10v11M18 10v11M10 14v3M14 14v3" />
+          </svg>
+        ),
+      },
     ] : []),
   ]
 }
