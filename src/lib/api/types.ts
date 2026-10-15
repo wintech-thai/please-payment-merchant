@@ -911,3 +911,51 @@ export interface ApprovePayOutRequestPayload {
 export interface RejectPayOutRequestPayload {
   RejectReason: string
 }
+
+// ─── Agent ───────────────────────────────────────────────────────────────────
+
+export interface AgentItem {
+  agentId: string
+  orgId?: string | null
+  code?: string | null
+  description?: string | null
+  tags?: string | null
+  agentStatus?: string | null
+  agentType?: string | null
+  createdDate?: string | null
+  lastSeenDate?: string | null
+  lastSeenErrorDate?: string | null
+  bankAccountsSelectedObj?: { bankCode?: string | null; accountNumber?: string | null; accountName?: string | null }[] | null
+  agentConfigObj?: { userName?: string | null; apiKey?: string | null; agentImageTag?: string | null } | null
+}
+
+export interface GetAgentsPayload {
+  FullTextSearch?: string
+  Status?: string
+  AgentType?: string
+  Page?: number
+  Limit?: number
+}
+
+export interface AgentEventItem {
+  eventId?: string | null
+  id?: string
+  agentId?: string | null
+  eventType?: string | null
+  channel?: string | null
+  tags?: string | null
+  status?: string | null
+  statusDesc?: string | null
+  errorCount?: number | null
+  createdDate?: string | null
+}
+
+export interface GetAgentEventsPayload {
+  FullTextSearch?: string
+  EventType?: string
+  Channel?: string
+  FromDate?: string
+  ToDate?: string
+  Page?: number
+  Limit?: number
+}

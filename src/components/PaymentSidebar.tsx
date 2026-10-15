@@ -2,14 +2,15 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useState } from 'react'
+import { useState, useEffect, useLayoutEffect } from 'react'
 import clsx from 'clsx'
 import { useLang } from '@/context/LanguageContext'
 import type { Translations } from '@/context/LanguageContext'
+import { userApi } from '@/lib/api/user.api'
 
 type MenuItem = { href: string; label: string; icon: React.ReactNode } | { divider: true }
 
-function getMenuItems(t: Translations): MenuItem[] {
+function getMenuItems(t: Translations, showAgents: boolean): MenuItem[] {
   return [
     {
       href: '/payment/pay-in-requests',
@@ -48,14 +49,73 @@ function getMenuItems(t: Translations): MenuItem[] {
         </svg>
       ),
     },
+    ...(showAgents ? [
+      { divider: true } as const,
+      {
+        href: '/agent',
+        label: t.nav.agents,
+        icon: (
+          <svg style={{ width: '18px', height: '18px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+            <rect x="4" y="8" width="16" height="12" rx="2" strokeLinecap="round" strokeLinejoin="round" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 8V6a3 3 0 016 0v2M9 13h.01M15 13h.01" />
+          </svg>
+        ),
+      },
+      {
+        href: '/bank-accounts',
+        label: t.nav.bankAccounts,
+        icon: (
+          <svg style={{ width: '18px', height: '18px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3 21h18M4 10h16M5 6l7-3 7 3M6 10v11M18 10v11M10 14v3M14 14v3" />
+          </svg>
+        ),
+      },
+    ] : []),
   ]
+}
+
+function custodyCacheKey(orgId: string) {
+  return `showAgentsMenu_${orgId}`
 }
 
 export default function PaymentSidebar() {
   const pathname = usePathname()
   const { t } = useLang()
-  const menuItems = getMenuItems(t)
+  // Must start false to match the server-rendered HTML (no localStorage there) —
+  // the cached value is applied in a layout effect below, before the browser paints,
+  // so it never causes a hydration mismatch but still avoids a visible flash.
+  const [showAgents, setShowAgents] = useState(false)
+  const menuItems = getMenuItems(t, showAgents)
   const [collapsed, setCollapsed] = useState(false)
+
+  useLayoutEffect(() => {
+    const orgId = localStorage.getItem('orgId')
+    if (!orgId) return
+    const cached = localStorage.getItem(custodyCacheKey(orgId))
+    if (cached !== null) setShowAgents(cached === 'true')
+  }, [])
+
+  useEffect(() => {
+    const loadCustodyType = () => {
+      const orgId = localStorage.getItem('orgId')
+      if (orgId) {
+        const cached = localStorage.getItem(custodyCacheKey(orgId))
+        if (cached !== null) setShowAgents(cached === 'true')
+      }
+      userApi.getMyMerchantInfo()
+        .then(res => {
+          const data = res.data as any
+          const custodyType = data?.payInBankCustodyType ?? data?.PayInBankCustodyType ?? data?.merchant?.payInBankCustodyType
+          const show = custodyType === 'MerchantOwn'
+          setShowAgents(show)
+          if (orgId) localStorage.setItem(custodyCacheKey(orgId), String(show))
+        })
+        .catch(() => {})
+    }
+    loadCustodyType()
+    window.addEventListener('orgchange', loadCustodyType)
+    return () => window.removeEventListener('orgchange', loadCustodyType)
+  }, [])
 
   return (
     <aside
