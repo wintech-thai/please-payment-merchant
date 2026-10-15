@@ -34,6 +34,9 @@ export const bankAccountApi = {
     return { ...res, data: normalize(res.data) }
   },
 
+  getMyBankAccountById: (bankAccountId: string, orgId?: string) =>
+    client.get(`${getBase(orgId)}/GetMyBankAccountById/${bankAccountId}`),
+
   getMyBankAccountWallet: (bankAccountId: string, orgId?: string) =>
     client.get(`${getBase(orgId)}/GetMyBankAccountWallet/${bankAccountId}`),
 

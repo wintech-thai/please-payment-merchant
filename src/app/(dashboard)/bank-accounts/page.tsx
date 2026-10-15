@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, Suspense } from 'react'
+import Link from 'next/link'
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import { bankAccountApi } from '@/lib/api/bank-account.api'
 import type { BankAccountItem } from '@/lib/api/types'
@@ -8,6 +9,17 @@ import { toast } from 'sonner'
 import { Search, MoreHorizontal, Wallet, ChevronLeft, ChevronRight } from 'lucide-react'
 import clsx from 'clsx'
 import { useLang } from '@/context/LanguageContext'
+
+function fmtNum(n: number): string {
+  return n.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })
+}
+
+function formatRange(min?: number | null, max?: number | null) {
+  if (min == null && max == null) return '—'
+  if (min != null && max != null) return `${fmtNum(min)} - ${fmtNum(max)}`
+  if (min != null) return `${fmtNum(min)} -`
+  return `- ${fmtNum(max!)}`
+}
 
 function StatusBadge({ status }: { status?: string | null }) {
   const lower = status?.toLowerCase()
@@ -35,6 +47,7 @@ function BankAccountsPageInner() {
 
   const [accounts, setAccounts] = useState<BankAccountItem[]>([])
   const [loading, setLoading] = useState(true)
+  const [searchInput, setSearchInput] = useState('')
   const [search, setSearch] = useState('')
   const [filterType, setFilterType] = useState('')
   const [filterLevel, setFilterLevel] = useState('')
@@ -93,7 +106,9 @@ function BankAccountsPageInner() {
   const endRow = Math.min(page * itemsPerPage, total)
   const paged = filtered.slice((page - 1) * itemsPerPage, page * itemsPerPage)
 
-  const cols = [m.colBank, m.colAccountNumber, m.colAccountName, m.colPromptPayId, m.colAccountType, m.colAccountLevel, m.colStatus, m.colAction]
+  const handleSearch = () => { setSearch(searchInput); setPage(1) }
+
+  const cols = [m.colBank, m.colAccountNumber, m.colAccountName, m.colPromptPayId, m.colAccountType, m.colAccountLevel, m.colPayInRange, m.colDailyQuota, m.colStatus, m.colBalance, m.colAction]
 
   return (
     <div className="flex flex-col overflow-hidden h-[calc(100dvh-5rem)] sm:h-[calc(100dvh-6.5rem)]">
@@ -111,13 +126,14 @@ function BankAccountsPageInner() {
           <Search className="w-4 h-4 text-gray-400 flex-shrink-0" />
           <input
             type="text"
-            value={search}
-            onChange={e => { setSearch(e.target.value); setPage(1) }}
+            value={searchInput}
+            onChange={e => setSearchInput(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleSearch()}
             placeholder={m.searchPlaceholder}
             className="flex-1 text-sm bg-transparent outline-none text-gray-700 placeholder-gray-400"
           />
-          {search && (
-            <button onClick={() => { setSearch(''); setPage(1) }} className="text-gray-400 hover:text-gray-600">✕</button>
+          {searchInput && (
+            <button onClick={() => { setSearchInput(''); setSearch(''); setPage(1) }} className="text-gray-400 hover:text-gray-600">✕</button>
           )}
         </div>
         <select
@@ -139,7 +155,7 @@ function BankAccountsPageInner() {
           <option value="Selected">{m.accountLevelSelected}</option>
         </select>
         <button
-          onClick={() => {}}
+          onClick={handleSearch}
           className="px-4 py-2 text-sm font-semibold text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors"
         >
           {t.admin.search}
@@ -167,14 +183,15 @@ function BankAccountsPageInner() {
           <div className="flex items-center justify-center h-64 text-gray-400 text-sm">{m.noAccountsFound}</div>
         ) : (
         <div className="flex-1 overflow-auto custom-scrollbar">
-          <table className="w-full text-sm border-separate border-spacing-0 min-w-[900px]">
+          <table className="w-full text-sm border-separate border-spacing-0 min-w-[1300px]">
             <thead className="sticky top-0 z-10">
               <tr className="bg-gray-50">
                 {cols.map((col, i) => (
                   <th
                     key={i}
                     className={clsx(
-                      'px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200 whitespace-nowrap text-left',
+                      'px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200 whitespace-nowrap',
+                      i === cols.length - 2 ? 'text-right' : 'text-left',
                       i === 0 && 'rounded-tl-xl',
                       i === cols.length - 1 && 'rounded-tr-xl',
                     )}
@@ -201,9 +218,13 @@ function BankAccountsPageInner() {
                     className={clsx('cursor-pointer transition-colors', highlighted ? 'bg-primary-50' : 'hover:bg-gray-50')}
                   >
                     <td className="px-4 py-3 border-b border-gray-100 whitespace-nowrap">
-                      <span className={clsx('font-semibold text-sm', highlighted ? 'text-primary-700' : 'text-gray-800')}>
+                      <Link
+                        href={`/bank-accounts/${rowId}`}
+                        onClick={e => { e.stopPropagation(); sessionStorage.setItem('bank_account_highlight', rowId) }}
+                        className={clsx('font-semibold text-sm hover:underline', highlighted ? 'text-primary-700' : 'text-gray-800 hover:text-primary-600')}
+                      >
                         {acc.bankName || acc.bankCode || '—'}
-                      </span>
+                      </Link>
                     </td>
                     <td className="px-4 py-3 border-b border-gray-100 text-gray-600 whitespace-nowrap text-sm">
                       {acc.accountNumber ?? '—'}
@@ -220,8 +241,27 @@ function BankAccountsPageInner() {
                     <td className="px-4 py-3 border-b border-gray-100 text-sm text-gray-600 whitespace-nowrap">
                       {acc.accountLevel ?? '—'}
                     </td>
+                    <td className="px-4 py-3 border-b border-gray-100 text-sm text-gray-700 whitespace-nowrap tabular-nums">
+                      {formatRange(acc.payinMinAmount, acc.payinMaxAmount)}
+                    </td>
+                    <td className="px-4 py-3 border-b border-gray-100 text-sm text-gray-700 whitespace-nowrap tabular-nums">
+                      {acc.dailyQuota != null ? fmtNum(acc.dailyQuota) : '—'}
+                    </td>
                     <td className="px-4 py-3 border-b border-gray-100 whitespace-nowrap">
                       <StatusBadge status={acc.status} />
+                    </td>
+                    <td className="px-4 py-3 border-b border-gray-100 text-sm whitespace-nowrap text-right">
+                      {acc.currentBalanceDecimal != null || acc.currentBalance != null || acc.currentWalletBalanceDecimal != null || acc.currentWalletBalance != null ? (
+                        <Link
+                          href={`/bank-accounts/${rowId}/wallet`}
+                          onClick={e => { e.stopPropagation(); sessionStorage.setItem('bank_account_highlight', rowId) }}
+                          className="tabular-nums text-gray-700 hover:underline hover:text-primary-600"
+                        >
+                          {(acc.currentBalanceDecimal ?? acc.currentBalance ?? acc.currentWalletBalanceDecimal ?? acc.currentWalletBalance ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </Link>
+                      ) : (
+                        <span className="text-gray-400">—</span>
+                      )}
                     </td>
                     <td className="px-4 py-3 border-b border-gray-100 whitespace-nowrap" onClick={e => e.stopPropagation()}>
                       <div className="relative" ref={el => { menuRefs.current[rowId] = el }}>
