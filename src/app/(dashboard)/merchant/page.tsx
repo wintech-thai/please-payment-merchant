@@ -86,9 +86,12 @@ interface MerchantData {
   status?: string
   discardCent?: boolean | null
   payInBankCustodyType?: string | null
+  payInFeeWalletSource?: string | null
+  payOutFeeWalletSource?: string | null
   payinExpireMinute?: number | null
   currentBalance?: number | null
   currentBalanceDecimal?: number | null
+  currentPointBalance?: number | null
   // fallback aliases
   merchantCode?: string; orgCode?: string; orgCustomId?: string
   merchantName?: string; orgName?: string
@@ -373,6 +376,9 @@ export default function MerchantInfoPage() {
   const currentDailyCount     = data?.currentPayinDailyTxCount ?? null
   const discardCent = data?.discardCent ?? false
   const payInBankCustodyType = data?.payInBankCustodyType === 'MerchantOwn' ? 'MerchantOwn' : 'PlatformOwn'
+  const payInFeeWalletSource = data?.payInFeeWalletSource === 'PointWallet' ? 'PointWallet' : 'MerchantWallet'
+  const payOutFeeWalletSource = data?.payOutFeeWalletSource === 'PointWallet' ? 'PointWallet' : 'MerchantWallet'
+  const pointBalance = data?.currentPointBalance ?? null
   const payinExpireMinute = data?.payinExpireMinute ?? null
   const payoutPartialCountLimitP2P = data?.payoutPartialCountLimitP2P ?? null
   const payoutSelectionTypeP2P = data?.payoutSelectionTypeP2P || 'AllowAll'
@@ -545,6 +551,16 @@ export default function MerchantInfoPage() {
                   <ReadonlyField
                     label={mi.fieldPayInBankCustodyType}
                     value={payInBankCustodyType === 'MerchantOwn' ? mi.custodyTypeMerchantOwn : mi.custodyTypePlatformOwn}
+                    icon={<Zap className="w-3 h-3" />}
+                  />
+                  <ReadonlyField
+                    label={mi.fieldPayInFeeWalletSource}
+                    value={payInFeeWalletSource === 'PointWallet' ? mi.feeWalletSourcePointWallet : mi.feeWalletSourceMerchantWallet}
+                    icon={<Zap className="w-3 h-3" />}
+                  />
+                  <ReadonlyField
+                    label={mi.fieldPayOutFeeWalletSource}
+                    value={payOutFeeWalletSource === 'PointWallet' ? mi.feeWalletSourcePointWallet : mi.feeWalletSourceMerchantWallet}
                     icon={<Zap className="w-3 h-3" />}
                   />
                 </div>
@@ -733,6 +749,14 @@ export default function MerchantInfoPage() {
                           <p className="text-3xl font-bold text-gray-900">
                             {walletBalance != null
                               ? Number(walletBalance).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                              : '—'}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">{mi.pointWalletBalance}</p>
+                          <p className="text-xl font-bold text-violet-600">
+                            {pointBalance != null
+                              ? Number(pointBalance).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
                               : '—'}
                           </p>
                         </div>
