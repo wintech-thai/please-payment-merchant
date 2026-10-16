@@ -9,7 +9,7 @@ import { paymentRequestApi } from '@/lib/api/payment-request.api'
 import { useLang } from '@/context/LanguageContext'
 import { toast } from 'sonner'
 import clsx from 'clsx'
-import { Loader2, Copy, Check, Store, CreditCard, Webhook, Wallet, ChevronLeft, ChevronRight, Mail, Phone, Hash, User, Activity, Percent, TrendingUp, TrendingDown, ArrowDownCircle, ArrowUpCircle, Zap, Globe, ExternalLink, Coins, Search } from 'lucide-react'
+import { Loader2, Copy, Check, Store, CreditCard, Webhook, Wallet, ChevronLeft, ChevronRight, Mail, Phone, Hash, User, Activity, Percent, TrendingUp, TrendingDown, ArrowDownCircle, ArrowUpCircle, Zap, Globe, ExternalLink, Coins, Search, Gem } from 'lucide-react'
 import { isCurrencyFeatureEnabled } from '@/lib/feature-flags'
 import CurrencyLogo from '@/components/CurrencyLogo'
 
@@ -270,7 +270,7 @@ function EndpointRow({ ep, copyLabel, copiedLabel, isLast, isSelected, onClick }
   )
 }
 
-type Tab = 'info' | 'endpoint' | 'webhooks' | 'wallet' | 'currencyFiat' | 'currencyCrypto'
+type Tab = 'info' | 'endpoint' | 'webhooks' | 'wallet' | 'pointWallet' | 'currencyFiat' | 'currencyCrypto'
 
 export default function MerchantInfoPage() {
   const { t } = useLang()
@@ -283,6 +283,8 @@ export default function MerchantInfoPage() {
   const [webhooksData, setWebhooksData] = useState<any[]>([])
   const [walletData, setWalletData] = useState<any | null>(null)
   const [walletTxs, setWalletTxs] = useState<any[]>([])
+  const [pointWalletData, setPointWalletData] = useState<any | null>(null)
+  const [pointWalletTxs, setPointWalletTxs] = useState<any[]>([])
   const [currencies, setCurrencies] = useState<MerchantCurrencyRow[]>([])
   const [orgPolicy, setOrgPolicy] = useState<any>(null)
   const [currencyEnabled, setCurrencyEnabled] = useState(false)
@@ -290,6 +292,9 @@ export default function MerchantInfoPage() {
   const [walletPage, setWalletPage] = useState(1)
   const [walletPageSize, setWalletPageSize] = useState(25)
   const [highlightedTxIdx, setHighlightedTxIdx] = useState<number | null>(null)
+  const [pointWalletPage, setPointWalletPage] = useState(1)
+  const [pointWalletPageSize, setPointWalletPageSize] = useState(25)
+  const [pointHighlightedTxIdx, setPointHighlightedTxIdx] = useState<number | null>(null)
   const [reloadKey, setReloadKey] = useState(0)
 
   useOrgChange(() => setReloadKey(k => k + 1))
@@ -300,11 +305,12 @@ export default function MerchantInfoPage() {
     const load = async () => {
       try {
         // Call all merchant endpoints in parallel — backend resolves merchantId from current user
-        const [detailRes, endpointsRes, webhooksRes, walletRes, currenciesRes, policyRes] = await Promise.allSettled([
+        const [detailRes, endpointsRes, webhooksRes, walletRes, pointWalletRes, currenciesRes, policyRes] = await Promise.allSettled([
           userApi.getMyMerchantInfo(),
           userApi.getMerchantPaymentEndpoints(),
           userApi.getMerchantWebhooks(),
           userApi.getMerchantWallet(),
+          userApi.getMerchantPointWallet(),
           userApi.getMerchantCurrencies(),
           userApi.getOrganizationPolicy(),
         ])
@@ -337,6 +343,22 @@ export default function MerchantInfoPage() {
               const txd = txRes.data as any
               const list = Array.isArray(txd) ? txd : (txd?.transactions ?? txd?.items ?? txd?.data ?? [])
               setWalletTxs(list)
+            } catch {}
+          }
+        }
+
+        if (pointWalletRes.status === 'fulfilled') {
+          const d = pointWalletRes.value.data as any
+          const pointWallet = d?.wallet ?? d?.data ?? d
+          setPointWalletData(pointWallet ?? null)
+
+          const pwId = pointWallet?.walletId ?? pointWallet?.id
+          if (pwId) {
+            try {
+              const txRes = await userApi.getMerchantWalletTransactions(pwId, { offset: 0, limit: 100 })
+              const txd = txRes.data as any
+              const list = Array.isArray(txd) ? txd : (txd?.transactions ?? txd?.items ?? txd?.data ?? [])
+              setPointWalletTxs(list)
             } catch {}
           }
         }
@@ -388,6 +410,7 @@ export default function MerchantInfoPage() {
     { key: 'endpoint', label: mi.tabEndpoint, icon: <CreditCard className="w-4 h-4" />, activeClass: 'bg-blue-500 text-white shadow-md shadow-blue-200',    iconClass: 'text-blue-500' },
     { key: 'webhooks', label: mi.tabWebhooks, icon: <Webhook    className="w-4 h-4" />, activeClass: 'bg-violet-500 text-white shadow-md shadow-violet-200', iconClass: 'text-violet-500' },
     { key: 'wallet',   label: mi.tabWallet,   icon: <Wallet     className="w-4 h-4" />, activeClass: 'bg-amber-500 text-white shadow-md shadow-amber-200',   iconClass: 'text-amber-500' },
+    { key: 'pointWallet', label: mi.tabPointWallet, icon: <Gem className="w-4 h-4" />, activeClass: 'bg-fuchsia-500 text-white shadow-md shadow-fuchsia-200', iconClass: 'text-fuchsia-500' },
     ...(currencyEnabled ? [
       // Fiat tab hidden for now
       { key: 'currencyCrypto' as Tab, label: mi.tabCurrencyCrypto, icon: <Coins className="w-4 h-4" />, activeClass: 'bg-orange-500 text-white shadow-md shadow-orange-200', iconClass: 'text-orange-500' },
@@ -949,6 +972,229 @@ export default function MerchantInfoPage() {
                         <button
                           onClick={() => setWalletPage(p => Math.min(totalPages, p + 1))}
                           disabled={walletPage === totalPages}
+                          className="p-1.5 rounded-lg hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition"
+                        >
+                          <ChevronRight className="w-4 h-4 text-gray-600" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )
+          })()}
+
+          {/* ── Point Wallet tab ── */}
+          {activeTab === 'pointWallet' && !pointWalletData && (
+            <EmptyState title={mi.noWallet} description={mi.noWalletDesc} />
+          )}
+
+          {activeTab === 'pointWallet' && pointWalletData && (() => {
+            const pointWalletBalance = pointWalletData?.pointBalanceDecimal ?? pointWalletData?.currentBalanceDecimal ?? pointWalletData?.balance
+            const totalTxs = pointWalletTxs.length
+            const totalPages = Math.max(1, Math.ceil(totalTxs / pointWalletPageSize))
+            const pagedTxs = pointWalletTxs.slice((pointWalletPage - 1) * pointWalletPageSize, pointWalletPage * pointWalletPageSize)
+            const rangeStart = totalTxs === 0 ? 0 : (pointWalletPage - 1) * pointWalletPageSize + 1
+            const rangeEnd = Math.min(pointWalletPage * pointWalletPageSize, totalTxs)
+            return (
+              <div className="flex-1 flex flex-col min-h-0 gap-4">
+                {/* Info cards */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  <div className="bg-white rounded-xl border border-gray-100 p-5">
+                    <SectionHeader>{mi.sectionBasicInfo}</SectionHeader>
+                    <div className="grid grid-cols-2 gap-x-8 gap-y-3 mt-3">
+                      <div>
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">{mi.fieldCode}</p>
+                        <p className="text-sm font-semibold text-gray-800">{orgCode || '—'}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">{mi.fieldName}</p>
+                        <p className="text-sm text-gray-700">{orgName || '—'}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">{mi.fieldStatus}</p>
+                        {status ? <StatusBadge status={status} /> : <span className="text-gray-300 text-sm">—</span>}
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">{mi.fieldEmail}</p>
+                        <p className="text-sm text-gray-700 break-all">{email || '—'}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-white rounded-xl border border-gray-100 p-5">
+                    <SectionHeader>{mi.sectionPointWallet}</SectionHeader>
+                    <div className="mt-3 space-y-3">
+                      <div>
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">{mi.walletId}</p>
+                        <p className="text-xs text-gray-600 break-all">{pointWalletData?.walletId ?? pointWalletData?.id ?? '—'}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">{mi.pointWalletBalance}</p>
+                        <p className="text-3xl font-bold text-gray-900">
+                          {pointWalletBalance != null
+                            ? Number(pointWalletBalance).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                            : '—'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Transactions table */}
+                <div className="flex-1 flex flex-col min-h-0">
+                  <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">{mi.sectionWalletTxs}</h3>
+                  <div className="flex-1 overflow-auto rounded-xl border border-gray-100 min-h-0">
+                    <table className="w-full text-sm">
+                      <thead className="bg-gray-50 border-b border-gray-100 sticky top-0 z-10">
+                        <tr>
+                          <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 whitespace-nowrap">{mi.colTxDate}</th>
+                          <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">{mi.colTxTags}</th>
+                          <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">{mi.colTxDesc}</th>
+                          <th className="px-4 py-3 text-right text-sm font-semibold text-gray-600">{mi.colTxPayIn}</th>
+                          <th className="px-4 py-3 text-right text-sm font-semibold text-gray-600">{mi.colTxPayOut}</th>
+                          <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">{mi.colTxType}</th>
+                          <th className="px-4 py-3 text-right text-sm font-semibold text-gray-600">{mi.colTxPrevBalance}</th>
+                          <th className="px-4 py-3 text-right text-sm font-semibold text-gray-600">{mi.colTxBalance}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {pagedTxs.length > 0 ? pagedTxs.map((tx: any, idx) => {
+                          const isPayIn = tx.txType === 1
+                          const isWithdrawal = /IsWithdrawal=\[true\]/i.test(tx.tags2 ?? '')
+                          const amount = tx.txAmountDecimal ?? tx.txAmount
+                          const tags = typeof tx.tags === 'string' ? tx.tags : Array.isArray(tx.tags) ? tx.tags.join(', ') : ''
+                          const payOutMatch = tags.match(/PayOutRequestId=\[([^\]]+)\]/)
+                          const payInTxMatch = tags.match(/PaymentTxId=\[([^\]]+)\]/)
+                          const payInReqMatch = tags.match(/PaymentRequestId=\[([^\]]+)\]/)
+                          const refId1 = tags.match(/RefId1=\[([^\]]+)\]/)?.[1] ?? null
+                          const tagUuid = (payOutMatch ?? payInTxMatch ?? payInReqMatch)?.[1] ?? null
+                          const tagLink = payOutMatch
+                            ? `/payment/pay-out-requests/${payOutMatch[1]}`
+                            : payInTxMatch
+                            ? `/payment/pay-in-transactions/${payInTxMatch[1]}`
+                            : payInReqMatch
+                            ? `/payment/pay-in-requests/${payInReqMatch[1]}`
+                            : null
+                          const tagLabel = refId1 ?? (payOutMatch ? 'Pay-Out' : payInTxMatch ? 'Pay-In Tx' : 'Pay-In Req')
+                          const globalIdx = (pointWalletPage - 1) * pointWalletPageSize + idx
+                          const isHighlighted = pointHighlightedTxIdx === globalIdx
+                          return (
+                            <tr key={idx}
+                              onClick={() => setPointHighlightedTxIdx(isHighlighted ? null : globalIdx)}
+                              className={clsx(
+                                'border-b border-gray-100 last:border-0 cursor-pointer transition-colors',
+                                isHighlighted
+                                  ? '!bg-primary-100 border-l-[3px] border-l-primary-500'
+                                  : 'hover:bg-gray-50/50'
+                              )}>
+                              <td className="px-4 py-3 text-gray-700 text-sm whitespace-nowrap">
+                                {(tx.createdDate ?? tx.createdAt)
+                                  ? fmtDateTime(tx.createdDate ?? tx.createdAt)
+                                  : '—'}
+                              </td>
+                              <td className="px-4 py-3 text-gray-500 text-sm max-w-[200px] truncate">
+                                {tags
+                                  ? tagLink && tagUuid
+                                    ? payOutMatch
+                                      ? <button
+                                          type="button"
+                                          onClick={async (e) => {
+                                            e.stopPropagation()
+                                            try {
+                                              await paymentRequestApi.getPayOutRequestById(payOutMatch[1])
+                                              window.open(tagLink, '_blank', 'noopener,noreferrer')
+                                            } catch {
+                                              toast.error(mi.crossMerchantTitle, { description: mi.crossMerchantDesc })
+                                            }
+                                          }}
+                                          className={clsx(
+                                            'inline-block px-2 py-0.5 rounded text-xs font-semibold hover:opacity-80 transition-opacity cursor-pointer',
+                                            isWithdrawal ? 'bg-blue-100 text-blue-700' : 'bg-red-100 text-red-700'
+                                          )}
+                                        >
+                                          {tagLabel}
+                                        </button>
+                                      : <Link href={tagLink} target="_blank" rel="noopener noreferrer" className={clsx(
+                                          'inline-block px-2 py-0.5 rounded text-xs font-semibold hover:opacity-80 transition-opacity',
+                                          payInTxMatch && 'bg-green-100 text-green-700',
+                                          payInReqMatch && 'bg-blue-100 text-blue-700',
+                                        )}>
+                                          {tagLabel}
+                                        </Link>
+                                    : <span className="text-gray-500 text-xs">{tags}</span>
+                                  : <span className="text-gray-300">—</span>}
+                              </td>
+                              <td className="px-4 py-3 text-gray-600 text-sm max-w-[160px] truncate">
+                                {tx.description ?? <span className="text-gray-300">—</span>}
+                              </td>
+                              <td className="px-4 py-3 text-right text-sm font-medium">
+                                {isPayIn && amount != null
+                                  ? <span className="text-green-600">+{Number(amount).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                  : <span className="text-gray-300">—</span>}
+                              </td>
+                              <td className="px-4 py-3 text-right text-sm font-medium">
+                                {!isPayIn && amount != null
+                                  ? <span className="text-red-500">-{Number(amount).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                  : <span className="text-gray-300">—</span>}
+                              </td>
+                              <td className="px-4 py-3">
+                                <span className={clsx(
+                                  'inline-block px-2 py-0.5 rounded text-xs font-semibold',
+                                  isPayIn ? 'bg-green-100 text-green-700' : isWithdrawal ? 'bg-blue-100 text-blue-700' : 'bg-red-100 text-red-700'
+                                )}>
+                                  {isPayIn ? 'Pay-In' : (isWithdrawal ? 'Withdraw' : 'Pay-Out')}
+                                </span>
+                              </td>
+                              <td className="px-4 py-3 text-right text-sm text-gray-700">
+                                {(tx.previousBalanceDecimal ?? tx.previousBalance) != null
+                                  ? Number(tx.previousBalanceDecimal ?? tx.previousBalance).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                                  : <span className="text-gray-300">—</span>}
+                              </td>
+                              <td className="px-4 py-3 text-right text-sm font-semibold text-gray-800">
+                                {(tx.currentBalanceDecimal ?? tx.currentBalance) != null
+                                  ? Number(tx.currentBalanceDecimal ?? tx.currentBalance).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                                  : <span className="text-gray-300 font-normal">—</span>}
+                              </td>
+                            </tr>
+                          )
+                        }) : (
+                          <tr>
+                            <td colSpan={8} className="px-4 py-10 text-center text-sm text-gray-400">{mi.noTransactions}</td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Pagination */}
+                  <div className="flex items-center justify-between mt-3 px-1">
+                    <p className="text-sm text-gray-500 font-medium">
+                      {totalTxs} {mi.records}
+                    </p>
+                    <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-gray-500">{mi.rowsPerPage}</span>
+                        <select
+                          value={pointWalletPageSize}
+                          onChange={e => { setPointWalletPageSize(Number(e.target.value)); setPointWalletPage(1) }}
+                          className="text-sm border border-gray-200 rounded-lg px-2 py-1 text-gray-700 bg-white focus:outline-none focus:ring-1 focus:ring-primary-300"
+                        >
+                          {[25, 50, 100].map(n => <option key={n} value={n}>{n}</option>)}
+                        </select>
+                      </div>
+                      <span className="text-sm text-gray-500">{rangeStart}–{rangeEnd} of {totalTxs}</span>
+                      <div className="flex items-center gap-0.5">
+                        <button
+                          onClick={() => setPointWalletPage(p => Math.max(1, p - 1))}
+                          disabled={pointWalletPage === 1}
+                          className="p-1.5 rounded-lg hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition"
+                        >
+                          <ChevronLeft className="w-4 h-4 text-gray-600" />
+                        </button>
+                        <button
+                          onClick={() => setPointWalletPage(p => Math.min(totalPages, p + 1))}
+                          disabled={pointWalletPage === totalPages}
                           className="p-1.5 rounded-lg hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition"
                         >
                           <ChevronRight className="w-4 h-4 text-gray-600" />
