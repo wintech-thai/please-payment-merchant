@@ -6,7 +6,7 @@ import QRCode from 'react-qr-code'
 import { X, QrCode, Loader2, RefreshCw, Link2, Copy, Check, ExternalLink } from 'lucide-react'
 import { bankAccountApi } from '@/lib/api/bank-account.api'
 import { paymentRequestApi } from '@/lib/api/payment-request.api'
-import type { BankAccountItem, PaymentRequestResponse } from '@/lib/api/types'
+import type { BankAccountItem, BankItem, PaymentRequestResponse } from '@/lib/api/types'
 import { toast } from 'sonner'
 import clsx from 'clsx'
 import { useLang } from '@/context/LanguageContext'
@@ -31,13 +31,17 @@ function generateRefId(): string {
 }
 
 export default function QrPaymentModal({ merchantId, onClose, onSuccess }: Props) {
-  const { t } = useLang()
+  const { t, lang } = useLang()
   const m = t.merchant
   const a = t.admin
 
+  const [mode, setMode] = useState<'manual' | 'auto'>('manual')
+
+  const [qrBanks, setQrBanks] = useState<BankItem[]>([])
   const [accounts, setAccounts] = useState<BankAccountItem[]>([])
   const [loadingInit, setLoadingInit] = useState(true)
 
+  const [selectedBankCode, setSelectedBankCode] = useState('')
   const [selectedAccountId, setSelectedAccountId] = useState('')
   const [amount, setAmount] = useState('')
   const [ref, setRef] = useState(() => generateRefId())
@@ -115,14 +119,19 @@ export default function QrPaymentModal({ merchantId, onClose, onSuccess }: Props
   }, [result?.websocketPath, result?.sessionId])
 
   useEffect(() => {
-    bankAccountApi.getMyBankAccounts()
-      .then(res => {
-        const list = res.data.bankAccounts ?? []
+    Promise.allSettled([
+      bankAccountApi.getAvailableSupportQrBanks(),
+      bankAccountApi.getMyBankAccounts(),
+    ]).then(([banksRes, accountsRes]) => {
+      if (banksRes.status === 'fulfilled') {
+        const raw = banksRes.value.data as any
+        setQrBanks(Array.isArray(raw) ? raw : (raw?.banks ?? raw?.Banks ?? []))
+      }
+      if (accountsRes.status === 'fulfilled') {
+        const list = accountsRes.value.data.bankAccounts ?? []
         setAccounts(list)
-        if (list.length === 1) setSelectedAccountId(list[0].accountId ?? '')
-      })
-      .catch(() => {})
-      .finally(() => setLoadingInit(false))
+      }
+    }).finally(() => setLoadingInit(false))
   }, [])
 
   useEffect(() => {
@@ -131,12 +140,31 @@ export default function QrPaymentModal({ merchantId, onClose, onSuccess }: Props
     setSlipUrl(rel ? `${window.location.origin}${rel}` : null)
   }, [result])
 
+  const filteredAccounts = selectedBankCode
+    ? accounts.filter(acc =>
+        selectedBankCode === 'PP'
+          ? acc.accountType?.toLowerCase() === 'promptpay'
+          : acc.bankCode === selectedBankCode && acc.accountType?.toLowerCase() === 'native'
+      )
+    : []
+
+  const bankLabel = (b: BankItem) =>
+    lang === 'th'
+      ? (b.bankNameTh || b.bankNameEng || b.bankShortName || b.bankCode)
+      : (b.bankNameEng || b.bankNameTh || b.bankShortName || b.bankCode)
+
+  // Auto-select: ถ้า merchant ผูกบัญชี Native (เช่น SCB) ไว้ ให้ใช้ bank code นั้นเป็น QrProvider เลย ไม่งั้น fallback เป็น 'PP'
+  const getAutoProvider = () => {
+    const nativeAccount = accounts.find(acc => acc.accountType?.toLowerCase() !== 'promptpay')
+    return nativeAccount?.bankCode || 'PP'
+  }
+
   const validate = () => {
     const e: Record<string, string> = {}
     if (!amount || isNaN(Number(amount)) || Number(amount) <= 0) e.amount = m.qrErrAmount
     if (!ref.trim()) e.ref = m.qrErrRef
     if (!payerName.trim()) e.payerName = m.qrErrPayerName
-    if (!selectedAccountId) e.account = m.qrErrAccount
+    if (mode === 'manual' && !selectedAccountId) e.account = m.qrErrAccount
     setErrors(e)
     return Object.keys(e).length === 0
   }
@@ -146,16 +174,17 @@ export default function QrPaymentModal({ merchantId, onClose, onSuccess }: Props
     setSubmitting(true)
     setResult(null)
     try {
-      const account = accounts.find(a => a.accountId === selectedAccountId)
       const payload: any = {
-        RefId: ref.trim(),
-        RefId1: ref1.trim() || undefined,
-        RefId2: ref2.trim() || undefined,
+        RefId1: ref.trim(),
+        RefId2: ref1.trim() || undefined,
+        RefId3: ref2.trim() || undefined,
         Currency: 'THB',
         RequestedAmount: Number(amount),
-        QrProvider: account?.accountType?.toLowerCase() === 'promptpay' ? 'PP' : (account?.bankCode || 'PP'),
+        QrProvider: mode === 'manual' && selectedBankCode ? selectedBankCode : getAutoProvider(),
         PayerName: payerName.trim(),
-        SelectedPayInBankAccountId: selectedAccountId,
+      }
+      if (mode === 'manual' && selectedAccountId) {
+        payload.SelectedPayInBankAccountId = selectedAccountId
       }
       const res = await paymentRequestApi.submitPayInRequest(merchantId, payload)
       const raw = res.data as any
@@ -207,27 +236,74 @@ export default function QrPaymentModal({ merchantId, onClose, onSuccess }: Props
           ) : (
             <>
               <div className="flex-1 overflow-y-auto custom-scrollbar px-6 py-5 space-y-5">
+                {/* Mode selection */}
                 <div>
-                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
-                    {m.qrFieldBankAccount} <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    value={selectedAccountId}
-                    onChange={e => { setSelectedAccountId(e.target.value); setErrors(p => ({ ...p, account: '' })) }}
-                    className={clsx(
-                      'w-full px-3 py-2.5 text-sm border rounded-lg focus:outline-none focus:ring-2 bg-white',
-                      errors.account ? 'border-red-400 focus:ring-red-300' : 'border-gray-200 focus:ring-primary-300'
-                    )}
-                  >
-                    <option value="">{m.qrSelectAccountPlaceholder}</option>
-                    {accounts.map(acc => (
-                      <option key={acc.accountId} value={acc.accountId}>
-                        {[acc.bankCode, acc.accountNumber, acc.accountName ? `— ${acc.accountName}` : ''].filter(Boolean).join(' ')}
-                      </option>
+                  <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">{m.qrSelectAccount}</p>
+                  <div className="flex gap-4">
+                    {(['manual', 'auto'] as const).map(opt => (
+                      <label key={opt} className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          checked={mode === opt}
+                          onChange={() => { setMode(opt); setSelectedBankCode(''); setSelectedAccountId(''); setErrors({}) }}
+                          className="text-primary-600 focus:ring-primary-500"
+                        />
+                        <span className="text-sm text-gray-700 font-medium">
+                          {opt === 'manual' ? m.qrModeManual : m.qrModeAuto}
+                        </span>
+                      </label>
                     ))}
-                  </select>
-                  {errors.account && <p className="text-red-500 text-xs mt-1">{errors.account}</p>}
+                  </div>
                 </div>
+
+                {/* Manual: bank + account dropdowns */}
+                {mode === 'manual' && (
+                  <div className="grid grid-cols-1 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
+                        {m.qrFieldBank} <span className="text-red-500">*</span>
+                      </label>
+                      <select
+                        value={selectedBankCode}
+                        onChange={e => { setSelectedBankCode(e.target.value); setSelectedAccountId(''); setErrors(p => ({ ...p, account: '' })) }}
+                        className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 bg-white"
+                      >
+                        <option value="">{m.qrSelectBankPlaceholder}</option>
+                        {qrBanks.map(b => (
+                          <option key={b.bankCode} value={b.bankCode}>
+                            {b.bankCode} — {bankLabel(b)}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
+                        {m.qrFieldBankAccount} <span className="text-red-500">*</span>
+                      </label>
+                      <select
+                        value={selectedAccountId}
+                        onChange={e => { setSelectedAccountId(e.target.value); setErrors(p => ({ ...p, account: '' })) }}
+                        disabled={!selectedBankCode}
+                        className={clsx(
+                          'w-full px-3 py-2.5 text-sm border rounded-lg focus:outline-none focus:ring-2 bg-white',
+                          errors.account ? 'border-red-400 focus:ring-red-300' : 'border-gray-200 focus:ring-primary-300',
+                          !selectedBankCode && 'opacity-50 cursor-not-allowed'
+                        )}
+                      >
+                        <option value="">{m.qrSelectAccountPlaceholder}</option>
+                        {filteredAccounts.map(acc => (
+                          <option key={acc.accountId} value={acc.accountId}>
+                            {[acc.bankCode, acc.accountNumber, acc.accountName ? `— ${acc.accountName}` : ''].filter(Boolean).join(' ')}
+                          </option>
+                        ))}
+                      </select>
+                      {errors.account && <p className="text-red-500 text-xs mt-1">{errors.account}</p>}
+                      {selectedBankCode && filteredAccounts.length === 0 && (
+                        <p className="text-xs text-gray-400 mt-1">{m.qrNoAccountFound}</p>
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="col-span-2 sm:col-span-1">

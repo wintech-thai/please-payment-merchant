@@ -1,5 +1,5 @@
 import { client } from '@/lib/axios'
-import type { BankAccountItem, GetBankAccountsPayload } from './types'
+import type { BankAccountItem, BankItem, GetBankAccountsPayload } from './types'
 
 function getBase(orgId?: string) {
   const id = orgId ?? (typeof window !== 'undefined' ? localStorage.getItem('orgId') || 'temp' : 'temp')
@@ -18,6 +18,9 @@ function normalize(raw: any): { bankAccounts: BankAccountItem[] } {
 }
 
 export const bankAccountApi = {
+  getAvailableSupportQrBanks: (orgId?: string) =>
+    client.get<{ banks: BankItem[] }>(`${getBase(orgId)}/GetAvailableSupportQrBanks`),
+
   getBankAccounts: async (payload: GetBankAccountsPayload = {}, orgId?: string) => {
     const res = await client.get<any>(`${getBase(orgId)}/GetPayInBankAccountsForMerchant`)
     return { ...res, data: normalize(res.data) }
