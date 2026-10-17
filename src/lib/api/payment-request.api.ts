@@ -9,6 +9,7 @@ import type {
   CreatePayOutRequestPayload,
   UpdatePayOutRequestPayload,
   PaymentTxJob,
+  SubmitPaymentRequestPayload,
 } from './types'
 
 function getBase() {
@@ -27,6 +28,19 @@ export const paymentRequestApi = {
 
   getPaymentRequestById: (id: string) =>
     client.get<{ paymentRequest: PayInRequestDetail }>(`${getBase()}/GetPaymentRequestById/${id}`),
+
+  // ── Pay-In create / approve / reject — เฉพาะ merchant ที่เป็น MerchantOwn เท่านั้น ────
+  submitPayInRequest: (merchantId: string, payload: SubmitPaymentRequestPayload & { PayerName?: string }) =>
+    client.post(`${getBase()}/SubmitPayInRequest/${merchantId}`, payload),
+
+  submitPayInRequestP2P: (merchantId: string, payload: { RefId1?: string; RefId2?: string; RefId3?: string; Currency?: string; RequestedAmount: number; QrProvider?: string; PayerName?: string }) =>
+    client.post(`${getBase()}/SubmitPayInRequestP2P/${merchantId}`, payload),
+
+  createPaymentTxByPayInRequestId: (id: string, payload?: { StatusReason?: string; StatusCode?: string }) =>
+    client.post(`/api/PaymentTransaction/org/${typeof window !== 'undefined' ? (localStorage.getItem('orgId') || 'temp') : 'temp'}/action/CreatePaymentTxByPayInRequestId/${id}`, payload ?? {}),
+
+  rejectPendingPayInRequestById: (id: string, reason: string, rejectStatusCode?: string) =>
+    client.post(`${getBase()}/RejectPendingPayInRequestById/${id}`, { StatusReason: reason, StatusCode: rejectStatusCode }),
 
   // ── Pay-Out ───────────────────────────────────────────────────────────────
   getPayOutRequests: (payload: GetPayOutRequestsPayload = {}) =>

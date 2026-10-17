@@ -363,9 +363,15 @@ export interface PaymentRequestResponse {
   currency?: string
   qrCode?: string
   qrCodeImage?: string
+  isQrAvailable?: boolean | null
   payInBankAccountNo?: string
   payInBankAccountName?: string
   payInBankCode?: string
+  payInPromptPayId?: string | null
+  websocketPath?: string
+  sessionId?: string
+  slipUploadUrl?: string | null
+  paymentStatusUrl?: string | null
 }
 
 // ─── Pay-In Requests ─────────────────────────────────────────────────────────
