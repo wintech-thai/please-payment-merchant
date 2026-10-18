@@ -198,6 +198,11 @@ export const userApi = {
     return client.post(`/api/Merchant/org/${orgId}/action/GetMerchantWalletTxs/${walletId}`, payload || {})
   },
 
+  getMerchantPointWallet: () => {
+    const orgId = getOrgId()
+    return client.get(`/api/Merchant/org/${orgId}/action/GetMerchantPointWallet`)
+  },
+
   getMerchantCurrencies: () => {
     const orgId = getOrgId()
     return client.get(`/api/Merchant/org/${orgId}/action/GetMerchantCurrencies`)
