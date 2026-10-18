@@ -325,10 +325,10 @@ export default function PayInTransactionsPage() {
                       </>
                     ) : <p className="text-sm text-gray-400">—</p>}
                   </td>
-                  {/* Amount (net of commission — what's actually credited) */}
+                  {/* Amount (net of commission — what's actually credited; falls back to raw received amount for Unidentified txs, which have no fee computed yet) */}
                   <td className="px-4 py-3 border-b border-gray-100 text-right whitespace-nowrap">
                     <p className="text-sm font-semibold text-gray-800 tabular-nums">
-                      {formatAmount(item.payInTotalAmountDecimal ?? item.payInTotalAmount)}
+                      {formatAmount(item.payInTotalAmountDecimal ?? item.payInTotalAmount ?? item.txAmountDecimal ?? item.txAmount)}
                     </p>
                     <p className="text-xs text-gray-400">{item.currency ?? '—'}</p>
                   </td>
