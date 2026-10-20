@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useOrgChange } from '@/hooks/useOrgChange'
 import { useFormatDate } from '@/hooks/useFormatDate'
@@ -9,11 +9,12 @@ import { useLang } from '@/context/LanguageContext'
 import { paymentTxApi } from '@/lib/api/payment-tx.api'
 import type { PayInTxItem } from '@/lib/api/types'
 import { toast } from 'sonner'
-import { Search, RefreshCw, ChevronLeft, ChevronRight, ExternalLink, TriangleAlert, Download } from 'lucide-react'
+import { Search, RefreshCw, ChevronLeft, ChevronRight, ExternalLink, TriangleAlert, Download, MoreVertical, X } from 'lucide-react'
 import clsx from 'clsx'
 import { AdvancedTimeRangeSelector, type TimeRangeValue } from '@/components/AdvancedTimeRangeSelector'
 import AuditNoticeDrawer from '@/components/AuditNoticeDrawer'
 import ExportCsvModal from '@/components/ExportCsvModal'
+import CustodyTypeBadge from '@/components/CustodyTypeBadge'
 import type { CsvCell } from '@/lib/csv-export'
 
 const HIGHLIGHTED_KEY = 'payInTransactions_highlightedId'
@@ -116,6 +117,144 @@ function StatusBadge({ status, createdDate, paymentRequestId, statusReason, txIs
   )
 }
 
+// ── Action Menu ──────────────────────────────────────────────────────────────
+// x088: merchant แบบ MerchantOwn เท่านั้นที่ approve/reject tx ของตัวเองได้ (PlatformOwn ให้ disable ไว้เหมือนเดิม — ฝั่ง Admin ยังคุมเหมือนเดิม)
+
+function ActionMenu({
+  item,
+  busy,
+  onApprove,
+  onReject,
+}: {
+  item: PayInTxItem
+  busy: boolean
+  onApprove: () => void
+  onReject: () => void
+}) {
+  const { t } = useLang()
+  const m = t.payInTx
+  const [open, setOpen] = useState(false)
+  const [dropUp, setDropUp] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+  const btnRef = useRef<HTMLButtonElement>(null)
+  // หน้านี้ scope ด้วย orgId ของ merchant ที่ login อยู่แล้ว — row ที่เป็น UnIdentified จะโผล่มาได้ก็ต่อเมื่อ
+  // merchant เป็น MerchantOwn เท่านั้น (ดู ApplyUnidentifiedVisibility ฝั่ง API) ไม่ต้องเช็ค custody ซ้ำที่นี่
+  const canAct = item.status === 'UnIdentified'
+
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [])
+
+  const handleToggle = () => {
+    if (!open && btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect()
+      setDropUp(window.innerHeight - rect.bottom < 100)
+    }
+    setOpen(o => !o)
+  }
+
+  return (
+    <div ref={ref} className="relative" onClick={e => e.stopPropagation()}>
+      <button
+        ref={btnRef}
+        type="button"
+        disabled={busy}
+        onClick={handleToggle}
+        className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+      >
+        <MoreVertical className="w-4 h-4" />
+      </button>
+      {open && (
+        <div className={clsx('absolute right-0 z-20 w-36 bg-white border border-gray-200 rounded-xl shadow-lg py-1 overflow-hidden', dropUp ? 'bottom-8' : 'top-8')}>
+          <button
+            type="button"
+            disabled={!canAct}
+            onClick={() => { setOpen(false); onApprove() }}
+            className="w-full px-3 py-2 text-left text-sm font-medium text-emerald-700 hover:bg-emerald-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          >
+            {m.menuApprove}
+          </button>
+          <button
+            type="button"
+            disabled={!canAct}
+            onClick={() => { setOpen(false); onReject() }}
+            className="w-full px-3 py-2 text-left text-sm font-medium text-red-600 hover:bg-red-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          >
+            {m.menuReject}
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function RejectModal({
+  tx,
+  onSuccess,
+  onClose,
+}: {
+  tx: PayInTxItem
+  onSuccess: () => void
+  onClose: () => void
+}) {
+  const { t } = useLang()
+  const m = t.payInTx
+  const [reason, setReason] = useState('')
+  const [loading, setLoading] = useState(false)
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
+    try {
+      await paymentTxApi.rejectUnidentifiedPaymentTx(tx.id, reason)
+      toast.success(m.toastRejectSuccess)
+      onSuccess()
+      onClose()
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : m.toastRejectFailed)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+      <div className="w-full max-w-sm bg-white rounded-2xl shadow-2xl">
+        <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-gray-100">
+          <h3 className="text-base font-bold text-gray-900">{m.modalRejectTitle}</h3>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 transition-colors">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+        <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
+          <div>
+            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1">{m.labelRejectReason}</label>
+            <textarea
+              value={reason}
+              onChange={e => setReason(e.target.value)}
+              placeholder={m.rejectReasonPlaceholder}
+              rows={3}
+              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 resize-none"
+            />
+          </div>
+          <div className="flex gap-3 pt-2">
+            <button type="button" onClick={onClose} className="flex-1 py-2.5 text-sm font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors">
+              {m.btnCancel}
+            </button>
+            <button type="submit" disabled={loading} className="flex-1 py-2.5 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 rounded-xl transition-colors disabled:opacity-60">
+              {loading ? '...' : m.btnReject}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
 export default function PayInTransactionsPage() {
   const { t } = useLang()
   const m = t.payInTx
@@ -144,6 +283,8 @@ export default function PayInTransactionsPage() {
   const [loading, setLoading] = useState(false)
   const [noticeTarget, setNoticeTarget] = useState<string | null>(null)
   const [exportOpen, setExportOpen] = useState(false)
+  const [rejectTarget, setRejectTarget] = useState<PayInTxItem | null>(null)
+  const [approvingId, setApprovingId] = useState<string | null>(null)
   const [highlightedId, setHighlightedId] = useState<string>(() =>
     typeof window !== 'undefined' ? sessionStorage.getItem(HIGHLIGHTED_KEY) ?? '' : ''
   )
@@ -202,11 +343,24 @@ export default function PayInTransactionsPage() {
     sessionStorage.setItem(HIGHLIGHTED_KEY, id)
   }
 
+  const handleApprove = async (item: PayInTxItem) => {
+    setApprovingId(item.id)
+    try {
+      await paymentTxApi.approveUnidentifiedPaymentTx(item.id)
+      toast.success(m.toastApproveSuccess)
+      handleRefresh()
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : m.toastApproveFailed)
+    } finally {
+      setApprovingId(null)
+    }
+  }
+
   const totalPages = Math.ceil(total / itemsPerPage)
   const startRow = total === 0 ? 0 : (page - 1) * itemsPerPage + 1
   const endRow = Math.min(page * itemsPerPage, total)
 
-  const cols = [m.colDate, m.colMerchant, m.colAmount, m.colFee, m.colBankAccount, m.colPayer, m.colStatus, 'REF']
+  const cols = [m.colDate, m.colMerchant, m.colAmount, m.colFee, m.colBankAccount, m.colPayer, m.colStatus, 'REF', m.colAction]
 
   return (
     <div className="flex flex-col gap-4 h-full">
@@ -320,8 +474,11 @@ export default function PayInTransactionsPage() {
                   <td className="px-4 py-3 border-b border-gray-100">
                     {item.merchantCode || item.merchantName ? (
                       <>
-                        <p className="text-sm font-semibold text-gray-800">{item.merchantCode ?? '—'}</p>
-                        {item.merchantName && <p className="text-xs text-gray-500 mt-0.5">{item.merchantName}</p>}
+                        <p className="flex items-center gap-1.5 text-sm font-semibold text-gray-800">
+                          <CustodyTypeBadge custodyType={item.payInBankCustodyType} platformLabel={t.merchantInfo.custodyTypePlatformOwn} merchantLabel={t.merchantInfo.custodyTypeMerchantOwn} />
+                          {item.merchantCode ?? '—'}
+                        </p>
+                        {item.merchantName && <p className="text-xs text-gray-500 mt-0.5 pl-[22px]">{item.merchantName}</p>}
                       </>
                     ) : <p className="text-sm text-gray-400">—</p>}
                   </td>
@@ -389,6 +546,15 @@ export default function PayInTransactionsPage() {
                       {!item.refId1 && !item.refId2 && !item.refId3 && <span className="text-xs text-gray-400">—</span>}
                     </div>
                   </td>
+                  {/* Action */}
+                  <td className="px-4 py-3 border-b border-gray-100 text-center align-top">
+                    <ActionMenu
+                      item={item}
+                      busy={approvingId === item.id}
+                      onApprove={() => handleApprove(item)}
+                      onReject={() => setRejectTarget(item)}
+                    />
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -428,6 +594,14 @@ export default function PayInTransactionsPage() {
         </div>
       </div>
       {noticeTarget && <AuditNoticeDrawer rowId={noticeTarget} onClose={() => setNoticeTarget(null)} />}
+
+      {rejectTarget && (
+        <RejectModal
+          tx={rejectTarget}
+          onSuccess={handleRefresh}
+          onClose={() => setRejectTarget(null)}
+        />
+      )}
 
       {exportOpen && (
         <ExportCsvModal<PayInTxItem>

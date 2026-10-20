@@ -14,6 +14,7 @@ import clsx from 'clsx'
 import { AdvancedTimeRangeSelector, type TimeRangeValue } from '@/components/AdvancedTimeRangeSelector'
 import AuditNoticeDrawer from '@/components/AuditNoticeDrawer'
 import ExportCsvModal from '@/components/ExportCsvModal'
+import CustodyTypeBadge from '@/components/CustodyTypeBadge'
 import type { CsvCell } from '@/lib/csv-export'
 
 const HIGHLIGHTED_KEY = 'payOutTransactions_highlightedId'
@@ -367,6 +368,7 @@ export default function PayOutTransactionsPage() {
                   {/* Status */}
                   <td className="px-4 py-3 border-b border-gray-100">
                     <div className="flex items-start gap-1.5 flex-wrap">
+                      <CustodyTypeBadge custodyType={item.payInBankCustodyType} platformLabel={t.merchantInfo.custodyTypePlatformOwn} merchantLabel={t.merchantInfo.custodyTypeMerchantOwn} />
                       <StatusBadge status={item.status} createdDate={item.createdDate} statusReason={item.statusReason} isPeerToPeer={item.txIsPeerToPeer} />
                       {(item.noticeCount ?? 0) > 0 && (
                         <button

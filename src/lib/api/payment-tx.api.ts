@@ -25,4 +25,11 @@ export const paymentTxApi = {
 
   getPaymentTransactionJobById: (pmtId: string, jobId: string) =>
     client.get<PaymentTxJob>(`${getBase()}/GetPaymentTransactionJobById/${pmtId}/${jobId}`),
+
+  // x088: merchant แบบ MerchantOwn เท่านั้นที่ API ฝั่งนี้จะยอมให้เรียกได้ (เช็คที่ API อีกชั้นด้วย)
+  approveUnidentifiedPaymentTx: (pmtId: string) =>
+    client.post(`${getBase()}/ApproveUnidentifiedPaymentTx/${pmtId}`, null),
+
+  rejectUnidentifiedPaymentTx: (pmtId: string, statusReason: string) =>
+    client.post(`${getBase()}/RejectUnidentifiedPaymentTx/${pmtId}`, { StatusReason: statusReason }),
 }
