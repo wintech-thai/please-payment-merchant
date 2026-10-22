@@ -1267,6 +1267,10 @@ export const translations = {
       toastApproveFailed: 'อนุมัติไม่สำเร็จ',
       toastRejectSuccess: 'ปฏิเสธสำเร็จ',
       toastRejectFailed: 'ปฏิเสธไม่สำเร็จ',
+      confirmRejectTitle: 'ยืนยันการปฏิเสธ',
+      confirmRejectDesc: 'ยืนยันการปฏิเสธรายการนี้?',
+      btnRejecting: 'กำลังปฏิเสธ...',
+      btnBack: 'ย้อนกลับ',
     },
     payOutTx: {
       title: 'Pay-Out Transactions',
@@ -3031,6 +3035,10 @@ export const translations = {
       toastApproveFailed: 'Failed to approve',
       toastRejectSuccess: 'Rejected successfully',
       toastRejectFailed: 'Failed to reject',
+      confirmRejectTitle: 'Confirm Rejection',
+      confirmRejectDesc: 'Confirm rejecting this transaction?',
+      btnRejecting: 'Rejecting...',
+      btnBack: 'Back',
     },
     payOutTx: {
       title: 'Pay-Out Transactions',
@@ -4806,6 +4814,10 @@ export const translations = {
       toastApproveFailed: '批准失败',
       toastRejectSuccess: '拒绝成功',
       toastRejectFailed: '拒绝失败',
+      confirmRejectTitle: '确认拒绝',
+      confirmRejectDesc: '确认拒绝此交易？',
+      btnRejecting: '拒绝中...',
+      btnBack: '返回',
     },
     payOutTx: {
       title: '付款交易',
@@ -6581,6 +6593,10 @@ export const translations = {
       toastApproveFailed: 'အတည်ပြု၍ မရပါ',
       toastRejectSuccess: 'အောင်မြင်စွာ ပယ်ချပြီးပါပြီ',
       toastRejectFailed: 'ပယ်ချ၍ မရပါ',
+      confirmRejectTitle: 'ပယ်ချခြင်းကို အတည်ပြုပါ',
+      confirmRejectDesc: 'ဤငွေပေးချေမှုကို ပယ်ချရန် သေချာပါသလား',
+      btnRejecting: 'ပယ်ချနေသည်...',
+      btnBack: 'နောက်သို့',
     },
     payOutTx: {
       title: 'ငွေထုတ် ငွေလွှဲမှုများ',

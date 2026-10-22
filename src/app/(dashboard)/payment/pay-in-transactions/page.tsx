@@ -205,9 +205,14 @@ function RejectModal({
   const m = t.payInTx
   const [reason, setReason] = useState('')
   const [loading, setLoading] = useState(false)
+  const [confirmStep, setConfirmStep] = useState(false)
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    setConfirmStep(true)
+  }
+
+  const handleConfirm = async () => {
     setLoading(true)
     try {
       await paymentTxApi.rejectUnidentifiedPaymentTx(tx.id, reason)
@@ -225,11 +230,31 @@ function RejectModal({
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
       <div className="w-full max-w-sm bg-white rounded-2xl shadow-2xl">
         <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-gray-100">
-          <h3 className="text-base font-bold text-gray-900">{m.modalRejectTitle}</h3>
+          <h3 className="text-base font-bold text-gray-900">{confirmStep ? m.confirmRejectTitle : m.modalRejectTitle}</h3>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 transition-colors">
             <X className="w-4 h-4" />
           </button>
         </div>
+
+        {confirmStep ? (
+          <div className="px-6 py-5 space-y-4">
+            <p className="text-sm text-gray-600">{m.confirmRejectDesc}</p>
+            {reason && (
+              <div className="bg-gray-50 rounded-lg p-3 space-y-1">
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{m.labelRejectReason}</p>
+                <p className="text-sm text-gray-800 whitespace-pre-wrap">{reason}</p>
+              </div>
+            )}
+            <div className="flex gap-3 pt-2">
+              <button type="button" onClick={() => setConfirmStep(false)} disabled={loading} className="flex-1 py-2.5 text-sm font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors disabled:opacity-60">
+                {m.btnBack}
+              </button>
+              <button type="button" onClick={handleConfirm} disabled={loading} className="flex-1 py-2.5 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 rounded-xl transition-colors disabled:opacity-60">
+                {loading ? m.btnRejecting : m.btnReject}
+              </button>
+            </div>
+          </div>
+        ) : (
         <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
           <div>
             <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1">{m.labelRejectReason}</label>
@@ -245,11 +270,64 @@ function RejectModal({
             <button type="button" onClick={onClose} className="flex-1 py-2.5 text-sm font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors">
               {m.btnCancel}
             </button>
-            <button type="submit" disabled={loading} className="flex-1 py-2.5 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 rounded-xl transition-colors disabled:opacity-60">
-              {loading ? '...' : m.btnReject}
+            <button type="submit" className="flex-1 py-2.5 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 rounded-xl transition-colors disabled:opacity-60">
+              {m.btnReject}
             </button>
           </div>
         </form>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ── Approve Confirm Modal ────────────────────────────────────────────────────
+// Merchant-scoped approve is a single click away from a real money action (confirms an
+// unidentified tx belongs to this merchant) — always confirm before calling the API.
+
+function ApproveConfirmModal({
+  tx,
+  loading,
+  onConfirm,
+  onClose,
+}: {
+  tx: PayInTxItem
+  loading: boolean
+  onConfirm: () => void
+  onClose: () => void
+}) {
+  const { t } = useLang()
+  const m = t.payInTx
+  return (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+      <div className="w-full max-w-sm bg-white rounded-2xl shadow-2xl">
+        <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-gray-100">
+          <h3 className="text-base font-bold text-gray-900">{m.modalApproveTitle}</h3>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 transition-colors">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+        <div className="px-6 py-5 space-y-4">
+          <p className="text-sm text-gray-600">{m.confirmApproveDesc}</p>
+          <div className="bg-gray-50 rounded-lg p-3 space-y-1">
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{m.labelBankAccount}</p>
+            <p className="text-sm font-semibold text-gray-800">
+              {[tx.payInBankCode, tx.payInBankAccountNo].filter(Boolean).join(' · ') || '—'}
+            </p>
+            <p className="text-sm text-gray-700 mt-1">
+              <span className="font-semibold">{formatAmount(tx.txAmountDecimal ?? tx.txAmount)}</span>
+              {tx.currency ? ` ${tx.currency}` : ''}
+            </p>
+          </div>
+          <div className="flex gap-3 pt-2">
+            <button type="button" onClick={onClose} disabled={loading} className="flex-1 py-2.5 text-sm font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors disabled:opacity-60">
+              {m.btnCancel}
+            </button>
+            <button type="button" onClick={onConfirm} disabled={loading} className="flex-1 py-2.5 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl transition-colors disabled:opacity-60">
+              {loading ? m.btnApproving : m.btnApprove}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   )
@@ -284,6 +362,7 @@ export default function PayInTransactionsPage() {
   const [noticeTarget, setNoticeTarget] = useState<string | null>(null)
   const [exportOpen, setExportOpen] = useState(false)
   const [rejectTarget, setRejectTarget] = useState<PayInTxItem | null>(null)
+  const [approveTarget, setApproveTarget] = useState<PayInTxItem | null>(null)
   const [approvingId, setApprovingId] = useState<string | null>(null)
   const [highlightedId, setHighlightedId] = useState<string>(() =>
     typeof window !== 'undefined' ? sessionStorage.getItem(HIGHLIGHTED_KEY) ?? '' : ''
@@ -348,6 +427,7 @@ export default function PayInTransactionsPage() {
     try {
       await paymentTxApi.approveUnidentifiedPaymentTx(item.id)
       toast.success(m.toastApproveSuccess)
+      setApproveTarget(null)
       handleRefresh()
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : m.toastApproveFailed)
@@ -551,7 +631,7 @@ export default function PayInTransactionsPage() {
                     <ActionMenu
                       item={item}
                       busy={approvingId === item.id}
-                      onApprove={() => handleApprove(item)}
+                      onApprove={() => setApproveTarget(item)}
                       onReject={() => setRejectTarget(item)}
                     />
                   </td>
@@ -600,6 +680,15 @@ export default function PayInTransactionsPage() {
           tx={rejectTarget}
           onSuccess={handleRefresh}
           onClose={() => setRejectTarget(null)}
+        />
+      )}
+
+      {approveTarget && (
+        <ApproveConfirmModal
+          tx={approveTarget}
+          loading={approvingId === approveTarget.id}
+          onConfirm={() => handleApprove(approveTarget)}
+          onClose={() => setApproveTarget(null)}
         />
       )}
 
