@@ -6,7 +6,8 @@ import { useLang } from '@/context/LanguageContext'
 import { paymentRequestApi } from '@/lib/api/payment-request.api'
 import type { PayInRequestDetail, PaymentTxJob, PaymentTxJobParameter } from '@/lib/api/types'
 import { toast } from 'sonner'
-import { ChevronLeft, CheckCircle, AlertCircle, Clock, ExternalLink, X, Copy, Check, Paperclip, ChevronRight, Link2, TriangleAlert } from 'lucide-react'
+import { ChevronLeft, CheckCircle, AlertCircle, Clock, ExternalLink, X, Copy, Check, Paperclip, ChevronRight, Link2, TriangleAlert, History } from 'lucide-react'
+import AuditTrailDrawer from '@/components/AuditTrailDrawer'
 import AuditNoticeDrawer from '@/components/AuditNoticeDrawer'
 import { useFormatDate } from '@/hooks/useFormatDate'
 import { formatDateTime as formatDateTimeTz } from '@/lib/datetime'
@@ -537,6 +538,7 @@ export default function PayInRequestDetailPage() {
   const [showSlipLink, setShowSlipLink] = useState(false)
   const [showStatusLink, setShowStatusLink] = useState(false)
   const [showNoticeDrawer, setShowNoticeDrawer] = useState(false)
+  const [showAuditTrail, setShowAuditTrail] = useState(false)
 
   useEffect(() => {
     const load = async () => {
@@ -665,12 +667,20 @@ export default function PayInRequestDetailPage() {
             {tr.statusLinkBtn}
           </button>
         )}
+        <button
+          onClick={() => setShowAuditTrail(true)}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-gray-600 hover:text-gray-900 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg transition-colors"
+        >
+          <History className="w-3.5 h-3.5" />
+          Audit Trail
+        </button>
         {data && (
           <button onClick={() => setShowRawJson(true)} className="px-2 py-1 text-[11px] font-mono font-semibold text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-md border border-gray-200 transition-colors">
             {'{ }'}
           </button>
         )}
       </div>
+      {showAuditTrail && <AuditTrailDrawer rowId={id} onClose={() => setShowAuditTrail(false)} />}
       {showRawJson && <RawJsonModal data={data} onClose={() => setShowRawJson(false)} />}
       {showNoticeDrawer && <AuditNoticeDrawer rowId={id} onClose={() => setShowNoticeDrawer(false)} />}
       {showSlipViewer && slips.length > 0 && (

@@ -14,6 +14,7 @@ import clsx from 'clsx'
 import { AdvancedTimeRangeSelector, type TimeRangeValue } from '@/components/AdvancedTimeRangeSelector'
 import AuditNoticeDrawer from '@/components/AuditNoticeDrawer'
 import ExportCsvModal from '@/components/ExportCsvModal'
+import CustodyTypeBadge from '@/components/CustodyTypeBadge'
 import type { CsvCell } from '@/lib/csv-export'
 
 const HIGHLIGHTED_KEY = 'payOutTransactions_highlightedId'
@@ -177,7 +178,7 @@ export default function PayOutTransactionsPage() {
   const startRow = total === 0 ? 0 : (page - 1) * itemsPerPage + 1
   const endRow = Math.min(page * itemsPerPage, total)
 
-  const cols = [m.colDate, m.colAmount, m.colFee, m.colDestBank, m.colSourceBank, m.colStatus, 'REF']
+  const cols = [m.colDate, m.colMerchant, m.colAmount, m.colFee, m.colDestBank, m.colSourceBank, m.colStatus, 'REF']
 
   return (
     <div className="flex flex-col gap-4 h-full">
@@ -249,7 +250,7 @@ export default function PayOutTransactionsPage() {
                 {cols.map((col, i) => (
                   <th key={col} className={clsx(
                     'px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200 whitespace-nowrap',
-                    (i === 1 || i === 2) ? 'text-right' : 'text-left'
+                    (i === 2 || i === 3) ? 'text-right' : 'text-left'
                   )}>
                     {col}
                   </th>
@@ -294,6 +295,18 @@ export default function PayOutTransactionsPage() {
                       )}
                     </div>
                     {item.refId1 && <p className="text-xs text-gray-400 mt-0.5">{item.refId1}</p>}
+                  </td>
+                  {/* Merchant */}
+                  <td className="px-4 py-3 border-b border-gray-100">
+                    {item.merchantCode || item.merchantName ? (
+                      <>
+                        <p className="flex items-center gap-1.5 text-sm font-semibold text-gray-800">
+                          <CustodyTypeBadge custodyType={item.payInBankCustodyType} platformLabel={t.merchantInfo.custodyTypePlatformOwn} merchantLabel={t.merchantInfo.custodyTypeMerchantOwn} />
+                          {item.merchantCode ?? '—'}
+                        </p>
+                        {item.merchantName && <p className="text-xs text-gray-500 mt-0.5 pl-[22px]">{item.merchantName}</p>}
+                      </>
+                    ) : <p className="text-sm text-gray-400">—</p>}
                   </td>
                   {/* Amount */}
                   <td className="px-4 py-3 border-b border-gray-100 text-right whitespace-nowrap">

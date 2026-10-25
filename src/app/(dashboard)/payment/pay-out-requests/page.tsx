@@ -13,6 +13,7 @@ import clsx from 'clsx'
 import { AdvancedTimeRangeSelector, type TimeRangeValue } from '@/components/AdvancedTimeRangeSelector'
 import AuditNoticeDrawer from '@/components/AuditNoticeDrawer'
 import ExportCsvModal from '@/components/ExportCsvModal'
+import CustodyTypeBadge from '@/components/CustodyTypeBadge'
 import type { CsvCell } from '@/lib/csv-export'
 
 type SlipItem = { imageBase64: string; uploadedAt: string; note?: string | null; first4?: string | null; last4?: string | null }
@@ -382,6 +383,7 @@ export default function PayOutRequestsPage() {
                   </td>
                   <td className="px-4 py-3 border-b border-gray-100 whitespace-nowrap">
                     <div className="flex items-center gap-1.5">
+                      <CustodyTypeBadge custodyType={item.payInBankCustodyType} platformLabel={t.merchantInfo.custodyTypePlatformOwn} merchantLabel={t.merchantInfo.custodyTypeMerchantOwn} />
                       <div className="text-sm font-semibold text-gray-800">{item.merchantCode || '—'}</div>
                       {item.payoutIsWithdrawal && (
                         <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold ring-1 bg-blue-50 text-blue-700 ring-blue-200">
@@ -389,7 +391,7 @@ export default function PayOutRequestsPage() {
                         </span>
                       )}
                     </div>
-                    <div className="text-xs text-gray-400">{item.merchantName || ''}</div>
+                    <div className="text-xs text-gray-400 pl-[22px]">{item.merchantName || ''}</div>
                   </td>
                   <td className="px-4 py-3 border-b border-gray-100 text-right">
                     <div className="text-sm font-semibold text-gray-800">

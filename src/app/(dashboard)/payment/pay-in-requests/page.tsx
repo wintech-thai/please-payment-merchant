@@ -16,6 +16,7 @@ import ExportCsvModal from '@/components/ExportCsvModal'
 import QrPaymentModal from '@/components/QrPaymentModal'
 import QrPaymentP2PModal from '@/components/QrPaymentP2PModal'
 import QRCode from 'react-qr-code'
+import CustodyTypeBadge from '@/components/CustodyTypeBadge'
 import type { CsvCell } from '@/lib/csv-export'
 import { useFormatDate } from '@/hooks/useFormatDate'
 
@@ -759,8 +760,11 @@ export default function PayInRequestsPage() {
                     <div className="text-xs text-gray-400 truncate max-w-[160px]">{item.refId1 || '—'}</div>
                   </td>
                   <td className="px-4 py-3 border-b border-gray-100">
-                    <div className="text-sm font-semibold text-gray-800">{item.merchantCode || '—'}</div>
-                    <div className="text-xs text-gray-400">{item.merchantName || ''}</div>
+                    <div className="flex items-center gap-1.5 text-sm font-semibold text-gray-800">
+                      <CustodyTypeBadge custodyType={item.payInBankCustodyType} platformLabel={t.merchantInfo.custodyTypePlatformOwn} merchantLabel={t.merchantInfo.custodyTypeMerchantOwn} />
+                      {item.merchantCode || '—'}
+                    </div>
+                    <div className="text-xs text-gray-400 pl-[22px]">{item.merchantName || ''}</div>
                   </td>
                   <td className="px-4 py-3 border-b border-gray-100 text-right">
                     <div className="text-sm font-semibold text-gray-800">

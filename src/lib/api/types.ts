@@ -381,6 +381,7 @@ export interface PayInRequestItem {
   createdDate?: string | null
   merchantCode?: string | null
   merchantName?: string | null
+  payInBankCustodyType?: string | null
   generatedAmount?: number | null
   requestedAmount?: number | null
   currency?: string | null
@@ -466,6 +467,7 @@ export interface PayInTxItem {
   merchantId?: string | null
   merchantCode?: string | null
   merchantName?: string | null
+  payInBankCustodyType?: string | null
   paymentRequestId?: string | null
   description?: string | null
   currency?: string | null
@@ -525,6 +527,7 @@ export interface PayOutTxItem {
   merchantId?: string | null
   merchantCode?: string | null
   merchantName?: string | null
+  payInBankCustodyType?: string | null
   paymentRequestId?: string | null
   description?: string | null
   currency?: string | null
@@ -795,6 +798,7 @@ export interface PayOutRequestItem {
   merchantId2?: string | null
   merchantCode?: string | null
   merchantName?: string | null
+  payInBankCustodyType?: string | null
   description?: string | null
   currency?: string | null
   status?: string | null            // "Pending" | "Paid" | "Rejected"
