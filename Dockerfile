@@ -1,4 +1,4 @@
-FROM node:20-alpine AS deps
+FROM node:22.23.4-alpine AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
@@ -7,7 +7,7 @@ COPY package.json ./
 # ใช้ npm install แทน npm ci เพื่อหลีกเลี่ยงปัญหาเกี่ยวกับไฟล์ lock
 RUN npm install
 
-FROM node:20-alpine AS builder
+FROM node:22.23.4-alpine AS builder
 ARG version="dev-local"
 
 WORKDIR /app
@@ -22,7 +22,7 @@ ENV NEXT_TELEMETRY_DISABLED 1
 RUN npm run build
 
 # Stage Runner
-FROM node:20-alpine AS runner
+FROM node:22.23.4-alpine AS runner
 ARG version="dev-local"
 WORKDIR /app
 
