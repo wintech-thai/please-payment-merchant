@@ -811,6 +811,7 @@ export interface PayOutRequestItem {
   refId2?: string | null
   refId3?: string | null
   rejectReason?: string | null
+  statusReason?: string | null
   statusCode?: string | null
   paymentTxId?: string | null
   // Source (PayIn) bank account — API uses camelCase "payin" (lowercase)
@@ -899,6 +900,7 @@ export interface CreatePayOutRequestPayload {
   QrProvider?: string
   Tags?: string
   PayoutFeePayer?: string
+  PayoutIsWithdrawal?: boolean
   PayinBankAccountId?: string
   // Manual override — server reads these root-level fields when PayinBankAccountId is empty
   BankCode?: string

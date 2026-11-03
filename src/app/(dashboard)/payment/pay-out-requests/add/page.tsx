@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect, useRef, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useLang } from '@/context/LanguageContext'
 import { paymentRequestApi } from '@/lib/api/payment-request.api'
 import { bankAccountApi } from '@/lib/api/bank-account.api'
@@ -56,29 +56,12 @@ const inputCls = (hasError: boolean) =>
     hasError ? 'border-red-400 focus:ring-red-400' : 'border-gray-200 focus:ring-primary-500'
   )
 
-const THAI_BANKS = [
-  { code: 'BBL',   name: 'Bangkok Bank' },
-  { code: 'KBANK', name: 'Kasikorn Bank' },
-  { code: 'KTB',   name: 'Krungthai Bank' },
-  { code: 'SCB',   name: 'Siam Commercial Bank' },
-  { code: 'BAY',   name: 'Bank of Ayudhya (Krungsri)' },
-  { code: 'TTB',   name: 'TMBThanachart Bank' },
-  { code: 'TMB',   name: 'TMB Bank' },
-  { code: 'GSB',   name: 'Government Savings Bank' },
-  { code: 'GHB',   name: 'Government Housing Bank' },
-  { code: 'BAAC',  name: 'Bank for Agriculture & Cooperatives' },
-  { code: 'UOB',   name: 'UOB Thailand' },
-  { code: 'CIMBT', name: 'CIMB Thai Bank' },
-  { code: 'TISCO', name: 'Tisco Bank' },
-  { code: 'KKP',   name: 'Kiatnakin Phatra Bank' },
-  { code: 'LHB',   name: 'Land and Houses Bank' },
-  { code: 'IBANK', name: 'Islamic Bank of Thailand' },
-]
-
-export default function AddPayOutRequestPage() {
+function AddPayOutRequestPageInner() {
   const { t } = useLang()
   const tr = t.payOutRequest
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const isWithdrawal = searchParams.get('type') === 'withdrawal'
 
   const [merchantCode, setMerchantCode] = useState('')
   const [merchantName, setMerchantName] = useState('')
@@ -92,11 +75,6 @@ export default function AddPayOutRequestPage() {
   const [bankOpen, setBankOpen] = useState(false)
   const [bankSearch, setBankSearch] = useState('')
   const bankRef = useRef<HTMLDivElement>(null)
-  const [manualMode, setManualMode] = useState(false)
-  const [manualBankCode, setManualBankCode] = useState('')
-  const [manualBankAccountNo, setManualBankAccountNo] = useState('')
-  const [manualBankAccountName, setManualBankAccountName] = useState('')
-  const [manualPromptPayId, setManualPromptPayId] = useState('')
 
   const [requestedAmount, setRequestedAmount] = useState('')
   const [refId, setRefId] = useState(() => genRefId())
@@ -111,7 +89,7 @@ export default function AddPayOutRequestPage() {
     const init = async () => {
       const [merchantRes, bankRes] = await Promise.allSettled([
         userApi.getMyMerchantInfo(),
-        bankAccountApi.getPayOutBankAccounts(),
+        bankAccountApi.getMyPayOutBankAccounts(),
       ])
       if (merchantRes.status === 'fulfilled') {
         const d = merchantRes.value.data as any
@@ -150,18 +128,7 @@ export default function AddPayOutRequestPage() {
 
   const validate = () => {
     const errs: Record<string, string> = {}
-    if (!manualMode && !payinBankAccountId) errs.bank = tr.payoutBankAccountRequired
-    if (manualMode && !manualBankCode.trim()) errs.bank = tr.payoutBankAccountRequired
-    if (manualMode) {
-      if (!manualBankAccountNo.trim()) errs.accountNo = tr.errAccountNoRequired
-      else if (!/^\d+$/.test(manualBankAccountNo.trim())) errs.accountNo = tr.errAccountNoDigits
-      else if (manualBankAccountNo.trim().length < 10 || manualBankAccountNo.trim().length > 12) errs.accountNo = tr.errAccountNoLength
-      if (!manualBankAccountName.trim()) errs.accountName = tr.errAccountNameRequired
-    }
-    if (manualMode && manualPromptPayId.trim()) {
-      if (!/^\d+$/.test(manualPromptPayId.trim())) errs.promptPay = tr.errPromptPayDigits
-      else if (manualPromptPayId.trim().length !== 10 && manualPromptPayId.trim().length !== 13) errs.promptPay = tr.errPromptPayLength
-    }
+    if (!payinBankAccountId) errs.bank = tr.payoutBankAccountRequired
     if (!refId.trim()) errs.refId = tr.refIdRequired
     if (!requestedAmount.trim()) {
       errs.amount = tr.amountRequired
@@ -193,14 +160,8 @@ export default function AddPayOutRequestPage() {
         RequestedAmount: parseFloat(requestedAmount),
         QrProvider: 'PP',
         PayoutFeePayer: payoutFeePayer,
-        ...(manualMode ? {
-          BankCode: manualBankCode.trim() || undefined,
-          BankAccountNo: manualBankAccountNo.trim() || undefined,
-          BankAccountName: manualBankAccountName.trim() || undefined,
-          PromptPayId: manualPromptPayId.trim() || undefined,
-        } : {
-          PayinBankAccountId: payinBankAccountId,
-        }),
+        PayoutIsWithdrawal: isWithdrawal || undefined,
+        PayinBankAccountId: payinBankAccountId,
       })
       toast.success(tr.toastCreateSuccess)
       router.push('/payment/pay-out-requests')
@@ -220,7 +181,9 @@ export default function AddPayOutRequestPage() {
           <ChevronLeft className="w-5 h-5" />
         </button>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">{tr.createTitle}</h1>
+          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+            {isWithdrawal ? 'Withdraw Request' : tr.createTitle}
+          </h1>
           <p className="text-sm text-gray-500 mt-0.5">{tr.createSubtitle}</p>
         </div>
       </div>
@@ -272,72 +235,13 @@ export default function AddPayOutRequestPage() {
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 px-7 py-6">
               <div className="flex items-center justify-between mb-5">
                 <SectionHeader>{tr.sectionPayoutBank}</SectionHeader>
-                <button
-                  type="button"
-                  onClick={() => { setManualMode(p => !p); clearErr('bank') }}
-                  className="text-xs font-medium text-primary-600 hover:text-primary-800 underline underline-offset-2 transition-colors"
-                >
-                  {manualMode ? tr.placeholderPayoutBankAccount : (tr.manualEntryBtn ?? 'Enter manually')}
-                </button>
               </div>
 
               {/* Fee Payer Switch — always visible */}
               <div className="flex flex-wrap items-start gap-4">
 
                 {/* Bank account picker */}
-                {manualMode ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-xl">
-                    <FormField label="Bank Code" error={errors.bank}>
-                      <select
-                        value={manualBankCode}
-                        onChange={e => { setManualBankCode(e.target.value); clearErr('bank') }}
-                        className={clsx(inputCls(!!errors.bank), 'cursor-pointer')}
-                      >
-                        <option value="">— Select bank —</option>
-                        {THAI_BANKS.map(b => (
-                          <option key={b.code} value={b.code}>{b.code} – {b.name}</option>
-                        ))}
-                      </select>
-                    </FormField>
-                    <FormField label="Account No" required error={errors.accountNo} hint={tr.hintAccountNo}>
-                      <input
-                        value={manualBankAccountNo}
-                        onChange={e => {
-                          const v = e.target.value.replace(/\D/g, '')
-                          setManualBankAccountNo(v)
-                          clearErr('accountNo')
-                        }}
-                        placeholder="e.g. 1234567890"
-                        inputMode="numeric"
-                        maxLength={12}
-                        className={inputCls(!!errors.accountNo)}
-                      />
-                    </FormField>
-                    <FormField label="Account Name" required error={errors.accountName}>
-                      <input
-                        value={manualBankAccountName}
-                        onChange={e => { setManualBankAccountName(e.target.value); clearErr('accountName') }}
-                        placeholder="e.g. John Doe"
-                        className={inputCls(!!errors.accountName)}
-                      />
-                    </FormField>
-                    <FormField label="PromptPay ID" error={errors.promptPay} hint={tr.hintPromptPay}>
-                      <input
-                        value={manualPromptPayId}
-                        onChange={e => {
-                          const v = e.target.value.replace(/\D/g, '')
-                          setManualPromptPayId(v)
-                          clearErr('promptPay')
-                        }}
-                        placeholder="e.g. 0812345678"
-                        inputMode="numeric"
-                        maxLength={13}
-                        className={inputCls(!!errors.promptPay)}
-                      />
-                    </FormField>
-                  </div>
-                ) : (
-                  <div className="flex-1 min-w-0 max-w-md">
+                <div className="flex-1 min-w-0 max-w-md">
                     <FormField label={tr.fieldPayoutBankAccount} required error={errors.bank}>
                       <div ref={bankRef} className="relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
@@ -412,7 +316,6 @@ export default function AddPayOutRequestPage() {
                       </div>
                     )}
                   </div>
-                )}
 
                 {/* Fee Payer Switch */}
                 <div className="flex-shrink-0">
@@ -537,5 +440,13 @@ export default function AddPayOutRequestPage() {
         </div>
       )}
     </div>
+  )
+}
+
+export default function AddPayOutRequestPage() {
+  return (
+    <Suspense>
+      <AddPayOutRequestPageInner />
+    </Suspense>
   )
 }

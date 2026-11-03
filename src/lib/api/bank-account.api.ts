@@ -1,5 +1,5 @@
 import { client } from '@/lib/axios'
-import type { BankAccountItem, BankItem, GetBankAccountsPayload } from './types'
+import type { BankAccountItem, BankItem, GetBankAccountsPayload, AddBankAccountPayload, UpdateBankAccountPayload } from './types'
 
 function getBase(orgId?: string) {
   const id = orgId ?? (typeof window !== 'undefined' ? localStorage.getItem('orgId') || 'temp' : 'temp')
@@ -48,4 +48,31 @@ export const bankAccountApi = {
 
   getMyBankAccountWalletTxsCount: (bankAccountId: string, payload: { FromDate?: string; ToDate?: string } = {}, orgId?: string) =>
     client.post(`${getBase(orgId)}/GetMyBankAccountWalletTxsCount/${bankAccountId}`, payload),
+
+  // ── Pay-Out bank accounts — เฉพาะ merchant แบบ MerchantOwn เท่านั้นที่จัดการได้เอง ──
+  getAvailableBanks: (orgId?: string) =>
+    client.get<{ banks: BankItem[] }>(`${getBase(orgId)}/GetAvailableBanks`),
+
+  getMyPayOutBankAccounts: async (orgId?: string) => {
+    const res = await client.post<any>(`${getBase(orgId)}/GetMyPayOutBankAccounts`, { Limit: 200 })
+    return { ...res, data: normalize(res.data) }
+  },
+
+  getMyPayOutBankAccountById: (bankAccountId: string, orgId?: string) =>
+    client.get<{ bankAccount: BankAccountItem }>(`${getBase(orgId)}/GetMyPayOutBankAccountById/${bankAccountId}`),
+
+  addPayOutBankAccount: (payload: AddBankAccountPayload, orgId?: string) =>
+    client.post(`${getBase(orgId)}/AddPayOutBankAccount`, payload),
+
+  updatePayOutBankAccountById: (bankAccountId: string, payload: UpdateBankAccountPayload, orgId?: string) =>
+    client.post(`${getBase(orgId)}/UpdatePayOutBankAccountById/${bankAccountId}`, payload),
+
+  enablePayOutBankAccountById: (bankAccountId: string, orgId?: string) =>
+    client.post(`${getBase(orgId)}/EnableMyPayOutBankAccountById/${bankAccountId}`, {}),
+
+  disablePayOutBankAccountById: (bankAccountId: string, orgId?: string) =>
+    client.post(`${getBase(orgId)}/DisableMyPayOutBankAccountById/${bankAccountId}`, {}),
+
+  deletePayOutBankAccountById: (bankAccountId: string, orgId?: string) =>
+    client.post(`${getBase(orgId)}/DeleteMyPayOutBankAccountById/${bankAccountId}`, {}),
 }

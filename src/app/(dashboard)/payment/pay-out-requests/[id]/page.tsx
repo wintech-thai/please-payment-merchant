@@ -1,14 +1,15 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { useLang } from '@/context/LanguageContext'
 import { useFormatDate } from '@/hooks/useFormatDate'
 import { formatDateTime as fmtDateTimeTz } from '@/lib/datetime'
 import { paymentRequestApi } from '@/lib/api/payment-request.api'
-import type { PayOutRequestDetail, PartialPayoutItem, PaymentTxJob, PaymentTxJobParameter } from '@/lib/api/types'
+import { bankAccountApi } from '@/lib/api/bank-account.api'
+import type { PayOutRequestDetail, PartialPayoutItem, PaymentTxJob, PaymentTxJobParameter, BankAccountItem } from '@/lib/api/types'
 import { toast } from 'sonner'
-import { ChevronLeft, ChevronRight, CheckCircle, AlertCircle, Clock, X, Copy, Check, Paperclip, Loader2, TriangleAlert, History } from 'lucide-react'
+import { ChevronLeft, ChevronRight, CheckCircle, AlertCircle, Clock, X, Copy, Check, Paperclip, Loader2, TriangleAlert, History, Search, Link2, ExternalLink } from 'lucide-react'
 import AuditTrailDrawer from '@/components/AuditTrailDrawer'
 import QRCode from 'react-qr-code'
 import AuditNoticeDrawer from '@/components/AuditNoticeDrawer'
@@ -259,6 +260,131 @@ function RawJsonModal({ data, onClose }: { data: unknown; onClose: () => void })
   )
 }
 
+function SlipLinkModal({ paymentRequestId, onClose }: { paymentRequestId: string; onClose: () => void }) {
+  const { t } = useLang()
+  const m = t.payInRequest
+  const [url, setUrl] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [errorMsg, setErrorMsg] = useState('')
+  const [copied, setCopied] = useState(false)
+
+  useEffect(() => {
+    paymentRequestApi.generatePayOutSlipUploadToken(paymentRequestId)
+      .then(res => {
+        const d = res.data as any
+        const relUrl = d?.slipUploadUrl ?? d?.SlipUploadUrl
+        if (!relUrl) throw new Error('no url')
+        setUrl(`${window.location.origin}${relUrl}`)
+      })
+      .catch(() => setErrorMsg(m.slipLinkError))
+      .finally(() => setLoading(false))
+  }, [paymentRequestId])
+
+  const handleCopy = () => {
+    if (!url) return
+    navigator.clipboard.writeText(url)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  return (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={onClose}>
+      <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-gray-100">
+          <div className="flex items-center gap-2">
+            <Link2 className="w-4 h-4 text-primary-600" />
+            <h3 className="text-base font-bold text-gray-900">{m.slipLinkTitle}</h3>
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 transition-colors">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+        <div className="px-6 py-5">
+          {loading ? (
+            <div className="flex items-center justify-center py-6 gap-2 text-gray-400">
+              <Loader2 className="w-5 h-5 animate-spin" />
+              <span className="text-sm">{m.slipLinkLoading}</span>
+            </div>
+          ) : errorMsg ? (
+            <p className="text-sm text-red-500 text-center py-4">{errorMsg}</p>
+          ) : url ? (
+            <div className="space-y-4">
+              <p className="text-xs text-gray-500">{m.slipLinkDesc}</p>
+              <div className="flex justify-center p-3 bg-white border border-gray-200 rounded-xl">
+                <QRCode value={url} size={160} />
+              </div>
+              <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
+                <span className="flex-1 text-xs text-gray-700 font-mono break-all">{url}</span>
+                <button
+                  type="button"
+                  onClick={handleCopy}
+                  className="flex-shrink-0 flex items-center gap-1 px-2 py-1 text-xs font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-200 rounded transition-colors"
+                >
+                  {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                  {copied ? 'Copied!' : 'Copy'}
+                </button>
+              </div>
+              <a href={url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-xs text-primary-600 hover:text-primary-800 hover:underline">
+                <ExternalLink className="w-3.5 h-3.5" />
+                {m.slipLinkOpen}
+              </a>
+            </div>
+          ) : null}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function RejectConfirmModal({ onConfirm, onClose }: { onConfirm: (reason: string) => void; onClose: () => void }) {
+  const { t } = useLang()
+  const tr = t.payOutRequest
+  const [reason, setReason] = useState('')
+  const [error, setError] = useState('')
+
+  const handleConfirm = () => {
+    if (!reason.trim()) { setError(tr.rejectReasonRequired); return }
+    onConfirm(reason.trim())
+  }
+
+  return (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm" onClick={onClose}>
+      <div className="w-full max-w-sm bg-white rounded-2xl shadow-xl overflow-hidden" onClick={e => e.stopPropagation()}>
+        <div className="px-6 pt-6 pb-5">
+          <h3 className="text-base font-bold text-gray-900 mb-1">{tr.rejectModalTitle}</h3>
+          <p className="text-sm text-gray-500 mb-3">{tr.rejectModalDesc}</p>
+          <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wide mb-1.5">{tr.labelRejectReason}</label>
+          <textarea
+            value={reason}
+            onChange={e => { setReason(e.target.value); setError('') }}
+            placeholder={tr.placeholderRejectReason}
+            rows={3}
+            className={clsx(
+              'w-full px-3 py-2.5 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:border-transparent bg-white transition-colors resize-none',
+              error ? 'border-red-400 focus:ring-red-400' : 'border-gray-200 focus:ring-primary-500'
+            )}
+          />
+          {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
+        </div>
+        <div className="flex gap-2 px-6 pb-5">
+          <button
+            onClick={onClose}
+            className="flex-1 py-2 text-sm font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            {tr.btnCancelReject}
+          </button>
+          <button
+            onClick={handleConfirm}
+            className="flex-1 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
+          >
+            {tr.confirmReject}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function PayOutRequestDetailPage() {
   const { t } = useLang()
   const tr = t.payOutRequest
@@ -277,9 +403,65 @@ export default function PayOutRequestDetailPage() {
   const [showSlipViewer, setShowSlipViewer] = useState(false)
   const [showNoticeDrawer, setShowNoticeDrawer] = useState(false)
   const [showAuditTrail, setShowAuditTrail] = useState(false)
+  const [showSlipLink, setShowSlipLink] = useState(false)
   const [highlightedPartialId, setHighlightedPartialId] = useState<string | null>(null)
+  const [myBankAccounts, setMyBankAccounts] = useState<BankAccountItem[]>([])
+  const [sourceBankAccountId, setSourceBankAccountId] = useState('')
+  const [sourceAccountSearch, setSourceAccountSearch] = useState('')
+  const [sourceDropdownOpen, setSourceDropdownOpen] = useState(false)
+  const sourceDropdownRef = useRef<HTMLDivElement>(null)
+  const [approving, setApproving] = useState(false)
+  const [rejecting, setRejecting] = useState(false)
+  const [showRejectModal, setShowRejectModal] = useState(false)
 
   const isRejected = detail?.status?.toLowerCase() === 'rejected'
+  const isPending = detail?.status?.toLowerCase() === 'pending'
+  const isMerchantOwn = detail?.payInBankCustodyType === 'MerchantOwn'
+
+  useEffect(() => {
+    if (!isMerchantOwn || !isPending) return
+    bankAccountApi.getMyBankAccounts()
+      .then(res => setMyBankAccounts(res.data.bankAccounts))
+      .catch(() => {})
+  }, [isMerchantOwn, isPending])
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (sourceDropdownRef.current && !sourceDropdownRef.current.contains(e.target as Node)) {
+        setSourceDropdownOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  async function handleApprove() {
+    if (!sourceBankAccountId) { toast.error(tr.sourceAccountRequired); return }
+    setApproving(true)
+    try {
+      await paymentRequestApi.approvePayOutRequestById(id, { PayoutBankAccountId: sourceBankAccountId })
+      toast.success(tr.toastApproveSuccess)
+      router.push('/payment/pay-out-requests')
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : tr.toastApproveFailed)
+    } finally {
+      setApproving(false)
+    }
+  }
+
+  async function handleReject(reason: string) {
+    setRejecting(true)
+    try {
+      await paymentRequestApi.rejectPayOutRequestById(id, reason)
+      toast.success(tr.toastRejectSuccess)
+      setShowRejectModal(false)
+      router.push('/payment/pay-out-requests')
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : tr.toastRejectFailed)
+    } finally {
+      setRejecting(false)
+    }
+  }
 
   useEffect(() => {
     const load = async () => {
@@ -366,6 +548,17 @@ export default function PayOutRequestDetailPage() {
           </div>
           <p className="text-sm text-gray-500 mt-0.5">{id}</p>
         </div>
+        {detail && (
+          <button
+            onClick={() => detail.payInBankCustodyType === 'MerchantOwn' && setShowSlipLink(true)}
+            disabled={detail.payInBankCustodyType !== 'MerchantOwn'}
+            title={detail.payInBankCustodyType === 'MerchantOwn' ? undefined : t.payInRequest.slipLinkTitle}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-primary-700 bg-primary-50 hover:bg-primary-100 border border-primary-200 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-primary-50"
+          >
+            <Link2 className="w-3.5 h-3.5" />
+            Slip Link
+          </button>
+        )}
         <button
           onClick={() => setShowAuditTrail(true)}
           className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-gray-600 hover:text-gray-900 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg transition-colors"
@@ -381,6 +574,7 @@ export default function PayOutRequestDetailPage() {
       </div>
 
       {showAuditTrail && <AuditTrailDrawer rowId={id} onClose={() => setShowAuditTrail(false)} />}
+      {showSlipLink && <SlipLinkModal paymentRequestId={id} onClose={() => setShowSlipLink(false)} />}
       {showRawJson && <RawJsonModal data={detail} onClose={() => setShowRawJson(false)} />}
       {showNoticeDrawer && <AuditNoticeDrawer rowId={id} onClose={() => setShowNoticeDrawer(false)} />}
       {showSlipViewer && slips.length > 0 && (
@@ -501,9 +695,9 @@ export default function PayOutRequestDetailPage() {
                   </span>
                 </InfoRow>
               )}
-              {isRejected && detail?.rejectReason && (
+              {isRejected && (detail?.rejectReason || detail?.statusReason) && (
                 <InfoRow label={tr.fieldRejectReason}>
-                  <span className="text-red-600 font-medium">{detail.rejectReason}</span>
+                  <span className="text-red-600 font-medium">{detail.rejectReason || detail.statusReason}</span>
                 </InfoRow>
               )}
 
@@ -539,15 +733,14 @@ export default function PayOutRequestDetailPage() {
               const useP2P = detail?.isPartialyPayout && detail?.qrCodeP2P
               const rawQr = useP2P ? detail!.qrCodeP2P! : (detail?.qrCodeImage ?? detail?.qrCode ?? null)
               const qrAvailable = detail?.isQrAvailable !== false
-              if (!rawQr && qrAvailable) return null
-              const isImage = rawQr ? (rawQr.startsWith('data:') || rawQr.startsWith('iVBOR') || rawQr.startsWith('/9j/')) : false
               const isOverride = detail?.isPayInBankAccountOverride
               const noQrBankCode = isOverride ? detail?.payinBankCodeOverride : detail?.payinBankCode
               const noQrAccountNo = isOverride ? detail?.payinBankAccountNoOverride : detail?.payinBankAccountNo
-              const noQrAccountName = isOverride ? detail?.payinBankAccountNameOverride : detail?.payinBankAccountName
-              const noQrPromptPayId = isOverride ? detail?.payinPromptPayIdOverride : detail?.payinPromptPayId
+              const hasQrOrAccount = rawQr || !qrAvailable || noQrBankCode || noQrAccountNo
+              if (!hasQrOrAccount) return null
+              const isImage = rawQr ? (rawQr.startsWith('data:') || rawQr.startsWith('iVBOR') || rawQr.startsWith('/9j/')) : false
               return (
-                <div className="flex-shrink-0 flex flex-col items-center gap-2 pt-1">
+                <div className="flex-shrink-0 flex flex-col items-center gap-4 pt-1 min-w-[220px]">
                   <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide self-start">
                     {useP2P ? 'QR P2P' : 'QR Code'}
                   </p>
@@ -564,27 +757,12 @@ export default function PayOutRequestDetailPage() {
                       </div>
                     )
                   ) : (
-                    <div className="w-56 rounded-xl border border-dashed border-gray-300 bg-gray-50 flex flex-col items-center gap-3 text-center p-4">
-                      <svg className="w-8 h-8 text-gray-300 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <div className="w-56 h-56 rounded-lg border border-dashed border-gray-300 bg-gray-50 flex flex-col items-center justify-center gap-2 text-center p-4">
+                      <svg className="w-10 h-10 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 4a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm10 0a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V4zM3 14a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H4a1 1 0 01-1-1v-4z" />
                       </svg>
-                      <div>
-                        <p className="text-xs text-gray-500 font-semibold">QR ยังไม่พร้อม</p>
-                        <p className="text-[10px] text-gray-400 mt-0.5">บัญชีนี้ไม่รองรับ QR — โอนด้วยข้อมูลบัญชีด้านล่าง</p>
-                      </div>
-                      {(noQrBankCode || noQrAccountNo || noQrAccountName || noQrPromptPayId) && (
-                        <div className="w-full text-left bg-white border border-gray-200 rounded-lg px-3 py-2.5 flex flex-col gap-1">
-                          {(noQrBankCode || noQrAccountNo) && (
-                            <p className="text-xs font-bold text-gray-800">{[noQrBankCode, noQrAccountNo].filter(Boolean).join(' · ')}</p>
-                          )}
-                          {noQrAccountName && (
-                            <p className="text-[11px] text-gray-500">{noQrAccountName}</p>
-                          )}
-                          {noQrPromptPayId && (
-                            <p className="text-[11px] text-gray-500">{noQrPromptPayId}</p>
-                          )}
-                        </div>
-                      )}
+                      <p className="text-xs text-gray-400 font-medium">QR ยังไม่พร้อม</p>
+                      <p className="text-[10px] text-gray-400">โอนด้วยเลขบัญชีด้านล่าง</p>
                     </div>
                   )}
                   {useP2P && paidAmt > 0 && detail?.payOutTotalAmountDecimalP2P != null && (
@@ -599,8 +777,106 @@ export default function PayOutRequestDetailPage() {
           </div>
         </div>
 
-        {/* Source Bank Account (FROM) — hidden when Pending */}
-        {detail?.status?.toLowerCase() !== 'pending' && (
+        {/* Source Bank Account (FROM) — editable picker when MerchantOwn + Pending, readonly once set */}
+        {isMerchantOwn && isPending ? (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 px-7 py-6">
+            <h2 className="flex items-center gap-2.5 text-sm font-bold text-gray-900 mb-5">
+              <span className="w-1 h-5 bg-rose-500 rounded-full flex-shrink-0" />
+              {tr.sectionSource}
+            </h2>
+            <div className="max-w-sm">
+              <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wide mb-1.5">
+                {tr.fieldSourceAccount} <span className="text-red-500">*</span>
+              </label>
+              <div className="relative" ref={sourceDropdownRef}>
+                <div className="flex items-center border border-gray-200 rounded-lg bg-white overflow-hidden focus-within:ring-2 focus-within:ring-primary-500">
+                  <Search className="w-4 h-4 text-gray-400 ml-3 flex-shrink-0" />
+                  <input
+                    type="text"
+                    value={sourceAccountSearch}
+                    onChange={e => {
+                      setSourceAccountSearch(e.target.value)
+                      setSourceBankAccountId('')
+                      setSourceDropdownOpen(true)
+                    }}
+                    onFocus={() => setSourceDropdownOpen(true)}
+                    placeholder={tr.placeholderSourceAccount}
+                    className="flex-1 px-3 py-2.5 text-sm focus:outline-none bg-transparent"
+                  />
+                  {(sourceAccountSearch || sourceBankAccountId) && (
+                    <button
+                      type="button"
+                      onClick={() => { setSourceAccountSearch(''); setSourceBankAccountId('') }}
+                      className="p-2 text-gray-400 hover:text-gray-600"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+
+                {sourceDropdownOpen && (
+                  <div className="absolute z-20 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-52 overflow-y-auto">
+                    {(() => {
+                      const filtered = myBankAccounts.filter(ba => {
+                        const q = sourceAccountSearch.toLowerCase()
+                        return !q || [ba.bankCode, ba.accountNumber, ba.accountName].some(v => v?.toLowerCase().includes(q))
+                      })
+                      if (filtered.length === 0) return <p className="px-4 py-3 text-sm text-gray-400">{tr.noSourceAccounts}</p>
+                      return filtered.map(ba => {
+                        const baId = ba.bankAccountId ?? ba.accountId
+                        return (
+                          <button
+                            key={baId}
+                            type="button"
+                            onClick={() => {
+                              setSourceBankAccountId(baId)
+                              setSourceAccountSearch([ba.bankCode, ba.accountNumber].filter(Boolean).join(' · ') + (ba.accountName ? ` — ${ba.accountName}` : ''))
+                              setSourceDropdownOpen(false)
+                            }}
+                            className={clsx(
+                              'w-full px-4 py-2.5 text-left text-sm transition-colors',
+                              sourceBankAccountId === baId ? 'bg-primary-50 text-primary-700 font-semibold' : 'hover:bg-gray-50 text-gray-700'
+                            )}
+                          >
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="font-medium">{ba.bankCode}</span>
+                              {ba.accountNumber && <span>{ba.accountNumber}</span>}
+                              {ba.accountName && <span className="text-gray-400 text-xs">— {ba.accountName}</span>}
+                              {ba.accountCategory && (
+                                <span className="px-1.5 py-0.5 text-[10px] font-bold rounded-full ring-1 bg-blue-50 text-blue-700 ring-blue-200">
+                                  {ba.accountCategory}
+                                </span>
+                              )}
+                              {ba.accountType && (
+                                <span className="px-1.5 py-0.5 text-[10px] font-bold rounded-full ring-1 bg-gray-50 text-gray-600 ring-gray-200">
+                                  {ba.accountType}
+                                </span>
+                              )}
+                            </div>
+                            {ba.currentWalletBalance != null && (
+                              <div className="mt-1 flex items-center gap-1">
+                                <span className="text-[10px] text-gray-400">Balance:</span>
+                                <span className={clsx(
+                                  'text-xs font-semibold tabular-nums',
+                                  ba.currentWalletBalance > 0 ? 'text-emerald-600' : 'text-red-500'
+                                )}>
+                                  {ba.currentWalletBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </span>
+                              </div>
+                            )}
+                          </button>
+                        )
+                      })
+                    })()}
+                  </div>
+                )}
+              </div>
+              {myBankAccounts.length === 0 && (
+                <p className="text-xs text-gray-400 mt-1.5">{tr.noSourceAccounts}</p>
+              )}
+            </div>
+          </div>
+        ) : detail?.status?.toLowerCase() !== 'pending' && (
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 px-7 py-6">
             <h2 className="flex items-center gap-2.5 text-sm font-bold text-gray-900 mb-5">
               <span className="w-1 h-5 bg-rose-500 rounded-full flex-shrink-0" />
@@ -832,6 +1108,10 @@ export default function PayOutRequestDetailPage() {
 
       </div>
 
+      {showRejectModal && (
+        <RejectConfirmModal onConfirm={handleReject} onClose={() => setShowRejectModal(false)} />
+      )}
+
       {/* Footer */}
       <div className="flex-none -mx-3 sm:-mx-6 px-4 sm:px-8 py-4 flex items-center justify-end gap-3 bg-white border-t border-gray-100 shadow-[0_-4px_12px_rgba(0,0,0,0.06)]">
         <button
@@ -841,6 +1121,27 @@ export default function PayOutRequestDetailPage() {
         >
           {t.admin.back}
         </button>
+        {isMerchantOwn && isPending && (
+          <>
+            <button
+              type="button"
+              onClick={() => setShowRejectModal(true)}
+              disabled={rejecting || approving}
+              className="px-5 py-2.5 text-sm font-semibold text-red-600 bg-white border border-red-200 rounded-lg hover:bg-red-50 disabled:opacity-60 transition-colors"
+            >
+              {tr.btnReject}
+            </button>
+            <button
+              type="button"
+              onClick={handleApprove}
+              disabled={approving || rejecting}
+              className="flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 disabled:opacity-60 transition-colors"
+            >
+              {approving && <Loader2 className="w-4 h-4 animate-spin" />}
+              {approving ? tr.btnApproving : tr.btnApprove}
+            </button>
+          </>
+        )}
       </div>
     </div>
   )
