@@ -81,7 +81,7 @@ function AddPayOutRequestPageInner() {
   const [refId1, setRefId1] = useState('')
   const [refId2, setRefId2] = useState('')
   const [description, setDescription] = useState('')
-  const [payoutFeePayer, setPayoutFeePayer] = useState<'Merchant' | 'Beneficiary'>('Merchant')
+  const payoutFeePayer: 'Merchant' | 'Beneficiary' = 'Merchant'
   const [saving, setSaving] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
 
@@ -316,30 +316,6 @@ function AddPayOutRequestPageInner() {
                       </div>
                     )}
                   </div>
-
-                {/* Fee Payer Switch */}
-                <div className="flex-shrink-0">
-                  <p className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">{tr.fieldFeePayer}</p>
-                  <div className="flex rounded-lg border border-gray-200 overflow-hidden">
-                    {(['Merchant', 'Beneficiary'] as const).map(opt => (
-                      <button
-                        key={opt}
-                        type="button"
-                        onClick={() => setPayoutFeePayer(opt)}
-                        className={clsx(
-                          'px-4 py-2.5 text-sm font-semibold transition-colors',
-                          payoutFeePayer === opt
-                            ? opt === 'Merchant'
-                              ? 'bg-blue-600 text-white'
-                              : 'bg-orange-500 text-white'
-                            : 'bg-white text-gray-500 hover:bg-gray-50'
-                        )}
-                      >
-                        {opt === 'Merchant' ? tr.feePayerMerchant : tr.feePayerBeneficiary}
-                      </button>
-                    ))}
-                  </div>
-                </div>
 
               </div>
             </div>
