@@ -815,7 +815,7 @@ export default function PayOutRequestDetailPage() {
                 </div>
 
                 {sourceDropdownOpen && (
-                  <div className="absolute z-20 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-52 overflow-y-auto">
+                  <div className="absolute z-20 w-full bottom-full mb-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-52 overflow-y-auto">
                     {(() => {
                       const filtered = myBankAccounts.filter(ba => {
                         const q = sourceAccountSearch.toLowerCase()
@@ -853,14 +853,14 @@ export default function PayOutRequestDetailPage() {
                                 </span>
                               )}
                             </div>
-                            {ba.currentWalletBalance != null && (
+                            {ba.currentBalance != null && (
                               <div className="mt-1 flex items-center gap-1">
-                                <span className="text-[10px] text-gray-400">Balance:</span>
+                                <span className="text-[10px] text-gray-400">{tr.labelSourceAccountBalance ?? 'Balance'}:</span>
                                 <span className={clsx(
                                   'text-xs font-semibold tabular-nums',
-                                  ba.currentWalletBalance > 0 ? 'text-emerald-600' : 'text-red-500'
+                                  ba.currentBalance > 0 ? 'text-emerald-600' : 'text-red-500'
                                 )}>
-                                  {ba.currentWalletBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                  {ba.currentBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                 </span>
                               </div>
                             )}

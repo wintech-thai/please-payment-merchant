@@ -288,11 +288,6 @@ function AddPayOutRequestPageInner() {
                                           <span className="text-sm text-gray-700 font-normal">— {ba.accountName}</span>
                                         )}
                                         <AccountTypeBadge type={ba.accountType} />
-                                        {ba.custodyType === 'MerchantOwn' && (
-                                          <span className="text-xs text-primary-600 font-semibold tabular-nums">
-                                            {tr.fieldCurrentBalance}: {ba.currentBalance?.toLocaleString('th-TH', { minimumFractionDigits: 2 }) ?? '0.00'}
-                                          </span>
-                                        )}
                                       </span>
                                     </button>
                                   )
@@ -318,15 +313,6 @@ function AddPayOutRequestPageInner() {
                             {selectedBank.payoutMaxAmount?.toLocaleString('th-TH', { minimumFractionDigits: 2 }) ?? '—'}
                           </span>
                         </div>
-                      </div>
-                    )}
-
-                    {selectedBank?.custodyType === 'MerchantOwn' && (
-                      <div className="mt-3 flex items-center gap-1.5 px-2 py-1 bg-primary-50 border border-primary-200 rounded-lg w-fit">
-                        <span className="text-[10px] text-primary-600 uppercase tracking-wide">{tr.fieldCurrentBalance}</span>
-                        <span className="text-sm font-semibold text-primary-700 tabular-nums">
-                          {selectedBank.currentBalance?.toLocaleString('th-TH', { minimumFractionDigits: 2 }) ?? '0.00'}
-                        </span>
                       </div>
                     )}
                   </div>

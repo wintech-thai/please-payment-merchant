@@ -281,7 +281,6 @@ export interface BankAccountItem {
   accountType?: string | null       // "PromptPay" | "Native"
   accountCategory?: string | null   // "PayIn" | "PayOut"
   accountLevel?: string | null      // "Global" | "Selected"
-  custodyType?: string | null       // "MerchantOwn" | "PlatformOwn"
   payinMinAmount?: number | null
   payinMaxAmount?: number | null
   payoutMinAmount?: number | null
