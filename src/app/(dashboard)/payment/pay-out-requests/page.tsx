@@ -1,19 +1,21 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useOrgChange } from '@/hooks/useOrgChange'
 import { useFormatDate } from '@/hooks/useFormatDate'
 import { useLang } from '@/context/LanguageContext'
 import { paymentRequestApi } from '@/lib/api/payment-request.api'
+import { userApi } from '@/lib/api/user.api'
 import type { PayOutRequestItem } from '@/lib/api/types'
 import { toast } from 'sonner'
-import { Loader2, Plus, Trash2, ChevronLeft, ChevronRight, RefreshCw, X, Paperclip, TriangleAlert, Download } from 'lucide-react'
+import { Loader2, Plus, Trash2, ChevronLeft, ChevronRight, ChevronDown, RefreshCw, X, Paperclip, TriangleAlert, Download, Link2, Copy, Check, ExternalLink, Send, Wallet, MoreHorizontal } from 'lucide-react'
 import clsx from 'clsx'
 import { AdvancedTimeRangeSelector, type TimeRangeValue } from '@/components/AdvancedTimeRangeSelector'
 import AuditNoticeDrawer from '@/components/AuditNoticeDrawer'
 import ExportCsvModal from '@/components/ExportCsvModal'
 import CustodyTypeBadge from '@/components/CustodyTypeBadge'
+import QRCode from 'react-qr-code'
 import type { CsvCell } from '@/lib/csv-export'
 
 type SlipItem = { imageBase64: string; uploadedAt: string; note?: string | null; first4?: string | null; last4?: string | null }
@@ -180,6 +182,84 @@ function formatAge(d?: string | null): string {
   return `${hours}h ${mins}min`
 }
 
+// ── Slip Upload Link Modal ─────────────────────────────────────────────────
+
+function SlipUploadLinkModal({ item, onClose }: { item: PayOutRequestItem; onClose: () => void }) {
+  const { t } = useLang()
+  const m = t.payInRequest
+  const [url, setUrl] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [errorMsg, setErrorMsg] = useState('')
+  const [copied, setCopied] = useState(false)
+
+  useEffect(() => {
+    paymentRequestApi.generatePayOutSlipUploadToken(item.id)
+      .then(res => {
+        const d = res.data as any
+        const relUrl = d?.slipUploadUrl ?? d?.SlipUploadUrl
+        if (!relUrl) throw new Error('no url')
+        setUrl(`${window.location.origin}${relUrl}`)
+      })
+      .catch(() => setErrorMsg(m.slipLinkError))
+      .finally(() => setLoading(false))
+  }, [item])
+
+  const handleCopy = () => {
+    if (!url) return
+    navigator.clipboard.writeText(url)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  return (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={onClose}>
+      <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-gray-100">
+          <div className="flex items-center gap-2">
+            <Link2 className="w-4 h-4 text-primary-600" />
+            <h3 className="text-base font-bold text-gray-900">{m.slipLinkTitle}</h3>
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 transition-colors">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+        <div className="px-6 py-5">
+          {loading ? (
+            <div className="flex items-center justify-center py-6 gap-2 text-gray-400">
+              <Loader2 className="w-5 h-5 animate-spin" />
+              <span className="text-sm">{m.slipLinkLoading}</span>
+            </div>
+          ) : errorMsg ? (
+            <p className="text-sm text-red-500 text-center py-4">{errorMsg}</p>
+          ) : url ? (
+            <div className="space-y-4">
+              <p className="text-xs text-gray-500">{m.slipLinkDesc}</p>
+              <div className="flex justify-center p-3 bg-white border border-gray-200 rounded-xl">
+                <QRCode value={url} size={160} />
+              </div>
+              <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
+                <span className="flex-1 text-xs text-gray-700 font-mono break-all">{url}</span>
+                <button
+                  type="button"
+                  onClick={handleCopy}
+                  className="flex-shrink-0 flex items-center gap-1 px-2 py-1 text-xs font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-200 rounded transition-colors"
+                >
+                  {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                  {copied ? 'Copied!' : 'Copy'}
+                </button>
+              </div>
+              <a href={url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-xs text-primary-600 hover:text-primary-800 hover:underline">
+                <ExternalLink className="w-3.5 h-3.5" />
+                {m.slipLinkOpen}
+              </a>
+            </div>
+          ) : null}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function PayOutRequestsPage() {
   const { t } = useLang()
   const tr = t.payOutRequest
@@ -215,6 +295,45 @@ export default function PayOutRequestsPage() {
   )
   const [refreshKey, setRefreshKey] = useState(0)
   const [exportOpen, setExportOpen] = useState(false)
+  const [isMerchantOwn, setIsMerchantOwn] = useState(false)
+  const [createMenuOpen, setCreateMenuOpen] = useState(false)
+  const createMenuRef = useRef<HTMLDivElement>(null)
+  const [slipLinkTarget, setSlipLinkTarget] = useState<PayOutRequestItem | null>(null)
+  const [openActionId, setOpenActionId] = useState<string | null>(null)
+  const actionMenuRefs = useRef<Record<string, HTMLDivElement | null>>({})
+
+  useEffect(() => {
+    const loadMerchantInfo = () => {
+      userApi.getMyMerchantInfo()
+        .then(res => {
+          const d = res.data as any
+          const detail = d?.merchant ?? d?.merchantInfo ?? d?.data ?? d
+          setIsMerchantOwn(detail?.payInBankCustodyType === 'MerchantOwn')
+        })
+        .catch(() => {})
+    }
+    loadMerchantInfo()
+    window.addEventListener('orgchange', loadMerchantInfo)
+    return () => window.removeEventListener('orgchange', loadMerchantInfo)
+  }, [])
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (createMenuRef.current && !createMenuRef.current.contains(e.target as Node)) setCreateMenuOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (openActionId && actionMenuRefs.current[openActionId] && !actionMenuRefs.current[openActionId]!.contains(e.target as Node)) {
+        setOpenActionId(null)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [openActionId])
 
   const load = useCallback(async () => {
     if (typeof window !== 'undefined') sessionStorage.setItem(FILTER_KEY, JSON.stringify({ search, status, p2p, timeRange }))
@@ -291,11 +410,41 @@ export default function PayOutRequestsPage() {
 
   return (
     <div className="flex flex-col gap-4 h-full">
-      <div className="flex items-center justify-between flex-none">
+      <div className="flex items-start justify-between flex-none gap-3">
         <div>
           <h1 className="text-xl font-bold text-gray-900">{tr.title}</h1>
           <p className="text-sm text-gray-500 mt-0.5">{tr.subtitle}</p>
         </div>
+        {isMerchantOwn && (
+          <div ref={createMenuRef} className="relative">
+            <button
+              onClick={() => setCreateMenuOpen(v => !v)}
+              className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              {tr.addBtn}
+              <ChevronDown className={clsx('w-4 h-4 transition-transform', createMenuOpen && 'rotate-180')} />
+            </button>
+            {createMenuOpen && (
+              <div className="absolute right-0 z-30 w-56 mt-1.5 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden py-1">
+                <button
+                  onClick={() => { setCreateMenuOpen(false); router.push('/payment/pay-out-requests/add') }}
+                  className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  <Send className="w-4 h-4 flex-shrink-0" />
+                  Payout Request
+                </button>
+                <button
+                  onClick={() => { setCreateMenuOpen(false); router.push('/payment/pay-out-requests/add?type=withdrawal') }}
+                  className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  <Wallet className="w-4 h-4 flex-shrink-0" />
+                  Withdraw Request
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Filters */}
@@ -500,8 +649,8 @@ export default function PayOutRequestsPage() {
                         </button>
                       )}
                     </div>
-                    {item.rejectReason && (
-                      <p className="text-[11px] text-red-500 mt-1 truncate max-w-[140px]" title={item.rejectReason}>{item.rejectReason}</p>
+                    {(item.rejectReason || item.statusReason) && (
+                      <p className="text-[11px] text-red-500 mt-1 truncate max-w-[140px]" title={item.rejectReason || item.statusReason || ''}>{item.rejectReason || item.statusReason}</p>
                     )}
                   </td>
                   <td className="px-4 py-3 border-b border-gray-100">
@@ -513,15 +662,38 @@ export default function PayOutRequestsPage() {
                     </div>
                   </td>
                   <td className="px-4 py-3 border-b border-gray-100" onClick={e => e.stopPropagation()}>
-                    {canDelete && (
-                      <button
-                        onClick={e => handleDelete(e, item)}
-                        disabled={deletingId === item.id}
-                        className="p-1.5 rounded-lg text-red-400 hover:bg-red-50 hover:text-red-600 transition disabled:opacity-40"
-                      >
-                        {deletingId === item.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                      </button>
-                    )}
+                    <div className="flex items-center gap-1">
+                      <div className="relative" ref={el => { actionMenuRefs.current[item.id] = el }}>
+                        <button
+                          onClick={() => setOpenActionId(openActionId === item.id ? null : item.id)}
+                          className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-colors"
+                        >
+                          <MoreHorizontal className="w-4 h-4" />
+                        </button>
+                        {openActionId === item.id && (
+                          <div className="absolute right-0 top-8 z-50 w-52 rounded-xl shadow-xl bg-white border border-gray-100 overflow-hidden">
+                            <button
+                              type="button"
+                              disabled={item.payInBankCustodyType !== 'MerchantOwn'}
+                              title={item.payInBankCustodyType === 'MerchantOwn' ? undefined : t.payInRequest.slipLinkTitle}
+                              onClick={() => { setOpenActionId(null); setSlipLinkTarget(item) }}
+                              className="w-full px-4 py-2.5 text-left text-sm font-medium text-blue-600 hover:bg-blue-50 transition-colors disabled:text-gray-300 disabled:hover:bg-transparent disabled:cursor-not-allowed"
+                            >
+                              Slip Upload Link
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                      {canDelete && (
+                        <button
+                          onClick={e => handleDelete(e, item)}
+                          disabled={deletingId === item.id}
+                          className="p-1.5 rounded-lg text-red-400 hover:bg-red-50 hover:text-red-600 transition disabled:opacity-40"
+                        >
+                          {deletingId === item.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
                 )
@@ -592,6 +764,7 @@ export default function PayOutRequestsPage() {
       )}
       {slipViewer && <SlipViewerModal slips={slipViewer.slips} item={slipViewer.item} onClose={() => setSlipViewer(null)} />}
       {noticeTarget && <AuditNoticeDrawer rowId={noticeTarget} onClose={() => setNoticeTarget(null)} />}
+      {slipLinkTarget && <SlipUploadLinkModal item={slipLinkTarget} onClose={() => setSlipLinkTarget(null)} />}
 
       {exportOpen && (
         <ExportCsvModal<PayOutRequestItem>
@@ -640,7 +813,7 @@ export default function PayOutRequestsPage() {
               item.payoutPromptPayId ?? '',
               item.isPartialyPayout ? 'Yes' : 'No',
               item.status ?? '',
-              item.rejectReason ?? '',
+              item.rejectReason ?? item.statusReason ?? '',
               item.refId1 ?? '',
               item.refId2 ?? '',
               item.refId3 ?? '',

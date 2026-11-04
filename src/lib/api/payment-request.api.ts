@@ -8,6 +8,7 @@ import type {
   GetPayOutRequestsPayload,
   CreatePayOutRequestPayload,
   UpdatePayOutRequestPayload,
+  ApprovePayOutRequestPayload,
   PaymentTxJob,
   SubmitPaymentRequestPayload,
 } from './types'
@@ -84,4 +85,11 @@ export const paymentRequestApi = {
 
   generatePayOutSlipUploadToken: (paymentRequestId: string) =>
     client.get(`${getBase()}/GeneratePayOutSlipUploadToken/${paymentRequestId}`),
+
+  // ── Pay-Out approve / reject — เฉพาะ merchant ที่เป็น MerchantOwn เท่านั้น ────
+  approvePayOutRequestById: (id: string, payload: ApprovePayOutRequestPayload) =>
+    client.post<{ status: string; description: string }>(`${getBase()}/ApprovePayOutRequestById/${id}`, payload),
+
+  rejectPayOutRequestById: (id: string, reason: string, rejectStatusCode?: string) =>
+    client.post<{ status: string; description: string }>(`${getBase()}/RejectPayOutRequestById/${id}`, { StatusReason: reason, StatusCode: rejectStatusCode }),
 }
