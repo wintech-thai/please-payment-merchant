@@ -9,6 +9,7 @@ import { toast } from 'sonner'
 import { ChevronLeft, Wallet } from 'lucide-react'
 import clsx from 'clsx'
 import { useLang } from '@/context/LanguageContext'
+import { BookBankPreview } from '@/components/BookBankPhoto'
 
 function fmtNum(n: number): string {
   return n.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })
@@ -129,6 +130,11 @@ export default function BankAccountDetailPage() {
               </dd>
             </div>
           </dl>
+          {account?.bookBankImageBase64 && (
+            <div className="mt-4 pt-4 border-t border-gray-100">
+              <BookBankPreview imageBase64={account.bookBankImageBase64} mimeType={account.bookBankMimeType} title={m.fieldBookBank} />
+            </div>
+          )}
         </div>
 
         {/* Pay-In Limits */}
