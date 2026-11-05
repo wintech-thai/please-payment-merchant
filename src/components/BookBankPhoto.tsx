@@ -28,9 +28,8 @@ export function BookBankPreviewIcon({ bankAccountId, title }: { bankAccountId: s
     try {
       const res = await bankAccountApi.getMyBankAccountById(bankAccountId)
       const data = res.data as any
-      const account = data?.bankAccount ?? data?.BankAccount ?? data
-      const base64 = account?.bookBankImageBase64 ?? account?.BookBankImageBase64
-      const mime = account?.bookBankMimeType ?? account?.BookBankMimeType ?? 'image/jpeg'
+      const base64 = data?.bookBankImageBase64 ?? data?.BookBankImageBase64
+      const mime = data?.bookBankMimeType ?? data?.BookBankMimeType ?? 'image/jpeg'
       if (base64) setSrc(`data:${mime};base64,${base64}`)
       else toast.error('ไม่พบรูปภาพ')
     } catch {

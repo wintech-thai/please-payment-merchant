@@ -44,6 +44,9 @@ export default function BankAccountDetailPage() {
           return
         }
         const a: BankAccountItem = raw?.bankAccount ?? raw?.BankAccount ?? raw
+        // bookBankImageBase64/MimeType อยู่ระดับบนสุดของ response ไม่ได้ซ้อนอยู่ใน bankAccount
+        a.bookBankImageBase64 = raw?.bookBankImageBase64 ?? raw?.BookBankImageBase64 ?? a.bookBankImageBase64
+        a.bookBankMimeType = raw?.bookBankMimeType ?? raw?.BookBankMimeType ?? a.bookBankMimeType
         setAccount(a)
       })
       .catch(() => {
