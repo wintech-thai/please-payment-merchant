@@ -10,6 +10,7 @@ import clsx from 'clsx'
 import { useLang } from '@/context/LanguageContext'
 import QRCode from 'react-qr-code'
 import { useFormatDate } from '@/hooks/useFormatDate'
+import { useOrgChange } from '@/hooks/useOrgChange'
 
 type LineApiStatus = { ok?: boolean; podStatus?: string; login?: string; agentId?: string; raw?: string }
 
@@ -246,6 +247,7 @@ function AgentListContent() {
   }
 
   useEffect(() => { fetchAgents() }, [page])
+  useOrgChange(() => { setPage(1); fetchAgents() }) // สลับ org แล้วต้อง refetch
 
   // Background polling for Line Api agents every 10 seconds
   useEffect(() => {

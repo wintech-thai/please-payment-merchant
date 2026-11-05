@@ -9,6 +9,8 @@ import { toast } from 'sonner'
 import { Search, MoreHorizontal, Wallet, ChevronLeft, ChevronRight } from 'lucide-react'
 import clsx from 'clsx'
 import { useLang } from '@/context/LanguageContext'
+import { useOrgChange } from '@/hooks/useOrgChange'
+import { BookBankPreviewIcon } from '@/components/BookBankPhoto'
 
 function fmtNum(n: number): string {
   return n.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })
@@ -61,12 +63,16 @@ function BankAccountsPageInner() {
   })
   const menuRefs = useRef<Record<string, HTMLDivElement | null>>({})
 
-  useEffect(() => {
+  const loadAccounts = () => {
+    setLoading(true)
     bankAccountApi.getMyBankAccounts()
       .then(res => setAccounts(res.data.bankAccounts))
       .catch(() => toast.error(m.failedToLoad))
       .finally(() => setLoading(false))
-  }, [])
+  }
+
+  useEffect(loadAccounts, [])
+  useOrgChange(loadAccounts) // สลับ org แล้วต้อง refetch
 
   useEffect(() => {
     if (!highlightIdParam) return
@@ -218,13 +224,16 @@ function BankAccountsPageInner() {
                     className={clsx('cursor-pointer transition-colors', highlighted ? 'bg-primary-50' : 'hover:bg-gray-50')}
                   >
                     <td className="px-4 py-3 border-b border-gray-100 whitespace-nowrap">
-                      <Link
-                        href={`/bank-accounts/${rowId}`}
-                        onClick={e => { e.stopPropagation(); sessionStorage.setItem('bank_account_highlight', rowId) }}
-                        className={clsx('font-semibold text-sm hover:underline', highlighted ? 'text-primary-700' : 'text-gray-800 hover:text-primary-600')}
-                      >
-                        {acc.bankName || acc.bankCode || '—'}
-                      </Link>
+                      <div className="flex items-center gap-1.5">
+                        <Link
+                          href={`/bank-accounts/${rowId}`}
+                          onClick={e => { e.stopPropagation(); sessionStorage.setItem('bank_account_highlight', rowId) }}
+                          className={clsx('font-semibold text-sm hover:underline', highlighted ? 'text-primary-700' : 'text-gray-800 hover:text-primary-600')}
+                        >
+                          {acc.bankName || acc.bankCode || '—'}
+                        </Link>
+                        {acc.bookBankFileDocumentId && <BookBankPreviewIcon bankAccountId={rowId} title={m.fieldBookBank} />}
+                      </div>
                     </td>
                     <td className="px-4 py-3 border-b border-gray-100 text-gray-600 whitespace-nowrap text-sm">
                       {acc.accountNumber ?? '—'}

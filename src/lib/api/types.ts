@@ -293,6 +293,9 @@ export interface BankAccountItem {
   currentBalanceDecimal?: number | null
   currentWalletBalance?: number | null
   currentWalletBalanceDecimal?: number | null
+  bookBankImageBase64?: string | null
+  bookBankMimeType?: string | null
+  bookBankFileDocumentId?: string | null
 }
 
 export interface GetBankAccountsPayload {
