@@ -16,7 +16,7 @@ function ImagePreviewModal({ src, onClose }: { src: string; onClose: () => void 
   )
 }
 
-// x090 ปรับแก้ 6 : view-only icon for list pages — lazily fetches via GetMyBankAccountById only when clicked, same pattern as admin's BookBankPreviewIcon
+// view-only icon for list pages — lazily fetches via GetMyBankAccountById only when clicked, same pattern as admin's BookBankPreviewIcon
 export function BookBankPreviewIcon({ bankAccountId, title }: { bankAccountId: string; title?: string }) {
   const [loading, setLoading] = useState(false)
   const [src, setSrc] = useState<string | null>(null)

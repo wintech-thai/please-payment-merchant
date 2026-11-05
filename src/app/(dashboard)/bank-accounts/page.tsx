@@ -72,7 +72,7 @@ function BankAccountsPageInner() {
   }
 
   useEffect(loadAccounts, [])
-  useOrgChange(loadAccounts) // x090 ปรับแก้ 7 : สลับ org แล้วต้อง refetch
+  useOrgChange(loadAccounts) // สลับ org แล้วต้อง refetch
 
   useEffect(() => {
     if (!highlightIdParam) return
@@ -232,7 +232,7 @@ function BankAccountsPageInner() {
                         >
                           {acc.bankName || acc.bankCode || '—'}
                         </Link>
-                        <BookBankPreviewIcon bankAccountId={rowId} title={m.fieldBookBank} />
+                        {acc.bookBankFileDocumentId && <BookBankPreviewIcon bankAccountId={rowId} title={m.fieldBookBank} />}
                       </div>
                     </td>
                     <td className="px-4 py-3 border-b border-gray-100 text-gray-600 whitespace-nowrap text-sm">

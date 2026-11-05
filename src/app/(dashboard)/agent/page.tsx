@@ -247,7 +247,7 @@ function AgentListContent() {
   }
 
   useEffect(() => { fetchAgents() }, [page])
-  useOrgChange(() => { setPage(1); fetchAgents() }) // x090 ปรับแก้ 7 : สลับ org แล้วต้อง refetch
+  useOrgChange(() => { setPage(1); fetchAgents() }) // สลับ org แล้วต้อง refetch
 
   // Background polling for Line Api agents every 10 seconds
   useEffect(() => {
