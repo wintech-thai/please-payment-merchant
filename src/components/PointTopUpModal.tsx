@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { X, QrCode, ExternalLink } from 'lucide-react'
+import QRCode from 'react-qr-code'
 import clsx from 'clsx'
 import { toast } from 'sonner'
 import { pointTopUpApi } from '@/lib/api/point-topup.api'
@@ -109,9 +110,11 @@ export default function PointTopUpModal({ onClose, onSuccess, m }: { onClose: ()
           </div>
         ) : (
           <div className="px-6 py-5 space-y-4">
-            {qr?.qrCodeImageBase64 ? (
+            {qr?.qrCode ? (
               <div className="flex flex-col items-center gap-3">
-                <img src={`data:image/png;base64,${qr.qrCodeImageBase64}`} alt="QR" className="w-56 h-56 object-contain rounded-lg border border-gray-100" />
+                <div className="p-3 bg-white rounded-lg border border-gray-100">
+                  <QRCode value={qr.qrCode} size={200} />
+                </div>
                 <p className="text-xs text-gray-500 text-center">{m.topUpScanInstruction}</p>
               </div>
             ) : (

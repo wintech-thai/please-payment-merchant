@@ -6,6 +6,7 @@ import { pointTopUpApi } from '@/lib/api/point-topup.api'
 import type { PurchaseCashItem } from '@/lib/api/types'
 import { toast } from 'sonner'
 import { ChevronLeft } from 'lucide-react'
+import QRCode from 'react-qr-code'
 import clsx from 'clsx'
 import { useLang } from '@/context/LanguageContext'
 
@@ -80,7 +81,7 @@ export default function PurchasingOrderDetailPage() {
     )
   }
 
-  let qr: { qrCodeImageBase64?: string | null; paymentUrl?: string | null } | null = null
+  let qr: { qrCode?: string | null; paymentUrl?: string | null } | null = null
   if (item.status === 'Pending' && item.documentParams) {
     try { qr = JSON.parse(item.documentParams) } catch { qr = null }
   }
@@ -132,11 +133,13 @@ export default function PurchasingOrderDetailPage() {
           </dl>
         </div>
 
-        {qr?.qrCodeImageBase64 && (
+        {qr?.qrCode && (
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 px-7 py-6">
             <SectionHeader>{m.sectionQr}</SectionHeader>
             <div className="flex flex-col items-center gap-3">
-              <img src={`data:image/png;base64,${qr.qrCodeImageBase64}`} alt="QR" className="w-48 h-48 object-contain rounded-lg border border-gray-100" />
+              <div className="p-3 bg-white rounded-lg border border-gray-100">
+                <QRCode value={qr.qrCode} size={180} />
+              </div>
               {qr.paymentUrl && (
                 <a href={qr.paymentUrl} target="_blank" rel="noopener noreferrer" className="text-sm font-semibold text-primary-600 hover:underline">
                   {m.topUpOpenLink}
