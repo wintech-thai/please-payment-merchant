@@ -12,6 +12,7 @@ import clsx from 'clsx'
 import { Loader2, Copy, Check, Store, CreditCard, Webhook, Wallet, ChevronLeft, ChevronRight, Mail, Phone, Hash, User, Activity, Percent, TrendingUp, TrendingDown, ArrowDownCircle, ArrowUpCircle, Zap, Globe, ExternalLink, Coins, Search, Gem } from 'lucide-react'
 import { isCurrencyFeatureEnabled } from '@/lib/feature-flags'
 import CurrencyLogo from '@/components/CurrencyLogo'
+import PointTopUpModal from '@/components/PointTopUpModal'
 
 interface MerchantCurrencyRow {
   id?: string | null
@@ -296,6 +297,7 @@ export default function MerchantInfoPage() {
   const [pointWalletPageSize, setPointWalletPageSize] = useState(25)
   const [pointHighlightedTxIdx, setPointHighlightedTxIdx] = useState<number | null>(null)
   const [reloadKey, setReloadKey] = useState(0)
+  const [showTopUpModal, setShowTopUpModal] = useState(false)
 
   useOrgChange(() => setReloadKey(k => k + 1))
 
@@ -430,6 +432,14 @@ export default function MerchantInfoPage() {
 
   return (
     <div className="h-full flex flex-col overflow-hidden">
+      {showTopUpModal && (
+        <PointTopUpModal
+          m={mi}
+          onClose={() => setShowTopUpModal(false)}
+          onSuccess={() => setReloadKey(k => k + 1)}
+        />
+      )}
+
       <div className="flex items-center justify-between mb-5 flex-none">
         <div>
           <h1 className="text-xl font-bold text-gray-900">{mi.pageTitle}</h1>
@@ -1023,7 +1033,16 @@ export default function MerchantInfoPage() {
                   </div>
 
                   <div className="bg-white rounded-xl border border-gray-100 p-5">
-                    <SectionHeader>{mi.sectionPointWallet}</SectionHeader>
+                    <div className="flex items-center justify-between">
+                      <SectionHeader>{mi.sectionPointWallet}</SectionHeader>
+                      <button
+                        type="button"
+                        onClick={() => setShowTopUpModal(true)}
+                        className="px-3 py-1.5 text-xs font-semibold text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors"
+                      >
+                        {mi.topUpButton}
+                      </button>
+                    </div>
                     <div className="mt-3 space-y-3">
                       <div>
                         <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">{mi.walletId}</p>

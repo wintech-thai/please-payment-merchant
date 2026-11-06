@@ -298,6 +298,52 @@ export interface BankAccountItem {
   bookBankFileDocumentId?: string | null
 }
 
+export interface AccountDocItemRow {
+  id?: string | null
+  productType?: string | null
+  productCode?: string | null
+  productDesc?: string | null
+  quantity?: number | null
+  unitPrice?: number | null
+  totalPrice?: number | null
+  netAmount?: number | null
+}
+
+export interface PurchaseCashItem {
+  id?: string | null
+  orgId?: string | null
+  code?: string | null
+  documentNo?: string | null
+  description?: string | null
+  documentType?: string | null
+  documentSubType?: string | null
+  documentDate?: string | null
+  totalPrice?: number | null
+  netAmount?: number | null
+  grandTotal?: number | null
+  status?: string | null
+  rejectReason?: string | null
+  documentParams?: string | null
+  createdDate?: string | null
+  updatedDate?: string | null
+  approvedDate?: string | null
+  statusDate?: string | null
+  items?: AccountDocItemRow[] | null
+}
+
+export interface PurchaseCashResult {
+  status?: string | null
+  description?: string | null
+  accountDoc?: PurchaseCashItem | null
+}
+
+export interface PointTopUpQrParams {
+  qrCode?: string | null
+  qrCodeImageBase64?: string | null
+  paymentUrl?: string | null
+  externalPaymentRequestId?: string | null
+}
+
 export interface GetBankAccountsPayload {
   FullTextSearch?: string
   AccountCategory?: string

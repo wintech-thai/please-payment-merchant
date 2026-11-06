@@ -49,6 +49,16 @@ function getMenuItems(t: Translations, showAgents: boolean): MenuItem[] {
         </svg>
       ),
     },
+    { divider: true },
+    {
+      href: '/purchasing-order',
+      label: t.nav.purchasingOrder,
+      icon: (
+        <svg style={{ width: '18px', height: '18px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 11H4L5 9z" />
+        </svg>
+      ),
+    },
     ...(showAgents ? [
       { divider: true } as const,
       {
