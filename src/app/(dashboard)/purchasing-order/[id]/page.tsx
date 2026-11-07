@@ -5,8 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { pointTopUpApi } from '@/lib/api/point-topup.api'
 import type { PurchaseCashItem } from '@/lib/api/types'
 import { toast } from 'sonner'
-import { ChevronLeft } from 'lucide-react'
-import QRCode from 'react-qr-code'
+import { ChevronLeft, ExternalLink } from 'lucide-react'
 import clsx from 'clsx'
 import { useLang } from '@/context/LanguageContext'
 
@@ -24,6 +23,21 @@ function StatusBadge({ status, m }: { status?: string | null; m: any }) {
       <span className={clsx('w-1.5 h-1.5 rounded-full flex-shrink-0', c.dot)} />
       {c.label}
     </span>
+  )
+}
+
+function highlightJson(json: string): string {
+  return json.replace(
+    /("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g,
+    (match) => {
+      if (/^"/.test(match)) {
+        if (/:$/.test(match)) return `<span style="color:#6366f1;font-weight:600">${match}</span>`
+        return `<span style="color:#059669">${match}</span>`
+      }
+      if (/true|false/.test(match)) return `<span style="color:#d97706">${match}</span>`
+      if (/null/.test(match)) return `<span style="color:#9ca3af">${match}</span>`
+      return `<span style="color:#0284c7">${match}</span>`
+    }
   )
 }
 
@@ -81,23 +95,24 @@ export default function PurchasingOrderDetailPage() {
     )
   }
 
-  let qr: { qrCode?: string | null; paymentUrl?: string | null } | null = null
-  if (item.status === 'Pending' && item.documentParams) {
+  let qr: { qrCode?: string | null; paymentUrl?: string | null; slipUploadUrl?: string | null; paymentStatusUrl?: string | null } | null = null
+  if (item.documentParams) {
     try { qr = JSON.parse(item.documentParams) } catch { qr = null }
   }
 
   return (
     <div className="flex flex-col overflow-hidden h-[calc(100dvh-5rem)] sm:h-[calc(100dvh-6.5rem)]">
-      <div className="flex-none mb-6">
+      <div className="flex-none flex items-center gap-3 mb-6">
         <button
           onClick={() => router.push(`/purchasing-order?highlight=${id}`)}
-          className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 mb-3 transition-colors"
+          className="p-2 rounded-lg text-gray-500 hover:bg-gray-200 transition-colors"
         >
-          <ChevronLeft className="w-4 h-4" />
-          {m.detailBack}
+          <ChevronLeft className="w-5 h-5" />
         </button>
-        <h1 className="text-2xl font-bold text-gray-900">{m.detailTitle}</h1>
-        <p className="text-sm text-gray-500 mt-0.5">{item.documentNo}</p>
+        <div className="flex-1">
+          <h1 className="text-2xl font-bold text-gray-900">{m.detailTitle}</h1>
+          <p className="text-sm text-gray-500 mt-0.5">{item.documentNo}</p>
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-4 pb-2">
@@ -133,16 +148,30 @@ export default function PurchasingOrderDetailPage() {
           </dl>
         </div>
 
-        {qr?.qrCode && (
+        {(qr?.paymentStatusUrl || qr?.slipUploadUrl) && (
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 px-7 py-6">
-            <SectionHeader>{m.sectionQr}</SectionHeader>
-            <div className="flex flex-col items-center gap-3">
-              <div className="p-3 bg-white rounded-lg border border-gray-100">
-                <QRCode value={qr.qrCode} size={180} />
-              </div>
-              {qr.paymentUrl && (
-                <a href={qr.paymentUrl} target="_blank" rel="noopener noreferrer" className="text-sm font-semibold text-primary-600 hover:underline">
-                  {m.topUpOpenLink}
+            <SectionHeader>{m.sectionLinks}</SectionHeader>
+            <div className="flex flex-col sm:flex-row gap-3">
+              {qr.paymentStatusUrl && (
+                <a
+                  href={`${typeof window !== 'undefined' ? window.location.origin : ''}${qr.paymentStatusUrl}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-1.5 flex-1 py-2.5 text-sm font-semibold text-primary-700 bg-primary-50 hover:bg-primary-100 rounded-xl transition-colors"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  {m.linkPaymentStatus}
+                </a>
+              )}
+              {qr.slipUploadUrl && (
+                <a
+                  href={`${typeof window !== 'undefined' ? window.location.origin : ''}${qr.slipUploadUrl}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-1.5 flex-1 py-2.5 text-sm font-semibold text-primary-700 bg-primary-50 hover:bg-primary-100 rounded-xl transition-colors"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  {m.linkUploadSlip}
                 </a>
               )}
             </div>
@@ -179,9 +208,10 @@ export default function PurchasingOrderDetailPage() {
 
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 px-7 py-6">
           <SectionHeader>{m.sectionRawData}</SectionHeader>
-          <pre className="text-xs bg-gray-50 border border-gray-100 rounded-lg p-4 overflow-x-auto text-gray-600 whitespace-pre-wrap break-all">
-            {JSON.stringify(item, null, 2)}
-          </pre>
+          <pre
+            className="text-xs bg-gray-50 border border-gray-100 rounded-lg p-4 overflow-x-auto whitespace-pre-wrap break-all font-mono leading-relaxed"
+            dangerouslySetInnerHTML={{ __html: highlightJson(JSON.stringify(item, null, 2)) }}
+          />
         </div>
       </div>
     </div>

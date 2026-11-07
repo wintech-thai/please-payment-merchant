@@ -342,6 +342,17 @@ export interface PointTopUpQrParams {
   qrCodeImageBase64?: string | null
   paymentUrl?: string | null
   externalPaymentRequestId?: string | null
+  generatedAmount?: number | null
+  payinBankCode?: string | null
+  payinBankAccountNo?: string | null
+  payinBankAccountName?: string | null
+  payinPromptPayId?: string | null
+  slipUploadUrl?: string | null
+  paymentStatusUrl?: string | null
+  expireAt?: string | null
+  websocketPath?: string | null
+  sessionId?: string | null
+  gatewayBaseUrl?: string | null
 }
 
 export interface GetBankAccountsPayload {

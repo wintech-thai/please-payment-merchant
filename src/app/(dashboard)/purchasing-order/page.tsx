@@ -171,11 +171,11 @@ function PurchasingOrderPageInner() {
                     <tr
                       id={`po-row-${item.id}`}
                       key={item.id}
-                      onClick={() => handleOpenDetail(item.id)}
+                      onClick={() => item.id && setSelectedRowId(item.id)}
                       className={clsx('cursor-pointer transition-colors', highlighted ? 'bg-primary-100' : idx % 2 === 0 ? 'bg-white hover:bg-gray-50' : 'bg-gray-50/40 hover:bg-gray-100/50')}
                     >
-                      <td className="px-4 py-3 border-b border-gray-100 whitespace-nowrap">
-                        <span className={clsx('text-sm font-semibold', highlighted ? 'text-primary-700' : 'text-gray-800')}>{item.documentNo ?? '—'}</span>
+                      <td className="px-4 py-3 border-b border-gray-100 whitespace-nowrap cursor-pointer" onClick={e => { e.stopPropagation(); handleOpenDetail(item.id) }}>
+                        <span className={clsx('text-sm font-semibold hover:text-primary-600 hover:underline', highlighted ? 'text-primary-700' : 'text-gray-800')}>{item.documentNo ?? '—'}</span>
                       </td>
                       <td className="px-4 py-3 border-b border-gray-100 whitespace-nowrap text-sm text-gray-500">{item.createdDate ? new Date(item.createdDate).toLocaleString() : '—'}</td>
                       <td className="px-4 py-3 border-b border-gray-100 whitespace-nowrap text-sm text-gray-600">{item.documentSubType ?? '—'}</td>
