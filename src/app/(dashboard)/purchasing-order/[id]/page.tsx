@@ -142,7 +142,7 @@ export default function PurchasingOrderDetailPage() {
             {qr?.externalPaymentRequestId && (
               <div>
                 <dt className="text-xs text-gray-400 uppercase font-semibold tracking-wide">{m.fieldPaymentId}</dt>
-                <dd className="mt-0.5 text-gray-700 font-mono text-xs break-all">{qr.externalPaymentRequestId}</dd>
+                <dd className="mt-0.5 text-gray-700 text-xs break-all">{qr.externalPaymentRequestId}</dd>
               </div>
             )}
             {item.status === 'Rejected' && (
