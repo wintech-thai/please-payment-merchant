@@ -9,7 +9,7 @@ import { paymentRequestApi } from '@/lib/api/payment-request.api'
 import { useLang } from '@/context/LanguageContext'
 import { toast } from 'sonner'
 import clsx from 'clsx'
-import { Loader2, Copy, Check, Store, CreditCard, Webhook, Wallet, ChevronLeft, ChevronRight, Mail, Phone, Hash, User, Activity, Percent, TrendingUp, TrendingDown, ArrowDownCircle, ArrowUpCircle, Zap, Globe, ExternalLink, Coins, Search, Gem } from 'lucide-react'
+import { Loader2, Copy, Check, Store, CreditCard, Webhook, Wallet, ChevronLeft, ChevronRight, Mail, Phone, Hash, User, Activity, Percent, TrendingUp, TrendingDown, ArrowDownCircle, ArrowUpCircle, Zap, Globe, ExternalLink, Coins, Search, Gem, RefreshCw } from 'lucide-react'
 import { isCurrencyFeatureEnabled } from '@/lib/feature-flags'
 import CurrencyLogo from '@/components/CurrencyLogo'
 import PointTopUpModal from '@/components/PointTopUpModal'
@@ -290,6 +290,7 @@ export default function MerchantInfoPage() {
   const [orgPolicy, setOrgPolicy] = useState<any>(null)
   const [currencyEnabled, setCurrencyEnabled] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
   const [walletPage, setWalletPage] = useState(1)
   const [walletPageSize, setWalletPageSize] = useState(25)
   const [highlightedTxIdx, setHighlightedTxIdx] = useState<number | null>(null)
@@ -305,6 +306,9 @@ export default function MerchantInfoPage() {
 
   useEffect(() => {
     const load = async () => {
+      // reloadKey 0 = first mount -> full-page spinner; after that (org switch or manual refresh) -> just spin the refresh icon, keep the UI as-is
+      if (reloadKey === 0) setLoading(true)
+      else setRefreshing(true)
       try {
         // Call all merchant endpoints in parallel — backend resolves merchantId from current user
         const [detailRes, endpointsRes, webhooksRes, walletRes, pointWalletRes, currenciesRes, policyRes] = await Promise.allSettled([
@@ -378,6 +382,7 @@ export default function MerchantInfoPage() {
         toast.error(err instanceof Error ? err.message : mi.failedToLoad)
       } finally {
         setLoading(false)
+        setRefreshing(false)
       }
     }
     load()
@@ -770,7 +775,18 @@ export default function MerchantInfoPage() {
                   </div>
 
                   <div className="bg-white rounded-xl border border-gray-100 p-5">
-                    <SectionHeader>{mi.sectionWallet}</SectionHeader>
+                    <div className="flex items-center justify-between">
+                      <SectionHeader>{mi.sectionWallet}</SectionHeader>
+                      <button
+                        type="button"
+                        onClick={() => setReloadKey(k => k + 1)}
+                        disabled={refreshing}
+                        title={mi.refresh}
+                        className="p-1.5 text-gray-400 hover:text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-60"
+                      >
+                        <RefreshCw className={clsx('w-3.5 h-3.5', refreshing && 'animate-spin')} />
+                      </button>
+                    </div>
                     <div className="mt-3 grid grid-cols-2 gap-6">
                       <div className="space-y-3">
                         <div>
@@ -1035,13 +1051,24 @@ export default function MerchantInfoPage() {
                   <div className="bg-white rounded-xl border border-gray-100 p-5">
                     <div className="flex items-center justify-between">
                       <SectionHeader>{mi.sectionPointWallet}</SectionHeader>
-                      <button
-                        type="button"
-                        onClick={() => setShowTopUpModal(true)}
-                        className="px-3 py-1.5 text-xs font-semibold text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors"
-                      >
-                        {mi.topUpButton}
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setReloadKey(k => k + 1)}
+                          disabled={refreshing}
+                          title={mi.refresh}
+                          className="p-1.5 text-gray-400 hover:text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-60"
+                        >
+                          <RefreshCw className={clsx('w-3.5 h-3.5', refreshing && 'animate-spin')} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setShowTopUpModal(true)}
+                          className="px-3 py-1.5 text-xs font-semibold text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors"
+                        >
+                          {mi.topUpButton}
+                        </button>
+                      </div>
                     </div>
                     <div className="mt-3 space-y-3">
                       <div>

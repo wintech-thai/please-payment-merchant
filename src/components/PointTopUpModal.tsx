@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import * as signalR from '@microsoft/signalr'
-import { X, QrCode, ExternalLink, Loader2, CheckCircle2, Clock } from 'lucide-react'
+import { X, QrCode, ExternalLink, Loader2, CheckCircle2, Clock, Smartphone } from 'lucide-react'
 import QRCode from 'react-qr-code'
 import clsx from 'clsx'
 import { toast } from 'sonner'
@@ -13,7 +13,10 @@ import { bahtText } from '@/lib/bahtText'
 import { useLang } from '@/context/LanguageContext'
 
 const PRESET_AMOUNTS = [100, 200, 500, 1000, 2000, 5000]
-const COUNTDOWN_SECONDS = 60
+// ปรับแก้ ข้อ 4b : เปลี่ยนนับถอยหลังจาก 60 วิ เป็น 3 นาที
+const COUNTDOWN_SECONDS = 180
+// ปรับแก้ : ให้ QR หลักกับ QR แนบสลิป ขนาดเท่ากัน
+const QR_SIZE = 165
 
 export default function PointTopUpModal({ onClose, onSuccess, m }: { onClose: () => void; onSuccess: () => void; m: any }) {
   const { lang } = useLang()
@@ -27,6 +30,7 @@ export default function PointTopUpModal({ onClose, onSuccess, m }: { onClose: ()
   const [banks, setBanks] = useState<BankItem[]>([])
   const [secondsLeft, setSecondsLeft] = useState(COUNTDOWN_SECONDS)
   const [liveStatus, setLiveStatus] = useState<'idle' | 'connecting' | 'waiting' | 'success' | 'timeout' | 'error'>('idle')
+  const [showSlipQr, setShowSlipQr] = useState(false)
 
   const hubRef = useRef<signalR.HubConnection | null>(null)
 
@@ -143,8 +147,14 @@ export default function PointTopUpModal({ onClose, onSuccess, m }: { onClose: ()
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => { stopHub(); onClose() }}>
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-gray-100">
+      <div
+        className={clsx(
+          'w-full max-h-[94vh] bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col',
+          showSlipQr && slipUrl ? 'max-w-xl' : 'max-w-md'
+        )}
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="flex-none flex items-center justify-between px-6 pt-5 pb-4 border-b border-gray-100">
           <div className="flex items-center gap-2">
             <QrCode className="w-4 h-4 text-primary-600" />
             <h3 className="text-base font-bold text-gray-900">{m.topUpModalTitle}</h3>
@@ -153,6 +163,7 @@ export default function PointTopUpModal({ onClose, onSuccess, m }: { onClose: ()
             <X className="w-4 h-4" />
           </button>
         </div>
+        <div className="flex-1 min-h-0 overflow-y-auto">
 
         {!docStatus ? (
           <div className="px-6 py-5 space-y-4">
@@ -203,12 +214,12 @@ export default function PointTopUpModal({ onClose, onSuccess, m }: { onClose: ()
             </button>
           </div>
         ) : (
-          <div className="px-6 py-5 space-y-4">
+          <div className="px-6 py-4 space-y-3">
             {qr?.qrCode ? (
               <>
                 {/* PromptPay-style card */}
                 <div className="rounded-2xl overflow-hidden border border-indigo-100 shadow-sm">
-                  <div className="bg-gradient-to-r from-indigo-600 via-blue-600 to-purple-600 px-4 py-2.5 flex items-center gap-2">
+                  <div className="bg-gradient-to-r from-indigo-600 via-blue-600 to-purple-600 px-4 py-2 flex items-center gap-2">
                     <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
                       <svg viewBox="0 0 24 24" className="w-3 h-3 text-white" fill="currentColor">
                         <path d="M12 2 2 7l10 5 10-5-10-5zm0 7.5L4.5 7 12 3.5 19.5 7 12 9.5zM2 12l10 5 10-5v5l-10 5-10-5v-5z" />
@@ -216,7 +227,7 @@ export default function PointTopUpModal({ onClose, onSuccess, m }: { onClose: ()
                     </div>
                     <span className="text-xs font-bold text-white tracking-wide">PromptPay</span>
                   </div>
-                  <div className="bg-white px-5 py-4 flex flex-col items-center gap-3">
+                  <div className="bg-white px-5 py-3 flex flex-col items-center gap-2.5">
                     {(qr.payinBankAccountName || qr.payinPromptPayId) && (
                       <div className="w-full text-center">
                         <p className="text-[11px] text-gray-400">{m.topUpPayToLabel}</p>
@@ -226,11 +237,25 @@ export default function PointTopUpModal({ onClose, onSuccess, m }: { onClose: ()
                         </p>
                       </div>
                     )}
-                    <div className="p-3 bg-white rounded-xl border-2 border-indigo-50">
-                      <QRCode value={qr.qrCode} size={190} />
+                    {/* ปรับแก้ ข้อ 4a : วาง QR หลักกับ QR แนบสลิป (ถ้าเปิดไว้) ในแถวเดียวกันเพื่อให้กรอบสูงเท่ากันและขอบบนตรงกัน — items-start กันไม่ให้คำบรรยายใต้ QR ขวาไปดันแนวกลางของแถว */}
+                    <div className="flex items-start justify-center gap-3">
+                      <div className="p-2.5 bg-white rounded-xl border-2 border-indigo-50">
+                        <QRCode value={qr.qrCode} size={QR_SIZE} />
+                      </div>
+                      {showSlipQr && slipUrl && (
+                        <>
+                          <div className="w-px bg-indigo-100" style={{ height: QR_SIZE + 24 }} />
+                          <div className="flex flex-col items-center gap-1.5">
+                            <div className="p-2.5 bg-teal-50 rounded-xl border-2 border-teal-100">
+                              <QRCode value={slipUrl} size={QR_SIZE} />
+                            </div>
+                            <p className="text-[10px] text-teal-700 font-medium text-center leading-snug max-w-[150px]">{m.topUpScanSlipQrHint}</p>
+                          </div>
+                        </>
+                      )}
                     </div>
                     {!!displayAmount && (
-                      <div className="w-full text-center border-t border-dashed border-gray-200 pt-3">
+                      <div className="w-full text-center border-t border-dashed border-gray-200 pt-2.5">
                         <p className="text-[11px] text-gray-400">{m.topUpAmountLabelLarge}</p>
                         <p className="text-2xl font-extrabold text-indigo-700">฿{displayAmount.toLocaleString('th-TH', { minimumFractionDigits: 2 })}</p>
                         <p className="text-[11px] text-gray-400 mt-0.5">({bahtText(displayAmount)})</p>
@@ -239,11 +264,11 @@ export default function PointTopUpModal({ onClose, onSuccess, m }: { onClose: ()
                   </div>
                 </div>
 
-                {/* Live status */}
+                {/* Live status — ปรับแก้ ข้อ 5 : ทำเป็น badge สีๆ */}
                 <div className={clsx(
-                  'flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold',
-                  liveStatus === 'success' ? 'bg-emerald-50 text-emerald-700' :
-                  secondsLeft === 0 ? 'bg-amber-50 text-amber-700' : 'bg-gray-50 text-gray-600'
+                  'flex items-center justify-center gap-2 py-2 rounded-full text-sm font-semibold ring-1',
+                  liveStatus === 'success' ? 'bg-emerald-50 text-emerald-700 ring-emerald-200' :
+                  secondsLeft === 0 ? 'bg-amber-50 text-amber-700 ring-amber-200' : 'bg-gray-50 text-gray-600 ring-gray-200'
                 )}>
                   {liveStatus === 'success' ? (
                     <>
@@ -272,33 +297,48 @@ export default function PointTopUpModal({ onClose, onSuccess, m }: { onClose: ()
 
             <div className="flex flex-col gap-2">
               {slipUrl && (
-                <a
-                  href={slipUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-1.5 w-full py-2.5 text-sm font-semibold text-primary-700 bg-primary-50 hover:bg-primary-100 rounded-xl transition-colors"
-                >
-                  <ExternalLink className="w-4 h-4" />
-                  {m.topUpUploadSlip}
-                </a>
+                <div className="flex gap-2">
+                  <a
+                    href={slipUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-1.5 flex-1 py-2 text-sm font-semibold text-teal-700 bg-teal-50 hover:bg-teal-100 ring-1 ring-teal-200 rounded-full transition-colors"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                    {m.topUpUploadSlip}
+                  </a>
+                  {/* ปรับแก้ ข้อ 4a : แปลงลิงก์ upload slip เป็น QR ให้แสกนจากมือถือได้ ในกรณีทำรายการบน PC */}
+                  <button
+                    type="button"
+                    onClick={() => setShowSlipQr(v => !v)}
+                    title={m.topUpShowSlipQr}
+                    className={clsx(
+                      'flex items-center justify-center w-11 flex-shrink-0 rounded-full ring-1 transition-colors',
+                      showSlipQr ? 'bg-teal-600 text-white ring-teal-600' : 'bg-teal-50 text-teal-700 ring-teal-200 hover:bg-teal-100'
+                    )}
+                  >
+                    <Smartphone className="w-4 h-4" />
+                  </button>
+                </div>
               )}
               {qr?.paymentUrl && (
                 <a
                   href={qr.paymentUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-1.5 w-full py-2.5 text-sm font-semibold text-primary-700 bg-primary-50 hover:bg-primary-100 rounded-xl transition-colors"
+                  className="flex items-center justify-center gap-1.5 w-full py-2 text-sm font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 ring-1 ring-indigo-200 rounded-full transition-colors"
                 >
                   <ExternalLink className="w-4 h-4" />
                   {m.topUpOpenLink}
                 </a>
               )}
-              <button onClick={() => { stopHub(); onClose() }} className="w-full py-2.5 text-sm font-semibold text-white bg-primary-600 hover:bg-primary-700 rounded-xl transition-colors">
+              <button onClick={() => { stopHub(); onClose() }} className="w-full py-2 text-sm font-semibold text-white bg-teal-600 hover:bg-teal-700 rounded-full transition-colors">
                 {m.topUpClose}
               </button>
             </div>
           </div>
         )}
+        </div>
       </div>
     </div>
   )

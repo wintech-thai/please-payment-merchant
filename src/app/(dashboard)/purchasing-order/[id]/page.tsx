@@ -95,7 +95,7 @@ export default function PurchasingOrderDetailPage() {
     )
   }
 
-  let qr: { qrCode?: string | null; paymentUrl?: string | null; slipUploadUrl?: string | null; paymentStatusUrl?: string | null } | null = null
+  let qr: { qrCode?: string | null; paymentUrl?: string | null; slipUploadUrl?: string | null; paymentStatusUrl?: string | null; externalPaymentRequestId?: string | null } | null = null
   if (item.documentParams) {
     try { qr = JSON.parse(item.documentParams) } catch { qr = null }
   }
@@ -139,6 +139,12 @@ export default function PurchasingOrderDetailPage() {
               <dt className="text-xs text-gray-400 uppercase font-semibold tracking-wide">{m.fieldCreatedDate}</dt>
               <dd className="mt-0.5 text-gray-700">{item.createdDate ? new Date(item.createdDate).toLocaleString() : '—'}</dd>
             </div>
+            {qr?.externalPaymentRequestId && (
+              <div>
+                <dt className="text-xs text-gray-400 uppercase font-semibold tracking-wide">{m.fieldPaymentId}</dt>
+                <dd className="mt-0.5 text-gray-700 font-mono text-xs break-all">{qr.externalPaymentRequestId}</dd>
+              </div>
+            )}
             {item.status === 'Rejected' && (
               <div>
                 <dt className="text-xs text-gray-400 uppercase font-semibold tracking-wide">{m.fieldRejectReason}</dt>
