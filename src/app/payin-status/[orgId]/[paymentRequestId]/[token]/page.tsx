@@ -26,6 +26,7 @@ interface PaymentStatusData {
   payInPromptPayId?: string | null
   merchantName?: string | null
   slipUploadUrl?: string | null
+  latestSlipImageBase64?: string | null
 }
 
 function pick<T>(d: any, camel: string, pascal: string): T | undefined {
@@ -75,6 +76,7 @@ function PaymentStatusContent() {
           payInPromptPayId: pick(d, 'payInPromptPayId', 'PayInPromptPayId'),
           merchantName: pick(d, 'merchantName', 'MerchantName'),
           slipUploadUrl: pick(d, 'slipUploadUrl', 'SlipUploadUrl'),
+          latestSlipImageBase64: pick(d, 'latestSlipImageBase64', 'LatestSlipImageBase64'),
         })
         setPageState('ready')
       })
@@ -260,6 +262,18 @@ function PaymentStatusContent() {
                       </div>
                     )}
                   </div>
+
+                  {/* ปรับแก้ ข้อ 7 : แสดงรูปสลิปล่าสุดที่ upload มา ถ้ายังไม่มี upload ก็ไม่แสดง */}
+                  {data.latestSlipImageBase64 && (
+                    <div>
+                      <p className="text-xs font-semibold text-gray-500 mb-1.5">{m.uploadedSlipLabel}</p>
+                      <img
+                        src={`data:image/jpeg;base64,${data.latestSlipImageBase64}`}
+                        alt="uploaded slip"
+                        className="w-full object-contain max-h-80 rounded-xl border border-gray-200"
+                      />
+                    </div>
+                  )}
 
                   {/* Upload slip button */}
                   {data.slipUploadUrl && (
