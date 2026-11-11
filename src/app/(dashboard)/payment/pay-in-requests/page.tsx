@@ -1003,10 +1003,10 @@ export default function PayInRequestsPage() {
       {noticeTarget && <AuditNoticeDrawer rowId={noticeTarget} onClose={() => setNoticeTarget(null)} />}
 
       {qrOpen && !qrOpen.isP2P && myMerchantId && (
-        <QrPaymentModal merchantId={myMerchantId} onClose={() => setQrOpen(null)} onSuccess={load} />
+        <QrPaymentModal merchantId={myMerchantId} onClose={() => { setQrOpen(null); load() }} onSuccess={id => { load(); if (id) handleRowHighlight(id) }} />
       )}
       {qrOpen && qrOpen.isP2P && myMerchantId && (
-        <QrPaymentP2PModal merchantId={myMerchantId} onClose={() => setQrOpen(null)} onSuccess={load} />
+        <QrPaymentP2PModal merchantId={myMerchantId} onClose={() => { setQrOpen(null); load() }} onSuccess={id => { load(); if (id) handleRowHighlight(id) }} />
       )}
       {approveTarget && (
         <ApproveConfirmModal item={approveTarget} onClose={() => setApproveTarget(null)} onSuccess={load} />

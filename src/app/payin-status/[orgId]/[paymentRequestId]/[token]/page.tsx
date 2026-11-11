@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useEffect, useCallback, Suspense } from 'react'
+import { useState, useEffect, useCallback, useRef, Suspense } from 'react'
 import { useParams } from 'next/navigation'
 import QRCode from 'react-qr-code'
-import { Loader2, AlertCircle, RefreshCw, Ban, Upload, Building2, Banknote, Hash, User } from 'lucide-react'
+import { Loader2, AlertCircle, RefreshCw, Ban, Upload, Building2, Banknote, Hash, User, ImageIcon, ChevronDown } from 'lucide-react'
 import NavbarClean from '@/components/NavbarClean'
 import { LanguageProvider, useLang } from '@/context/LanguageContext'
 
@@ -44,6 +44,12 @@ function PaymentStatusContent() {
   const [pageState, setPageState] = useState<PageState>('verifying')
   const [data, setData] = useState<PaymentStatusData | null>(null)
   const [errorMsg, setErrorMsg] = useState('')
+  const [slipExpanded, setSlipExpanded] = useState(false)
+  const slipRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (slipExpanded) slipRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }, [slipExpanded])
 
   const load = useCallback((isRefresh: boolean) => {
     if (!orgId || !paymentRequestId || !token) {
@@ -78,6 +84,7 @@ function PaymentStatusContent() {
           slipUploadUrl: pick(d, 'slipUploadUrl', 'SlipUploadUrl'),
           latestSlipImageBase64: pick(d, 'latestSlipImageBase64', 'LatestSlipImageBase64'),
         })
+        setSlipExpanded(false)
         setPageState('ready')
       })
       .catch(() => {
@@ -264,14 +271,27 @@ function PaymentStatusContent() {
                   </div>
 
                   {/* ปรับแก้ ข้อ 7 : แสดงรูปสลิปล่าสุดที่ upload มา ถ้ายังไม่มี upload ก็ไม่แสดง */}
+                  {/* x093 2 : ซ่อนรูปไว้ก่อน คลิกค่อย expand เพื่อไม่ให้หน้ายาวเกินไป */}
                   {data.latestSlipImageBase64 && (
-                    <div>
-                      <p className="text-xs font-semibold text-gray-500 mb-1.5">{m.uploadedSlipLabel}</p>
-                      <img
-                        src={`data:image/jpeg;base64,${data.latestSlipImageBase64}`}
-                        alt="uploaded slip"
-                        className="w-full object-contain max-h-80 rounded-xl border border-gray-200"
-                      />
+                    <div ref={slipRef}>
+                      <button
+                        type="button"
+                        onClick={() => setSlipExpanded(v => !v)}
+                        className="w-full flex items-center justify-between gap-2 px-3.5 py-2.5 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl transition-colors"
+                      >
+                        <span className="flex items-center gap-2 text-xs font-semibold text-gray-600">
+                          <ImageIcon className="w-4 h-4 text-gray-400" />
+                          {slipExpanded ? m.uploadedSlipLabel : m.tapToViewSlip}
+                        </span>
+                        <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${slipExpanded ? 'rotate-180' : ''}`} />
+                      </button>
+                      {slipExpanded && (
+                        <img
+                          src={`data:image/jpeg;base64,${data.latestSlipImageBase64}`}
+                          alt="uploaded slip"
+                          className="w-full object-contain max-h-80 rounded-xl border border-gray-200 mt-2"
+                        />
+                      )}
                     </div>
                   )}
 
