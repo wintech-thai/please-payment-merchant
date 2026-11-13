@@ -13,7 +13,7 @@ import { useLang } from '@/context/LanguageContext'
 interface Props {
   merchantId: string
   onClose: () => void
-  onSuccess: () => void
+  onSuccess: (id?: string) => void
 }
 
 function generateRefId(): string {
@@ -131,7 +131,7 @@ export default function QrPaymentP2PModal({ merchantId, onClose, onSuccess }: Pr
       const raw = res.data as any
       const pr: PaymentRequestResponse = raw?.paymentResponse ?? raw?.PaymentResponse ?? raw
       setResult(pr)
-      onSuccess()
+      onSuccess(pr.id)
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : m.qrErrFailed)
     } finally {

@@ -1114,15 +1114,19 @@ export default function MerchantInfoPage() {
                           const payInTxMatch = tags.match(/PaymentTxId=\[([^\]]+)\]/)
                           const payInReqMatch = tags.match(/PaymentRequestId=\[([^\]]+)\]/)
                           const refId1 = tags.match(/RefId1=\[([^\]]+)\]/)?.[1] ?? null
-                          const tagUuid = (payOutMatch ?? payInTxMatch ?? payInReqMatch)?.[1] ?? null
+                          // x093 3 : Point TopUp -> link ไปที่เอกสาร Purchase Order (PurchaseCash) ที่เกี่ยวข้อง แสดงเลขที่เอกสารแทน tag ดิบ
+                          const accountDocMatch = tags.match(/AccountDocId=\[([^\]]+)\]/)
+                          const tagUuid = (payOutMatch ?? payInTxMatch ?? payInReqMatch ?? accountDocMatch)?.[1] ?? null
                           const tagLink = payOutMatch
                             ? `/payment/pay-out-requests/${payOutMatch[1]}`
                             : payInTxMatch
                             ? `/payment/pay-in-transactions/${payInTxMatch[1]}`
                             : payInReqMatch
                             ? `/payment/pay-in-requests/${payInReqMatch[1]}`
+                            : accountDocMatch
+                            ? `/purchasing-order/${accountDocMatch[1]}`
                             : null
-                          const tagLabel = refId1 ?? (payOutMatch ? 'Pay-Out' : payInTxMatch ? 'Pay-In Tx' : 'Pay-In Req')
+                          const tagLabel = refId1 ?? (tx.tags2 && accountDocMatch ? tx.tags2 : null) ?? (payOutMatch ? 'Pay-Out' : payInTxMatch ? 'Pay-In Tx' : payInReqMatch ? 'Pay-In Req' : 'Purchase Order')
                           const globalIdx = (pointWalletPage - 1) * pointWalletPageSize + idx
                           const isHighlighted = pointHighlightedTxIdx === globalIdx
                           return (
@@ -1165,6 +1169,7 @@ export default function MerchantInfoPage() {
                                           'inline-block px-2 py-0.5 rounded text-xs font-semibold hover:opacity-80 transition-opacity',
                                           payInTxMatch && 'bg-green-100 text-green-700',
                                           payInReqMatch && 'bg-blue-100 text-blue-700',
+                                          accountDocMatch && 'bg-violet-100 text-violet-700',
                                         )}>
                                           {tagLabel}
                                         </Link>

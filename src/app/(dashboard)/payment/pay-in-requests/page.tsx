@@ -262,7 +262,7 @@ function StatusLinkModal({ item, onClose }: { item: PayInRequestItem; onClose: (
 
 // ── Approve Modal ────────────────────────────────────────────────────────────
 
-function ApproveConfirmModal({ item, onSuccess, onClose }: { item: PayInRequestItem; onSuccess: () => void; onClose: () => void }) {
+function ApproveConfirmModal({ item, onSuccess, onClose, mode = 'approve' }: { item: PayInRequestItem; onSuccess: () => void; onClose: () => void; mode?: 'approve' | 'reapprove' }) {
   const { t } = useLang()
   const m = t.payInRequest
   const [reason, setReason] = useState('')
@@ -271,12 +271,16 @@ function ApproveConfirmModal({ item, onSuccess, onClose }: { item: PayInRequestI
   const handleConfirm = async () => {
     setLoading(true)
     try {
-      await paymentRequestApi.createPaymentTxByPayInRequestId(item.id, { StatusReason: reason.trim() || undefined })
-      toast.success(m.requestToastApproveSuccess)
+      if (mode === 'reapprove') {
+        await paymentRequestApi.approveRejectedPayInRequestById(item.id, { StatusReason: reason.trim() || undefined })
+      } else {
+        await paymentRequestApi.createPaymentTxByPayInRequestId(item.id, { StatusReason: reason.trim() || undefined })
+      }
+      toast.success(mode === 'reapprove' ? m.requestToastReapproveSuccess : m.requestToastApproveSuccess)
       onSuccess()
       onClose()
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : m.requestToastApproveFailed)
+      toast.error(err instanceof Error ? err.message : (mode === 'reapprove' ? m.requestToastReapproveFailed : m.requestToastApproveFailed))
     } finally {
       setLoading(false)
     }
@@ -286,7 +290,7 @@ function ApproveConfirmModal({ item, onSuccess, onClose }: { item: PayInRequestI
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
       <div className="w-full max-w-sm bg-white rounded-2xl shadow-2xl">
         <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-gray-100">
-          <h3 className="text-base font-bold text-gray-900">{m.requestApproveTitle}</h3>
+          <h3 className="text-base font-bold text-gray-900">{mode === 'reapprove' ? m.requestReapproveTitle : m.requestApproveTitle}</h3>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 transition-colors">
             <X className="w-4 h-4" />
           </button>
@@ -409,11 +413,12 @@ function RejectModal({ item, onSuccess, onClose }: { item: PayInRequestItem; onS
 
 // ── Action Menu ───────────────────────────────────────────────────────────────
 
-function ActionMenu({ item, canManage, onApprove, onReject, onSlipLink, onStatusLink }: {
+function ActionMenu({ item, canManage, onApprove, onReject, onApproveRejected, onSlipLink, onStatusLink }: {
   item: PayInRequestItem
   canManage: boolean
   onApprove: () => void
   onReject: () => void
+  onApproveRejected: () => void
   onSlipLink: () => void
   onStatusLink: () => void
 }) {
@@ -424,6 +429,8 @@ function ActionMenu({ item, canManage, onApprove, onReject, onSlipLink, onStatus
   const ref = useRef<HTMLDivElement>(null)
   const btnRef = useRef<HTMLButtonElement>(null)
   const isPending = item.status?.toLowerCase() === 'pending'
+  // Re-approve a Rejected request (canManage already guarantees MerchantOwn)
+  const isRejected = item.status?.toLowerCase() === 'rejected'
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
@@ -457,6 +464,10 @@ function ActionMenu({ item, canManage, onApprove, onReject, onSlipLink, onStatus
               <button type="button" disabled={!isPending} onClick={() => { setOpen(false); onReject() }}
                 className="w-full px-3 py-2 text-left text-sm font-medium text-red-600 hover:bg-red-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
                 {m.menuReject}
+              </button>
+              <button type="button" disabled={!isRejected} onClick={() => { setOpen(false); onApproveRejected() }}
+                className="w-full px-3 py-2 text-left text-sm font-medium text-emerald-700 hover:bg-emerald-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                {m.menuApproveRejected}
               </button>
             </>
           )}
@@ -514,6 +525,7 @@ export default function PayInRequestsPage() {
   const createMenuRef = useRef<HTMLDivElement>(null)
   const [qrOpen, setQrOpen] = useState<{ isP2P: boolean } | null>(null)
   const [approveTarget, setApproveTarget] = useState<PayInRequestItem | null>(null)
+  const [reapproveTarget, setReapproveTarget] = useState<PayInRequestItem | null>(null)
   const [rejectTarget, setRejectTarget] = useState<PayInRequestItem | null>(null)
   const [slipLinkTarget, setSlipLinkTarget] = useState<PayInRequestItem | null>(null)
   const [statusLinkTarget, setStatusLinkTarget] = useState<PayInRequestItem | null>(null)
@@ -869,6 +881,7 @@ export default function PayInRequestsPage() {
                       canManage={isMerchantOwn}
                       onApprove={() => setApproveTarget(item)}
                       onReject={() => setRejectTarget(item)}
+                      onApproveRejected={() => setReapproveTarget(item)}
                       onSlipLink={() => setSlipLinkTarget(item)}
                       onStatusLink={() => setStatusLinkTarget(item)}
                     />
@@ -1003,13 +1016,16 @@ export default function PayInRequestsPage() {
       {noticeTarget && <AuditNoticeDrawer rowId={noticeTarget} onClose={() => setNoticeTarget(null)} />}
 
       {qrOpen && !qrOpen.isP2P && myMerchantId && (
-        <QrPaymentModal merchantId={myMerchantId} onClose={() => setQrOpen(null)} onSuccess={load} />
+        <QrPaymentModal merchantId={myMerchantId} onClose={() => { setQrOpen(null); load() }} onSuccess={id => { load(); if (id) handleRowHighlight(id) }} />
       )}
       {qrOpen && qrOpen.isP2P && myMerchantId && (
-        <QrPaymentP2PModal merchantId={myMerchantId} onClose={() => setQrOpen(null)} onSuccess={load} />
+        <QrPaymentP2PModal merchantId={myMerchantId} onClose={() => { setQrOpen(null); load() }} onSuccess={id => { load(); if (id) handleRowHighlight(id) }} />
       )}
       {approveTarget && (
         <ApproveConfirmModal item={approveTarget} onClose={() => setApproveTarget(null)} onSuccess={load} />
+      )}
+      {reapproveTarget && (
+        <ApproveConfirmModal item={reapproveTarget} mode="reapprove" onClose={() => setReapproveTarget(null)} onSuccess={load} />
       )}
       {rejectTarget && (
         <RejectModal item={rejectTarget} onClose={() => setRejectTarget(null)} onSuccess={load} />

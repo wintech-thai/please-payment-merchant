@@ -40,6 +40,9 @@ export const paymentRequestApi = {
   createPaymentTxByPayInRequestId: (id: string, payload?: { StatusReason?: string; StatusCode?: string }) =>
     client.post(`/api/PaymentTransaction/org/${typeof window !== 'undefined' ? (localStorage.getItem('orgId') || 'temp') : 'temp'}/action/CreatePaymentTxByPayInRequestId/${id}`, payload ?? {}),
 
+  approveRejectedPayInRequestById: (id: string, payload?: { StatusReason?: string; StatusCode?: string }) =>
+    client.post(`/api/PaymentTransaction/org/${typeof window !== 'undefined' ? (localStorage.getItem('orgId') || 'temp') : 'temp'}/action/ApproveRejectedPayInRequestById/${id}`, payload ?? {}),
+
   rejectPendingPayInRequestById: (id: string, reason: string, rejectStatusCode?: string) =>
     client.post(`${getBase()}/RejectPendingPayInRequestById/${id}`, { StatusReason: reason, StatusCode: rejectStatusCode }),
 

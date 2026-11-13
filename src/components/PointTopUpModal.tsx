@@ -233,8 +233,11 @@ export default function PointTopUpModal({ onClose, onSuccess, m }: { onClose: ()
                         <p className="text-[11px] text-gray-400">{m.topUpPayToLabel}</p>
                         <p className="text-sm font-bold text-gray-800">{qr.payinBankAccountName}</p>
                         <p className="text-xs text-gray-500">
-                          {[bankLabel(qr.payinBankCode), qr.payinBankAccountNo ?? (qr.payinPromptPayId ? `${m.topUpPromptPayIdLabel} ${qr.payinPromptPayId}` : null)].filter(Boolean).join(' · ')}
+                          {[bankLabel(qr.payinBankCode), qr.payinBankAccountNo].filter(Boolean).join(' · ')}
                         </p>
+                        {qr.payinPromptPayId && (
+                          <p className="text-xs text-gray-500 whitespace-nowrap">{m.topUpPromptPayIdLabel}: {qr.payinPromptPayId}</p>
+                        )}
                       </div>
                     )}
                     {/* ปรับแก้ ข้อ 4a : วาง QR หลักกับ QR แนบสลิป (ถ้าเปิดไว้) ในแถวเดียวกันเพื่อให้กรอบสูงเท่ากันและขอบบนตรงกัน — items-start กันไม่ให้คำบรรยายใต้ QR ขวาไปดันแนวกลางของแถว */}
